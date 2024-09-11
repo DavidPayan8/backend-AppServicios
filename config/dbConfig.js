@@ -1,8 +1,8 @@
 const config = {
-    user: 'Hugo',
-    password: 'SQLKong1972.',
-    server: '85.215.191.245',
-    database: 'APPFICHAJE',
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    server: process.env.DB_SERVER,
+    database: process.env.DB_NAME,
     options: {
       encrypt: true, 
       enableArithAbort: true,  
