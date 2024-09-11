@@ -11,7 +11,7 @@ const authenticateToken = require('./middleware/authMiddleware');
 const path = require('path');
 
 const app = express();
-const port = 3000; /* || 0 */
+const port = 3000;
 
 // Middleware
 app.use(cors());
@@ -39,3 +39,4 @@ app.get('/prueba', (req, res) => {
 app.listen(port, () => {
   console.log(`Servidor Node.js corriendo en http://localhost:${port}`);
 });
+

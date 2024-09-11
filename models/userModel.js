@@ -7,6 +7,8 @@ const getUserByUsername = async (username) => {
     let result = await pool.request()
       .input('username', sql.VarChar, username)
       .query('SELECT * FROM Usuarios WHERE user_name = @username');
+
+      console.log(result.recordset[0])
     return result.recordset[0];
   } catch (error) {
     console.error('Error al obtener usuario:', error.message);

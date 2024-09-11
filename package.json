@@ -17,5 +17,8 @@
     "express": "^4.19.2",
     "jsonwebtoken": "^8.5.1",
     "mssql": "^11.0.0"
+  },
+  "devDependencies": {
+    "morgan": "^1.10.0"
   }
 }
