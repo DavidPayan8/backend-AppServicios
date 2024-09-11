@@ -1,3 +1,4 @@
+const dotenv = require('dotenv');
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -8,10 +9,13 @@ const asistenciaRoutes = require('./routes/asistenciaRoutes');
 const proyectosRoutes = require('./routes/proyectosRoutes');
 const parteRoutes = require('./routes/parteRoutes');
 const authenticateToken = require('./middleware/authMiddleware');
-const path = require('path');
 
 const app = express();
-const port = 3000;
+ dotenv.config();
+
+console.log(process.env.PORT);
+
+const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
@@ -30,13 +34,13 @@ app.get('/protected', authenticateToken, (req, res) => {
   res.json({ message: 'Acceso autorizado', user: req.user });
 });
 
-app.get('/prueba', (req, res) => {
+app.get('/', (req, res) => {
   res.json({ message: 'Localhost funciona' });
 });
 
 
 // Iniciar el servidor
-app.listen(port, () => {
+app.listen(port, (res,req) => {
   console.log(`Servidor Node.js corriendo en http://localhost:${port}`);
 });
 
