@@ -1,4 +1,4 @@
-const dotenv = require("dotenv");
+require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
@@ -11,7 +11,8 @@ const parteRoutes = require("./routes/parteRoutes");
 const authenticateToken = require("./middleware/authMiddleware");
 
 const app = express();
-dotenv.config();
+
+console.log(process.env.DB_NAME,process.env.DB_USER,process.env.DB_PASSWORD,process.env.DB_SERVER)
 
 const port = process.env.PORT || 0;
 

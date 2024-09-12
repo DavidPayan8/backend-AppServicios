@@ -95,19 +95,20 @@ const getPartes = async (id_usuario, id_proyecto, fecha) => {
 };
 
 const getParte = async (id_parte, id_usuario) => {
+  const id = id_parte;
   try {
     const pool = await sql.connect(config);
     const result = await pool
       .request()
-      .input("id_parte", sql.Int, id_parte)
+      .input("id", sql.Int, id)
       .input("id_usuario", sql.Int, id_usuario)
-      .input("fecha", sql.Date, fecha).query(`
+      .query(`
                 SELECT * 
                 FROM PARTES_TRABAJO 
                 WHERE id_usuario = @id_usuario 
-                  AND id_parte = @id_parte
+                  AND id = @id
             `);
-
+        console.log(result.recordset)
     return result.recordset;
   } catch (error) {
     console.error("Error al obtener partes de trabajo:", error.message);

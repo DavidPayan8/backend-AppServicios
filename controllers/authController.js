@@ -7,8 +7,6 @@ const JWT_SECRET = '111';
 const login = async (req, res) => {
   const { username, password } = req.body;
 
-  console.log(username, password)
-
   try {
     const user = await getUserByUsername(username);
     if (!user) {
