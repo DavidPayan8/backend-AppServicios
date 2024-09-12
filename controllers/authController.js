@@ -19,7 +19,7 @@ const login = async (req, res) => {
     }
   } catch (err) {
     /* res.error('Error al iniciar sesión:', err); */
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: err });
   }
 };
 
