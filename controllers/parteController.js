@@ -95,7 +95,8 @@ const getPartes = async (req, res) => {
 };
 
 const getParte = async (req, res) => {
-  const { id_parte } = req.params;
+  console.log(req.body)
+  const { id_parte } = req.body;
   const id_usuario = req.user.id;
 
   try {

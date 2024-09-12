@@ -100,7 +100,7 @@ const getParte = async (id_parte, id_usuario) => {
     const pool = await sql.connect(config);
     const result = await pool
       .request()
-      .input("id", sql.Int, id)
+      .input("id", sql.Int, id_parte)
       .input("id_usuario", sql.Int, id_usuario)
       .query(`
                 SELECT * 
@@ -108,7 +108,7 @@ const getParte = async (id_parte, id_usuario) => {
                 WHERE id_usuario = @id_usuario 
                   AND id = @id
             `);
-        console.log(result.recordset)
+        console.log(result.recordset[0])
     return result.recordset;
   } catch (error) {
     console.error("Error al obtener partes de trabajo:", error.message);
