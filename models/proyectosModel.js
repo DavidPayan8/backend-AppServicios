@@ -10,6 +10,7 @@ const connectToDb = async () => {
   return poolPromise;
 };
 
+
 const getIdProyectos = async (userId, date) => {
   try {
     const pool = await connectToDb();

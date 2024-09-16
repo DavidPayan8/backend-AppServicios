@@ -108,7 +108,6 @@ const getParte = async (id_parte, id_usuario) => {
                 WHERE id_usuario = @id_usuario 
                   AND id = @id
             `);
-        console.log(result.recordset[0])
     return result.recordset;
   } catch (error) {
     console.error("Error al obtener partes de trabajo:", error.message);

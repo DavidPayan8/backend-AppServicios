@@ -1,14 +1,13 @@
-const DB_NAME="APPFICHAJE"
-const DB_USER="Hugo"
+/* const DB_NAME="APPFICHAJE"
+const DB_USER="Kong"
 const DB_PASSWORD="SQLKong1972."
-const DB_SERVER="85.215.191.245"
-const DB_HOST="localhost"
+const DB_SERVER="85.215.191.245" */
 
 const config = {
-    user: DB_USER,
-    password:DB_PASSWORD,
-    server: DB_SERVER,
-    database: DB_NAME,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    server: process.env.DB_SERVER,
+    database: process.env.DB_NAME,
     options: {
       encrypt: true, 
       enableArithAbort: true,  

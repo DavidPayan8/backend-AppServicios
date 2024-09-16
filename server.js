@@ -12,7 +12,6 @@ const authenticateToken = require("./middleware/authMiddleware");
 
 const app = express();
 
-console.log(process.env.DB_NAME,process.env.DB_USER,process.env.DB_PASSWORD,process.env.DB_SERVER)
 
 const port = process.env.PORT || 0;
 

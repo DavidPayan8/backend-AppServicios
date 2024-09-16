@@ -1,4 +1,5 @@
-const { getIdProyectos, getProyectos, addProyecto } = require('../models/proyectosModel');
+const { getIdProyectos, getProyectos, addProyecto} = require('../models/proyectosModel');
+
 
 
 const obtenerIdProyectos = async (req, res) => {
