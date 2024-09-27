@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const JWT_SECRET = String(process.env.JWT_SECRET) || 111;
 
 const authenticateToken = (req, res, next) => {
+  
 
   // 1. Obtener el token de la cabecera 'Authorization'
   const authHeader = req.header('Authorization');
@@ -24,7 +25,6 @@ const authenticateToken = (req, res, next) => {
     }
     // 4. Almacenar los datos decodificados del usuario en el objeto de solicitud (req)
     req.user = decoded;
-
     // 5. Continuar con la ejecución del siguiente middleware o controlador
     next();
   });

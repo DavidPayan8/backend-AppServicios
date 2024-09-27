@@ -9,4 +9,5 @@ router.post('/entrada', ficharEntradaHandler);
 router.post('/salida', ficharSalidaHandler);
 router.get('/partes-usuario', obtenerPartesUsuarioFecha);
 
+
 module.exports = router;

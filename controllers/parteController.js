@@ -101,7 +101,7 @@ const getParte = async (req, res) => {
   try {
     const parte = await parteService.getParte(id_parte, id_usuario);
 
-    if (parte.length == 1 ) {
+    if (parte.length == 1) {
       res.status(200).json(parte);
     } else {
       res.status(404).json({
@@ -155,14 +155,7 @@ const getCapitulos = async (req, res) => {
 
   try {
     const capitulos = await parteService.getCapitulos(id_proyecto);
-
-    if (capitulos.length > 0) {
-      res.status(200).json(capitulos);
-    } else {
-      res.status(404).json({
-        message: "ERROR EN PARTE CONTROLLER.",
-      });
-    }
+    res.status(200).json(capitulos);
   } catch (error) {
     console.error("Error al obtener capitulos:", error.message);
     res

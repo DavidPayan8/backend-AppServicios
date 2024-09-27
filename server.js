@@ -8,6 +8,7 @@ const authRoutes = require("./routes/authRoutes");
 const asistenciaRoutes = require("./routes/asistenciaRoutes");
 const proyectosRoutes = require("./routes/proyectosRoutes");
 const parteRoutes = require("./routes/parteRoutes");
+const notificacionesRoutes =  require("./routes/notificacionesRoutes")
 const authenticateToken = require("./middleware/authMiddleware");
 
 const app = express();
@@ -27,6 +28,7 @@ app.use("/api/asistencia", asistenciaRoutes);
 app.use("/api/proyectos", proyectosRoutes);
 app.use("/api/clientes", clientesRoutes);
 app.use("/api/partes", parteRoutes);
+app.use("/api/notificaciones", notificacionesRoutes);
 app.get("/protected", authenticateToken, (req, res) => {
   res.json({ message: "Acceso autorizado", user: req.user });
 });
@@ -36,6 +38,6 @@ app.get("/", (req, res) => {
 });
 
 // Iniciar el servidor
-app.listen(port, (res, req) => {
+app.listen(port, () => {
   console.log(`Servidor Node.js corriendo en http://localhost:${port}`);
 });

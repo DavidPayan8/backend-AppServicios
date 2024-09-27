@@ -1,5 +1,6 @@
 const { getParteAbierto, getPartesUsuarioFecha, ficharEntrada, ficharSalida } = require('../models/asistenciaModel');
 
+
 const ficharEntradaHandler = async (req, res) => {
     const userId = req.user.id;
     const { date, horaEntrada } = req.body; // Recibe date (dd/mm/yyyy) y horaSalida (HH:mm:ss) desde el frontend
@@ -65,5 +66,5 @@ const formatFecha = (fecha) => {
 module.exports = {
     ficharEntradaHandler,
     ficharSalidaHandler,
-    obtenerPartesUsuarioFecha
+    obtenerPartesUsuarioFecha,
 };

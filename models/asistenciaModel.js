@@ -14,17 +14,12 @@ const ficharEntrada = async (userId, date, horaEntrada) => {
     try {
         const pool = await connectToDb();
 
-        // Usar una consulta para obtener el nuevo ID
-        let idResult = await pool.request().query(`SELECT MAX(id) AS maxId FROM CONTROL_ASISTENCIAS`);
-        let id = idResult.recordset[0].maxId + 1;
-
         await pool.request()
-            .input('id', sql.Int, id)
             .input('userId', sql.Int, userId)
             .input('fecha', sql.Date, date)
             .input('horaEntrada',  sql.VarChar, horaEntrada)
-            .query(`INSERT INTO CONTROL_ASISTENCIAS (id, id_usuario, fecha, hora_entrada) 
-                    VALUES (@id, @userId, @fecha, @horaEntrada)`);
+            .query(`INSERT INTO CONTROL_ASISTENCIAS ( id_usuario, fecha, hora_entrada) 
+                    VALUES ( @userId, @fecha, @horaEntrada)`);
     } catch (error) {
         console.error('Error al fichar entrada:', error.message);
         throw error;
@@ -83,5 +78,5 @@ module.exports = {
     ficharEntrada, 
     ficharSalida, 
     getParteAbierto,
-    getPartesUsuarioFecha
+    getPartesUsuarioFecha,
 };

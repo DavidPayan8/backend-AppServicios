@@ -31,8 +31,6 @@ const crearParteTrabajo = async ({
   hora_entrada,
   fecha,
   localizacion,
-  horas_extra,
-  horas_festivo,
 }) => {
   console.log("Entrando en crearParteTrabajo en el modelo");
 
@@ -40,16 +38,10 @@ const crearParteTrabajo = async ({
     const pool = await sql.connect(config);
 
     // Obtener el próximo ID disponible
-    const idResult = await pool
-      .request()
-      .query("SELECT ISNULL(MAX(id), 0) AS maxId FROM PARTES_TRABAJO");
-    let id = idResult.recordset[0].maxId + 1;
-    console.log("ID a insertar:", id);
 
     // Insertar el nuevo parte de trabajo
-    await pool
+    const result = await pool
       .request()
-      .input("id", sql.Int, id)
       .input("id_usuario", sql.Int, id_usuario)
       .input("id_capitulo", sql.Int, id_capitulo)
       .input("id_partida", sql.Int, id_partida)
@@ -57,12 +49,11 @@ const crearParteTrabajo = async ({
       .input("hora_entrada", sql.Time, hora_entrada)
       .input("fecha", sql.Date, fecha)
       .input("localizacion", sql.VarChar, localizacion)
-      .input("horas_extra", sql.Int, horas_extra)
-      .input("horas_festivo", sql.Int, horas_festivo)
-      .query(`INSERT INTO PARTES_TRABAJO (id, id_usuario, id_capitulo , id_partida ,id_proyecto, hora_entrada, fecha, localizacion, horas_extra, horas_festivo)
-                    VALUES (@id, @id_usuario, @id_capitulo, @id_partida ,@id_proyecto, @hora_entrada, @fecha, @localizacion, @horas_extra, @horas_festivo)`);
+      .query(`INSERT INTO PARTES_TRABAJO ( id_usuario, id_capitulo , id_partida ,id_proyecto, hora_entrada, fecha, localizacion)
+              OUTPUT INSERTED.id
+              VALUES (@id_usuario, @id_capitulo, @id_partida ,@id_proyecto, @hora_entrada, @fecha, @localizacion)`);
 
-    return id; // Retornar el ID del nuevo registro
+    return result.recordset[0].id; // Retornar el ID del nuevo registro
   } catch (error) {
     console.error(
       "Error al crear parte de trabajo en el modelo:",
@@ -101,8 +92,7 @@ const getParte = async (id_parte, id_usuario) => {
     const result = await pool
       .request()
       .input("id", sql.Int, id_parte)
-      .input("id_usuario", sql.Int, id_usuario)
-      .query(`
+      .input("id_usuario", sql.Int, id_usuario).query(`
                 SELECT * 
                 FROM PARTES_TRABAJO 
                 WHERE id_usuario = @id_usuario 
@@ -122,7 +112,7 @@ const actualizarParteTrabajo = async (
   id_proyecto,
   hora_salida,
   horas_extra,
-  horas_festivo,
+  horas_festivo
 ) => {
   try {
     const pool = await sql.connect(config);

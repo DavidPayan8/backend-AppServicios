@@ -65,25 +65,16 @@ const addProyecto = async (
     const request = new sql.Request(transaction);
 
     // Obtener el próximo ID para el nuevo proyecto
-    let idResult = await request.query(
-      "SELECT MAX(id) AS maxId FROM PROYECTOS"
-    );
-    let idProyecto = (idResult.recordset[0].maxId || 0) + 1;
 
     // Insertar el nuevo proyecto
     await request
-      .input("idProyecto", sql.Int, idProyecto)
       .input("nombre", sql.VarChar, nombre)
       .input("observaciones", sql.VarChar, observaciones)
       .input("id_cliente", sql.Int, id_cliente)
-      .query(`INSERT INTO PROYECTOS (id, nombre, observaciones, id_cliente)
-                    VALUES (@idProyecto, @nombre, @observaciones, @id_cliente)`);
+      .query(`INSERT INTO PROYECTOS ( nombre, observaciones, id_cliente)
+                    VALUES ( @nombre, @observaciones, @id_cliente)`);
 
     // Obtener el próximo ID para el calendario
-    let idResultCalendario = await request.query(
-      "SELECT MAX(id) AS maxId FROM CALENDARIO"
-    );
-    let idCalendario = (idResultCalendario.recordset[0].maxId || 0) + 1;
 
     // Insertar la entrada en el calendario
     await request
@@ -91,8 +82,8 @@ const addProyecto = async (
       .input("fecha", sql.Date, fechaCalendario)
       .input("id_usuario", sql.Int, id_usuario)
       .input("id_proyecto", sql.Int, idProyecto)
-      .query(`INSERT INTO CALENDARIO (id, fecha, id_usuario, id_proyecto)
-                    VALUES (@idCalendario, @fecha, @id_usuario, @id_proyecto)`);
+      .query(`INSERT INTO CALENDARIO ( fecha, id_usuario, id_proyecto)
+                    VALUES ( @fecha, @id_usuario, @id_proyecto)`);
 
     // Confirmar la transacción
     await transaction.commit();
