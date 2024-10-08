@@ -11,6 +11,7 @@ const connectToDb = async () => {
 };
 
 
+// Obtiene los ids de los proyectos, por usuario
 const getIdProyectos = async (userId, date) => {
   try {
     const pool = await connectToDb();
@@ -27,13 +28,14 @@ const getIdProyectos = async (userId, date) => {
   }
 };
 
+// Obtiene los proyectos por ids
 const getProyectos = async (ids) => {
   try {
     let idsString = "";
     const pool = await connectToDb();
 
     // Convertir array de IDs en formato adecuado para SQL
-      idsString = ids.join(",");
+    idsString = ids.join(",");
 
     const query = `SELECT * FROM PROYECTOS WHERE id IN (${idsString})`;
 
@@ -49,9 +51,10 @@ const getProyectos = async (ids) => {
 const addProyecto = async (
   nombre,
   observaciones,
-  id_cliente,
   id_usuario,
-  fechaCalendario
+  id_cliente,
+  fechaCalendario,
+  es_ote
 ) => {
   let transaction;
   try {
@@ -63,25 +66,36 @@ const addProyecto = async (
 
     // Crear el nuevo proyecto
     const request = new sql.Request(transaction);
+    let result = null;
 
-    // Obtener el próximo ID para el nuevo proyecto
+    // Insertar el nuevo proyecto y devuelve el id generado
+    // Si no hay cliente se pone como nulo, si hay, se pone su Id
+    if (id_cliente === 0) {
+      result= await request
+        .input("nombre", sql.VarChar, nombre)
+        .input("observaciones", sql.VarChar, observaciones)
+        .input("es_ote", sql.Bit, es_ote)
+        .query(`INSERT INTO PROYECTOS ( nombre, observaciones, id_cliente, es_ote)
+              OUTPUT inserted.id
+              VALUES (  @nombre, @observaciones, null, @es_ote)`);
+    }else{
+      result= await request
+          .input("id_cliente", sql.Int, id_cliente)
+          .input("nombre", sql.VarChar, nombre)
+          .input("observaciones", sql.VarChar, observaciones)
+          .input("es_ote", sql.Bit, es_ote)
+          .query(`INSERT INTO PROYECTOS ( nombre, observaciones, id_cliente, es_ote)
+                OUTPUT inserted.id
+                VALUES ( @nombre, @observaciones, @id_cliente, @es_ote)`);
+    }
 
-    // Insertar el nuevo proyecto
-    await request
-      .input("nombre", sql.VarChar, nombre)
-      .input("observaciones", sql.VarChar, observaciones)
-      .input("id_cliente", sql.Int, id_cliente)
-      .query(`INSERT INTO PROYECTOS ( nombre, observaciones, id_cliente)
-                    VALUES ( @nombre, @observaciones, @id_cliente)`);
 
-    // Obtener el próximo ID para el calendario
 
     // Insertar la entrada en el calendario
-    await request
-      .input("idCalendario", sql.Int, idCalendario)
+   await request
       .input("fecha", sql.Date, fechaCalendario)
       .input("id_usuario", sql.Int, id_usuario)
-      .input("id_proyecto", sql.Int, idProyecto)
+      .input("id_proyecto", sql.Int, result.recordset[0].id)
       .query(`INSERT INTO CALENDARIO ( fecha, id_usuario, id_proyecto)
                     VALUES ( @fecha, @id_usuario, @id_proyecto)`);
 
@@ -89,7 +103,7 @@ const addProyecto = async (
     await transaction.commit();
 
     // Retornar el ID del nuevo proyecto
-    return { id: idProyecto };
+    return { id: result.recordset[0].id };
   } catch (error) {
     // Revertir la transacción en caso de error
     if (transaction) {

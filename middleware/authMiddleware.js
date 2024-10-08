@@ -17,11 +17,11 @@ const authenticateToken = (req, res, next) => {
   // 3. Verificar y decodificar el token
   jwt.verify(token,JWT_SECRET, (err, decoded) => {
     if (err) {
-      if (err.name === 'TokenExpiredError') {
-        return res.redirect('/');
+      if(err.name === 'TokenExpiredError'){
+        return res.status(401).json({message:"TokenExpirado"})
       }
       console.error('Error verifying token:', err);
-      return res.status(403).json({ message: 'Unauthorized: Invalid token' });
+      return res.status(403).json({ message: err });
     }
     // 4. Almacenar los datos decodificados del usuario en el objeto de solicitud (req)
     req.user = decoded;

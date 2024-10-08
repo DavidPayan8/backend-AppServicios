@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.use(authenticateToken);
 
-router.get('/', getClientes);
+router.get('/obtener-clientes', getClientes);
 
 module.exports = router;
 

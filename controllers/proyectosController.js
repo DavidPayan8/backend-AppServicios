@@ -30,11 +30,11 @@ const obtenerProyectosPorIds = async (req, res) => {
 
 const crearProyecto = async (req, res) => {
     try {
-        const { nombre, observaciones, id_cliente, fechaCalendario } = req.body;
+        const { nombre, observaciones, id_cliente, fechaCalendario, es_ote } = req.body;
         const id_usuario = req.user.id; 
 
         // Crear el proyecto y calendario
-        const nuevoProyecto = await addProyecto(nombre, observaciones, id_cliente, id_usuario, fechaCalendario);
+        const nuevoProyecto = await addProyecto(nombre, observaciones, id_usuario, id_cliente, fechaCalendario, es_ote);
 
         res.status(201).json({
             mensaje: 'Proyecto y calendario creados exitosamente',

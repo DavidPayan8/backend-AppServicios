@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
+/* const bcrypt = require('bcrypt'); */
 const { getUserByUsername } = require('../models/userModel');
 
 const JWT_SECRET = '111';
@@ -18,7 +18,6 @@ const login = async (req, res) => {
       res.json({ token });
     }
   } catch (err) {
-    /* res.error('Error al iniciar sesión:', err); */
     res.status(500).json({ message: err });
   }
 };
