@@ -11,7 +11,7 @@ const authenticateToken = (req, res, next) => {
 
   // 2. Verificar si no hay token presente
   if (!token) {
-    return res.status(401).json({ message: 'Access Denied' });
+    return res.status(407).json({ message: 'Access Denied' });
   }
 
   // 3. Verificar y decodificar el token

@@ -9,7 +9,7 @@ const obtenerIdProyectos = async (req, res) => {
     try {
         const idProyectos= await getIdProyectos(userId, date);
 
-        res.status(200).json(idProyectos); 
+        res.status(200).json(idProyectos);
     } catch (error) {
         console.error('Error al obtener los id de los proyectos:', error.message);
         res.status(500).json({ message: 'Error del servidor al obtener los partes del usuario.' });
