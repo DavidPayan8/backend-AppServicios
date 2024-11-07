@@ -37,16 +37,6 @@ const crearParteTrabajo = async (req, res) => {
   } = req.body;
   const id_usuario = req.user.id;
 
-  console.log("Datos recibidos en el controlador:", {
-    id_proyecto,
-    hora_entrada,
-    fecha,
-    localizacion,
-    horas_extra,
-    horas_festivo,
-    id_usuario,
-  });
-
   try {
     const newParteId = await parteService.crearParteTrabajo({
       id_usuario,
@@ -59,8 +49,6 @@ const crearParteTrabajo = async (req, res) => {
       horas_extra,
       horas_festivo,
     });
-
-    console.log("h", hora_entrada);
     res.status(201).json({ id: newParteId });
   } catch (error) {
     res.status(500).json({
