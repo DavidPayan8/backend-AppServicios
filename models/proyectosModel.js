@@ -35,7 +35,7 @@ const getProyectos = async (ids) => {
     const pool = await connectToDb();
 
     // Convertir array de IDs en formato adecuado para SQL
-    idsString = ids.join(",");
+    ids.length > 1 ? idsString = ids.join(","): idsString = ids
 
     const query = `SELECT * FROM PROYECTOS WHERE id IN (${idsString})`;
 
@@ -46,6 +46,8 @@ const getProyectos = async (ids) => {
     throw error;
   }
 };
+
+
 
 // Función para agregar un proyecto y crear una entrada en el calendario
 const addProyecto = async (

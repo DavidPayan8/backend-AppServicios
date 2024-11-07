@@ -75,8 +75,7 @@ const getPartes = async (id_usuario, id_proyecto, fecha) => {
                 FROM PARTES_TRABAJO 
                 WHERE id_usuario = @id_usuario 
                   AND id_proyecto = @id_proyecto 
-                  AND fecha = @fecha
-            `);
+            `);  /* AND fecha = @fecha */
 
     return result.recordset;
   } catch (error) {
