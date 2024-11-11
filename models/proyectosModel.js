@@ -10,7 +10,6 @@ const connectToDb = async () => {
   return poolPromise;
 };
 
-
 // Obtiene los ids de los proyectos, por usuario
 const getIdProyectos = async (userId, date) => {
   try {
@@ -35,9 +34,18 @@ const getProyectos = async (ids) => {
     const pool = await connectToDb();
 
     // Convertir array de IDs en formato adecuado para SQL
-    ids.length > 1 ? idsString = ids.join(","): idsString = ids
+    ids.length > 1 ? (idsString = ids.join(",")) : (idsString = ids);
 
-    const query = `SELECT * FROM PROYECTOS WHERE id IN (${idsString})`;
+    const query = `SELECT 
+    PROYECTOS.*, 
+    CLIENTES.nombre AS nombre_cliente
+    FROM 
+        PROYECTOS
+    LEFT JOIN 
+        CLIENTES ON PROYECTOS.id_cliente = CLIENTES.id
+    WHERE 
+        PROYECTOS.id IN (${idsString});
+`;
 
     let result = await pool.request().query(query);
     return result.recordset;
@@ -46,8 +54,6 @@ const getProyectos = async (ids) => {
     throw error;
   }
 };
-
-
 
 // Función para agregar un proyecto y crear una entrada en el calendario
 const addProyecto = async (
@@ -73,28 +79,26 @@ const addProyecto = async (
     // Insertar el nuevo proyecto y devuelve el id generado
     // Si no hay cliente se pone como nulo, si hay, se pone su Id
     if (id_cliente === 0) {
-      result= await request
+      result = await request
         .input("nombre", sql.VarChar, nombre)
         .input("observaciones", sql.VarChar, observaciones)
         .input("es_ote", sql.Bit, es_ote)
         .query(`INSERT INTO PROYECTOS ( nombre, observaciones, id_cliente, es_ote)
               OUTPUT inserted.id
               VALUES (  @nombre, @observaciones, null, @es_ote)`);
-    }else{
-      result= await request
-          .input("id_cliente", sql.Int, id_cliente)
-          .input("nombre", sql.VarChar, nombre)
-          .input("observaciones", sql.VarChar, observaciones)
-          .input("es_ote", sql.Bit, es_ote)
-          .query(`INSERT INTO PROYECTOS ( nombre, observaciones, id_cliente, es_ote)
+    } else {
+      result = await request
+        .input("id_cliente", sql.Int, id_cliente)
+        .input("nombre", sql.VarChar, nombre)
+        .input("observaciones", sql.VarChar, observaciones)
+        .input("es_ote", sql.Bit, es_ote)
+        .query(`INSERT INTO PROYECTOS ( nombre, observaciones, id_cliente, es_ote)
                 OUTPUT inserted.id
                 VALUES ( @nombre, @observaciones, @id_cliente, @es_ote)`);
     }
 
-
-
     // Insertar la entrada en el calendario
-   await request
+    await request
       .input("fecha", sql.Date, fechaCalendario)
       .input("id_usuario", sql.Int, id_usuario)
       .input("id_proyecto", sql.Int, result.recordset[0].id)
