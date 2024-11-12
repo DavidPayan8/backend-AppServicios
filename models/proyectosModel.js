@@ -38,13 +38,30 @@ const getProyectos = async (ids) => {
 
     const query = `SELECT 
     PROYECTOS.*, 
-    CLIENTES.nombre AS nombre_cliente
+    CLIENTES.nombre_empresa AS nombre_cliente
     FROM 
         PROYECTOS
     LEFT JOIN 
         CLIENTES ON PROYECTOS.id_cliente = CLIENTES.id
     WHERE 
         PROYECTOS.id IN (${idsString});
+`;
+
+    let result = await pool.request().query(query);
+    return result.recordset;
+  } catch (error) {
+    console.error("Error al obtener los proyectos por IDs:", error.message);
+    throw error;
+  }
+};
+
+const cambiarEstadoProyecto = async (id, estado) => {
+  try {
+    const pool = await connectToDb();
+
+    const query = `UPDATE Proyectos
+      SET estado = '${estado}'
+      WHERE id = ${id};
 `;
 
     let result = await pool.request().query(query);
@@ -127,4 +144,5 @@ module.exports = {
   getIdProyectos,
   getProyectos,
   addProyecto,
+  cambiarEstadoProyecto,
 };

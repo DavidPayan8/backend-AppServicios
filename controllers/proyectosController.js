@@ -2,6 +2,7 @@ const {
   getIdProyectos,
   getProyectos,
   addProyecto,
+  cambiarEstadoProyecto,
 } = require("../models/proyectosModel");
 
 const obtenerIdProyectos = async (req, res) => {
@@ -21,6 +22,19 @@ const obtenerIdProyectos = async (req, res) => {
       });
   }
 };
+const cambiarEstado = async (req, res) => {
+  try {
+    const { id, estado } = req.body;
+
+    // Cambiar estado del proyecto
+    await cambiarEstadoProyecto(id, estado);
+
+    res.status(201);
+  } catch (error) {
+    console.error("Error al crear proyecto:", error.message);
+    res.status(500).send("Error del servidor");
+  }
+}
 
 const obtenerProyectosPorIds = async (req, res) => {
   const { ids } = req.body;
@@ -83,4 +97,5 @@ module.exports = {
   obtenerProyectosPorIds,
   crearProyecto,
   obtenerProyecto,
+  cambiarEstado,
 };
