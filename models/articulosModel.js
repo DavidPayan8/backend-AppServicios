@@ -15,7 +15,7 @@ const getArticulosPorOt = async (id_Ot) => {
     const pool = await connectToDb();
     const result = await pool.request().input("id_proyecto", sql.Int, id_Ot)
       .query(`
-        SELECT Lista_Articulos_Partes.*, articulos.nombre ,articulos.utiles
+        SELECT Lista_Articulos_Partes.*, articulos.nombre ,articulos.utiles, articulos.referencia, articulos.tarifa_base, articulos.iva
         FROM Lista_Articulos_Partes
         INNER JOIN articulos ON Lista_Articulos_Partes.id_articulo = articulos.id
         WHERE Lista_Articulos_Partes.id_proyecto = @id_proyecto`);
