@@ -1,13 +1,12 @@
 const {
-    getArticulosPorOt
+    getArticulos
   } = require("../models/articulosModel");
 
-  const obtenerArticulosPorOt = async (req, res) => {
+  const obtenerArticulos = async (req, res) => {
     try {
-      const { id } = req.body;
   
-      // Obtener listado articulos por Id de la Orden Trabajo
-      const articulos = await getArticulosPorOt(id);
+      // Obtener articulos
+      const articulos = await getArticulos();
   
       res.status(201).json(articulos);
     } catch (error) {
@@ -17,5 +16,5 @@ const {
   };
 
   module.exports = {
-    obtenerArticulosPorOt
+    obtenerArticulos
   };

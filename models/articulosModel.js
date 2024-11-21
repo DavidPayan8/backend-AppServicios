@@ -10,23 +10,21 @@ const connectToDb = async () => {
   return poolPromise;
 };
 
-const getArticulosPorOt = async (id_Ot) => {
+const getArticulos= async () => {
   try {
     const pool = await connectToDb();
-    const result = await pool.request().input("id_proyecto", sql.Int, id_Ot)
+    const result = await pool.request()
       .query(`
-        SELECT Lista_Articulos_Partes.*, articulos.nombre ,articulos.utiles, articulos.referencia, articulos.tarifa_base, articulos.iva
-        FROM Lista_Articulos_Partes
-        INNER JOIN articulos ON Lista_Articulos_Partes.id_articulo = articulos.id
-        WHERE Lista_Articulos_Partes.id_proyecto = @id_proyecto`);
+        SELECT *
+        FROM Articulos`); //Poner limite de articulos.
 
     return result.recordset;
   } catch (error) {
-    console.error("Error al obtener lista de articulos:", error.message);
+    console.error("Error al obtener articulos:", error.message);
     throw error;
   }
 };
 
 module.exports = {
-  getArticulosPorOt,
+  getArticulos,
 };
