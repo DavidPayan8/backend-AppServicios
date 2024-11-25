@@ -2,7 +2,29 @@ const {
   cambiarDetallesDoc,
   crearDetallesDoc,
   borrarDetalleDoc,
+  obtenerCabeceraDoc,
+  crearCabeceraDoc,
+  cambiarCabeceraDoc,
 } = require("../models/albaranModel");
+
+const obtenerCabeceraOt = async (req, res) => {
+  try {
+    const { id, cabecera } = req.body;
+
+    // Obtener listado articulos por Id de la Orden Trabajo
+    const result = await obtenerCabeceraDoc(id);
+
+    if (result[0]) {
+      res.status(201).json(result[0]);
+    } else {
+      const cabeceraCreada = await crearCabeceraDoc(cabecera);
+      res.status(201).json(cabeceraCreada);
+    }
+  } catch (error) {
+    console.error("Error al cambiar detalles doc:", error.message);
+    res.status(500).send("Error del servidor");
+  }
+};
 
 const cambiarDetalleAlbaran = async (req, res) => {
   try {
@@ -20,12 +42,12 @@ const cambiarDetalleAlbaran = async (req, res) => {
 
 const crearDetalleAlbaran = async (req, res) => {
   try {
-    const { id, details, cabecera} = req.body;
+    const { id, details, cabecera } = req.body;
 
     // Si no tiene cabecera, crea una nueva.
-    if(!details.cabecera_id){
-        const cabecera_id = await crearCabeceraDoc(cabecera)
-        details.cabecera_id = cabecera_id;
+    if (!details.cabecera_id) {
+      const cabecera_id = await crearCabeceraDoc(cabecera);
+      details.cabecera_id = cabecera_id;
     }
 
     // Obtener listado articulos por Id de la Orden Trabajo.
@@ -56,4 +78,5 @@ module.exports = {
   cambiarDetalleAlbaran,
   crearDetalleAlbaran,
   borrarDetalleAlbaran,
+  obtenerCabeceraOt,
 };

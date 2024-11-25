@@ -32,15 +32,13 @@ const cambiarDetallesDoc = async (id, details) => {
               iva_porcentaje = @iva_porcentaje
               cuota_iva = @cuota_iva
               total_linea = @total_linea
-          WHERE id = @id
+          WHERE cabecera_id = @id
         `);
 
     console.log("Parte de trabajo actualizado en la base de datos:", result);
   } catch (error) {
     console.error("Error al actualizar el detalles doc:", details);
     throw error;
-  } finally {
-    sql.close();
   }
 };
 
@@ -95,8 +93,6 @@ const crearDetallesDoc = async (id, details) => {
   } catch (error) {
     console.error("Error al actualizar el detalles doc:", details);
     throw error;
-  } finally {
-    sql.close();
   }
 };
 
@@ -109,12 +105,54 @@ const borrarDetalleDoc = async (id) => {
             `);
   } catch (error) {
     console.error("Error al eliminar el registro:", error);
-  } finally {
-    sql.close();
   }
 };
 
 const crearCabeceraDoc = async (cabecera) => {
+  try {
+    console.log(cabecera)
+    const pool = await sql.connect(config);
+    const result = await pool
+      .request()
+      .input("fecha", sql.Date, cabecera.fecha)
+      .input("numero", sql.Int, cabecera.numero)
+      .input("entidad_id", sql.Int, cabecera.entidad_id)
+      .input("base", sql.Float, cabecera.base)
+      .input("tipo_IVA", sql.Int, cabecera.tipo_iva)
+      .input("orden_trabajo_id", sql.Int, cabecera.orden_trabajo_id).query(`
+        INSERT INTO CABECERA
+          (fecha, numero, entidad_id, base, tipo_IVA, orden_trabajo_id)
+        OUTPUT 
+          INSERTED.*
+        VALUES 
+          (@fecha, @numero, @entidad_id, @base, @tipo_IVA, @orden_trabajo_id)
+      `);
+
+      console.log(result.recordset)
+    return result.recordset[0];
+  } catch (error) {
+    console.error("Error al actualizar el detalles doc:", details);
+    throw error;
+  }
+};
+
+const obtenerCabeceraDoc = async (id) => {
+  try {
+    const pool = await sql.connect(config);
+    const result = await pool.request().input("id", sql.Int, id).query(`
+          SELECT * 
+          FROM Cabecera
+          WHERE orden_trabajo_id = @id
+        `);
+
+    return result.recordset;
+  } catch (error) {
+    console.error("Error al actualizar el detalles doc", error.message);
+    throw error;
+  }
+};
+
+const cambiarCabeceraDoc = async (cabecera) => {
   try {
     const pool = await sql.connect(config);
     const result = await pool
@@ -125,20 +163,20 @@ const crearCabeceraDoc = async (cabecera) => {
       .input("base", sql.Float, cabecera.base)
       .input("tipo_IVA", sql.Int, cabecera.tipo_IVA)
       .input("orden_trabajo_id", sql.Int, cabecera.orden_trabajo_id).query(`
-            INSERT INTO CABECERA
-              (fecha, numero, entidad_id, base, tipo_IVA, orden_trabajo_id)
-            OUTPUT INSERTED.id
-            VALUES 
-              (@fecha, @numero, @entidad_id, @base, @tipo_IVA, @orden_trabajo_id)
-          `);
+        UPDATE CABECERA 
+          SET fecha = @fecha,
+              numero = @numero,
+              entidad_id = @entidad_id,
+              base = @base, 
+              tipo_IVA = @tipo_IVA, 
+              tarifa_id = @tarifa_id
+          WHERE orden_trabajo_id = @orden_trabajo_id
+      `);
 
-    console.log(result[0].id)
-    return result[0].id // Devuelve el id generado
+    return result.recordset[0];
   } catch (error) {
-    console.error("Error al actualizar el detalles doc:", details);
+    console.error("Error al actualizar el cabecera:", details);
     throw error;
-  } finally {
-    sql.close();
   }
 };
 
@@ -147,4 +185,6 @@ module.exports = {
   crearDetallesDoc,
   borrarDetalleDoc,
   crearCabeceraDoc,
+  obtenerCabeceraDoc,
+  cambiarCabeceraDoc,
 };
