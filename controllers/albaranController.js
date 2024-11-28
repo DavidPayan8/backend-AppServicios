@@ -2,8 +2,9 @@ const {
   cambiarDetallesDoc,
   crearDetallesDoc,
   borrarDetalleDoc,
-  obtenerCabeceraDoc,
+  obtenerDetallesDocDb,
   crearCabeceraDoc,
+  obtenerCabeceraDoc,
   cambiarCabeceraDoc,
 } = require("../models/albaranModel");
 
@@ -26,12 +27,29 @@ const obtenerCabeceraOt = async (req, res) => {
   }
 };
 
-const cambiarDetalleAlbaran = async (req, res) => {
+const obtenerDetallesDoc = async (req, res) => {
   try {
-    const { id, details } = req.body;
+    const { id } = req.body;
 
     // Obtener listado articulos por Id de la Orden Trabajo
-    const result = await cambiarDetallesDoc(id, details);
+    const result = await obtenerDetallesDocDb(id);
+
+    /* console.log(result) */
+
+    res.status(201).json(result);
+  } catch (error) {
+    console.error("Error al cambiar detalles doc:", error.message);
+    res.status(500).send("Error del servidor");
+  }
+};
+
+const cambiarDetalleAlbaran = async (req, res) => {
+  try {
+    const { detallesDoc } = req.body;
+    console.log("desde controller",req.body)
+
+    // Obtener listado articulos por Id de la Orden Trabajo
+    const result = await cambiarDetallesDoc(detallesDoc);
 
     res.status(201).json(result);
   } catch (error) {
@@ -42,16 +60,10 @@ const cambiarDetalleAlbaran = async (req, res) => {
 
 const crearDetalleAlbaran = async (req, res) => {
   try {
-    const { id, details, cabecera } = req.body;
-
-    // Si no tiene cabecera, crea una nueva.
-    if (!details.cabecera_id) {
-      const cabecera_id = await crearCabeceraDoc(cabecera);
-      details.cabecera_id = cabecera_id;
-    }
+    const details = req.body;
 
     // Obtener listado articulos por Id de la Orden Trabajo.
-    const result = await crearDetallesDoc(id, details);
+    const result = await crearDetallesDoc( details);
 
     res.status(201).json(result);
   } catch (error) {
@@ -62,10 +74,10 @@ const crearDetalleAlbaran = async (req, res) => {
 
 const borrarDetalleAlbaran = async (req, res) => {
   try {
-    const { id, details } = req.body;
+    const { id } = req.body;
 
-    // Obtener listado articulos por Id de la Orden Trabajo.
-    const result = await borrarDetalleDoc(id, details);
+    // Borrar linea de detalle
+    const result = await borrarDetalleDoc(id);
 
     res.status(201).json(result);
   } catch (error) {
@@ -79,4 +91,5 @@ module.exports = {
   crearDetalleAlbaran,
   borrarDetalleAlbaran,
   obtenerCabeceraOt,
+  obtenerDetallesDoc
 };

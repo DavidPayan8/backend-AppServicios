@@ -21,8 +21,6 @@ const {
   
       // Obtener articulos
       const result = await get_iva_and_descuento();
-
-      console.log("Desde controller:",result)
   
       res.status(201).json(result);
     } catch (error) {

@@ -39,8 +39,6 @@ const get_iva_and_descuento = async () => {
       tipos_iva: ivas.recordset,
       descuentos: descuentos.recordset,
     };
-
-    console.log("Desde model:",ivas_descuentos);
     return ivas_descuentos;
   } catch (error) {
     console.error("Error al obtener articulos:", error.message);

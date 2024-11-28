@@ -6,13 +6,15 @@ const {
   crearDetalleAlbaran,
   borrarDetalleAlbaran,
   obtenerCabeceraOt,
+  obtenerDetallesDoc
 } = require("../controllers/albaranController");
 
 router.use(authenticateToken);
 
 //Rutas para detalles doc
+router.post("/obtener-detallesDoc", obtenerDetallesDoc);
 router.post("/cambiar-detallesDoc", cambiarDetalleAlbaran);
-router.post("/crear-detallesDoc", crearDetalleAlbaran);
+router.post("/add-detallesDoc", crearDetalleAlbaran);
 router.post("/borrar-detallesDoc", borrarDetalleAlbaran);
 
 //Rutas para cabecera doc

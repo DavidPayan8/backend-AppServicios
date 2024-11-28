@@ -1,18 +1,18 @@
 const sql = require("mssql");
 const config = require("../config/dbConfig");
 
-const cambiarDetallesDoc = async (id, details) => {
+const cambiarDetallesDoc = async (details) => {
   try {
+    console.log("para actualizar model",details)
     const pool = await sql.connect(config);
     const result = await pool
       .request()
-      .input("id", sql.Int, id)
-      .input("cabecera_id", sql.Int, details.cabecera_id)
-      .input("articulo_id", sql.Int, details.articulo.Id)
+      .input("id", sql.Int, details.id)
+      .input("cabecera_id", sql.Int, details.cabecera_Id)
+      .input("articulo_id", sql.Int, details.articulo_Id)
       .input("descripcion_articulo", sql.VarChar, details.descripcion_articulo)
       .input("descripcion_larga", sql.VarChar, details.descripcion_larga)
       .input("cantidad", sql.Int, details.cantidad)
-      .input("tarifa_id", sql.Int, details.tarifa_id)
       .input("precio", sql.Float, details.precio)
       .input("descuento", sql.Int, details.descuento)
       .input("importe_neto", sql.Float, details.importe_neto)
@@ -25,35 +25,32 @@ const cambiarDetallesDoc = async (id, details) => {
               descripcion_articulo = @descripcion_articulo,
               descripcion_larga = @descripcion_larga, 
               cantidad = @cantidad, 
-              tarifa_id = @tarifa_id
-              precio = @precio
-              descuento = @descuento
-              importe_neto = @importe_neto
-              iva_porcentaje = @iva_porcentaje
-              cuota_iva = @cuota_iva
+              precio = @precio,
+              descuento = @descuento,
+              importe_neto = @importe_neto,
+              iva_porcentaje = @iva_porcentaje,
+              cuota_iva = @cuota_iva,
               total_linea = @total_linea
-          WHERE cabecera_id = @id
+          WHERE id = @id 
         `);
 
-    console.log("Parte de trabajo actualizado en la base de datos:", result);
+    console.log("Detalle doc actualizado en la base de datos:", result);
   } catch (error) {
     console.error("Error al actualizar el detalles doc:", details);
     throw error;
   }
 };
 
-const crearDetallesDoc = async (id, details) => {
+const crearDetallesDoc = async (details) => {
   try {
     const pool = await sql.connect(config);
     const result = await pool
       .request()
-      .input("id", sql.Int, id)
-      .input("cabecera_id", sql.Int, details.cabecera_id)
-      .input("articulo_id", sql.Int, details.articulo.Id)
+      .input("cabecera_id", sql.Int, details.cabecera_Id)
+      .input("articulo_id", sql.Int, details.articulo_Id)
       .input("descripcion_articulo", sql.VarChar, details.descripcion_articulo)
       .input("descripcion_larga", sql.VarChar, details.descripcion_larga)
       .input("cantidad", sql.Int, details.cantidad)
-      .input("tarifa_id", sql.Int, details.tarifa_id)
       .input("precio", sql.Float, details.precio)
       .input("descuento", sql.Int, details.descuento)
       .input("importe_neto", sql.Float, details.importe_neto)
@@ -66,20 +63,20 @@ const crearDetallesDoc = async (id, details) => {
                 descripcion_articulo, 
                 descripcion_larga, 
                 cantidad, 
-                tarifa_id, 
                 precio, 
                 descuento, 
                 importe_neto, 
                 iva_porcentaje, 
                 cuota_iva, 
                 total_linea
-            ) VALUES (
+            ) 
+            OUTPUT INSERTED.id
+            VALUES (
                 @cabecera_id, 
                 @articulo_id, 
                 @descripcion_articulo, 
                 @descripcion_larga, 
                 @cantidad, 
-                @tarifa_id, 
                 @precio, 
                 @descuento, 
                 @importe_neto, 
@@ -88,11 +85,24 @@ const crearDetallesDoc = async (id, details) => {
                 @total_linea
             )
         `);
-
-    console.log("Parte de trabajo actualizado en la base de datos:", result);
+    return  result.recordset[0].id
   } catch (error) {
-    console.error("Error al actualizar el detalles doc:", details);
+    console.error("Error al crear detalles doc:", details);
     throw error;
+  }
+};
+
+const obtenerDetallesDocDb = async (id) => {
+  try {
+    const pool = await sql.connect(config);
+    const result = await pool.request().input("id", sql.Int, id).query(`
+                SELECT * 
+                FROM DETALLES_DOC
+                WHERE cabecera_Id = 14
+            `);
+    return result.recordset
+  } catch (error) {
+    console.error("Error al obtener detalles doc:", error);
   }
 };
 
@@ -104,13 +114,12 @@ const borrarDetalleDoc = async (id) => {
                 WHERE id = @id
             `);
   } catch (error) {
-    console.error("Error al eliminar el registro:", error);
+    console.error("Error al eliminar el detalle Doc:", error);
   }
 };
 
 const crearCabeceraDoc = async (cabecera) => {
   try {
-    console.log(cabecera)
     const pool = await sql.connect(config);
     const result = await pool
       .request()
@@ -128,7 +137,6 @@ const crearCabeceraDoc = async (cabecera) => {
           (@fecha, @numero, @entidad_id, @base, @tipo_IVA, @orden_trabajo_id)
       `);
 
-      console.log(result.recordset)
     return result.recordset[0];
   } catch (error) {
     console.error("Error al actualizar el detalles doc:", details);
@@ -141,13 +149,13 @@ const obtenerCabeceraDoc = async (id) => {
     const pool = await sql.connect(config);
     const result = await pool.request().input("id", sql.Int, id).query(`
           SELECT * 
-          FROM Cabecera
+          FROM CABECERA
           WHERE orden_trabajo_id = @id
         `);
 
     return result.recordset;
   } catch (error) {
-    console.error("Error al actualizar el detalles doc", error.message);
+    console.error("Error al obtener el cabecera doc", error.message);
     throw error;
   }
 };
@@ -187,4 +195,5 @@ module.exports = {
   crearCabeceraDoc,
   obtenerCabeceraDoc,
   cambiarCabeceraDoc,
+  obtenerDetallesDocDb,
 };
