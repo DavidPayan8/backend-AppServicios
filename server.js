@@ -11,18 +11,18 @@ const parteRoutes = require("./routes/parteRoutes");
 const notificacionesRoutes =  require("./routes/notificacionesRoutes")
 const articulosRoutes = require("./routes/articulosRoutes")
 const albaranRoutes = require("./routes/albaranRoutes")
+const emailRoutes = require("./routes/emailRoutes")
 const configuracionesRoutes = require("./routes/configuracionRoutes")
 const authenticateToken = require("./middleware/authMiddleware");
 
 const app = express();
 
-
 const port = process.env.PORT || 0;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(bodyParser.urlencoded({ limit:'10mb',extended: true }));
 
 // Rutas
 app.use("/auth", authRoutes);
@@ -31,6 +31,7 @@ app.use("/api/asistencia", asistenciaRoutes);
 app.use("/api/proyectos", proyectosRoutes);
 app.use("/api/articulos", articulosRoutes);
 app.use("/api/albaran", albaranRoutes);
+app.use("/api/email", emailRoutes);
 app.use("/api/clientes", clientesRoutes);
 app.use("/api/partes", parteRoutes);
 app.use("/api/notificaciones", notificacionesRoutes);

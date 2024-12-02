@@ -98,7 +98,7 @@ const obtenerDetallesDocDb = async (id) => {
     const result = await pool.request().input("id", sql.Int, id).query(`
                 SELECT * 
                 FROM DETALLES_DOC
-                WHERE cabecera_Id = 14
+                WHERE cabecera_Id = @id
             `);
     return result.recordset
   } catch (error) {
