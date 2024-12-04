@@ -96,14 +96,24 @@ const obtenerDetallesDocDb = async (id) => {
   try {
     const pool = await sql.connect(config);
     const result = await pool.request().input("id", sql.Int, id).query(`
-                SELECT * 
-                FROM DETALLES_DOC
-                WHERE cabecera_Id = @id
-            `);
-    return result.recordset
-  } catch (error) {
-    console.error("Error al obtener detalles doc:", error);
-  }
+        SELECT 
+            dd.*, 
+            a.referencia AS referencia
+        FROM 
+            DETALLES_DOC dd
+        LEFT JOIN 
+            ARTICULOS a
+        ON 
+            dd.articulo_Id = a.id
+        WHERE 
+            dd.cabecera_Id = @id
+    `);
+    return result.recordset;
+} catch (error) {
+    console.error("Error fetching data: ", error);
+    throw error;
+}
+
 };
 
 const borrarDetalleDoc = async (id) => {

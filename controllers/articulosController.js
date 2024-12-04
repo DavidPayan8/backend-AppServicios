@@ -1,6 +1,7 @@
 const {
     getArticulos,
-    get_iva_and_descuento
+    get_iva_and_descuento,
+    getVehiculos
   } = require("../models/articulosModel");
 
   const obtenerArticulos = async (req, res) => {
@@ -12,6 +13,21 @@ const {
       res.status(201).json(articulos);
     } catch (error) {
       console.error("Error al obtener lista articulos:", error.message);
+      res.status(500).send("Error del servidor");
+    }
+  };
+
+  const obtenerVehiculos = async (req, res) => {
+    try {
+      const {id_usuario} = req.body;
+      console.log("id usuario:",id_usuario)
+
+      // Obtener articulos
+      const vehiculos = await getVehiculos(id_usuario);
+  
+      res.status(201).json(vehiculos);
+    } catch (error) {
+      console.error("Error al obtener vehiculos:", error.message);
       res.status(500).send("Error del servidor");
     }
   };
@@ -31,5 +47,6 @@ const {
 
   module.exports = {
     obtenerArticulos,
+    obtenerVehiculos,
     get_iva_descuento
   };

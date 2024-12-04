@@ -27,6 +27,37 @@ const getIdProyectos = async (userId, date) => {
   }
 };
 
+const getContrato = async (id_contrato) => {
+  try {
+    const pool = await connectToDb();
+    const query = `SELECT 
+    c.id, 
+    c.Numero_Contrato, 
+    c.ID_Cliente, 
+    c.Fecha_Alta, 
+    c.Fecha_Vencimiento, 
+    c.ID_Articulo, 
+    c.Monto, 
+    c.Activo,
+    a.numero_serie,
+    a.nombre AS nombre_articulo  
+FROM 
+    CONTRATO c
+LEFT JOIN 
+    ARTICULOS a ON c.ID_Articulo = a.id 
+WHERE 
+    c.id = ${id_contrato};
+
+
+`;
+    
+    const result = await pool.request().query(query);
+    return result.recordset[0];
+  } catch (error) {
+    console.error("Error al obtener contrato:", error.message);
+    throw error;
+  }
+};
 // Obtiene los proyectos por ids
 const getProyectos = async (ids) => {
   try {
@@ -145,4 +176,5 @@ module.exports = {
   getProyectos,
   addProyecto,
   cambiarEstadoProyecto,
+  getContrato,
 };

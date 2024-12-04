@@ -25,6 +25,23 @@ const getArticulos = async () => {
   }
 };
 
+const getVehiculos = async (id_usuario) => {
+  try {
+    const pool = await connectToDb();
+    const result = await pool.request().query(`
+        SELECT *
+        From Vehiculos
+        Where id_usuario = ${id_usuario};
+`);
+
+  console.log("vehiculos",result.recordset)
+    return result.recordset;
+  } catch (error) {
+    console.error("Error al obtener vehiculos:", error.message);
+    throw error;
+  }
+};
+
 const get_iva_and_descuento = async () => {
   try {
     const pool = await connectToDb();
@@ -48,5 +65,6 @@ const get_iva_and_descuento = async () => {
 
 module.exports = {
   getArticulos,
+  getVehiculos,
   get_iva_and_descuento,
 };

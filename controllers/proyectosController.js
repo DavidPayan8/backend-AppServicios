@@ -3,6 +3,7 @@ const {
   getProyectos,
   addProyecto,
   cambiarEstadoProyecto,
+  getContrato
 } = require("../models/proyectosModel");
 
 const obtenerIdProyectos = async (req, res) => {
@@ -78,6 +79,20 @@ const crearProyecto = async (req, res) => {
   }
 };
 
+const obtenerContrato = async (req, res) => {
+  try {
+    const { id_contrato } = req.body;
+
+    // Obtener proyecto por Id
+    const contrato = await getContrato(id_contrato);
+
+    res.status(201).json(contrato);
+  } catch (error) {
+    console.error("Error al obtener contrato:", error.message);
+    res.status(500).send("Error del servidor");
+  }
+};
+
 const obtenerProyecto = async (req, res) => {
   try {
     const { id } = req.body;
@@ -98,4 +113,5 @@ module.exports = {
   crearProyecto,
   obtenerProyecto,
   cambiarEstado,
+  obtenerContrato
 };
