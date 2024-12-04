@@ -20,7 +20,6 @@ const {
   const obtenerVehiculos = async (req, res) => {
     try {
       const {id_usuario} = req.body;
-      console.log("id usuario:",id_usuario)
 
       // Obtener articulos
       const vehiculos = await getVehiculos(id_usuario);

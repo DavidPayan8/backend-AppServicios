@@ -34,7 +34,6 @@ const getVehiculos = async (id_usuario) => {
         Where id_usuario = ${id_usuario};
 `);
 
-  console.log("vehiculos",result.recordset)
     return result.recordset;
   } catch (error) {
     console.error("Error al obtener vehiculos:", error.message);
