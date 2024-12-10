@@ -110,7 +110,7 @@ const addProyecto = async (
   id_usuario,
   id_cliente,
   fechaCalendario,
-  es_ote
+  es_ote,
 ) => {
   let transaction;
   try {
@@ -128,27 +128,28 @@ const addProyecto = async (
     // Si no hay cliente se pone como nulo, si hay, se pone su Id
     if (id_cliente === 0) {
       result = await request
+        .input("id_usuario", sql.Int, id_usuario)
         .input("nombre", sql.VarChar, nombre)
         .input("observaciones", sql.VarChar, observaciones)
         .input("es_ote", sql.Bit, es_ote)
-        .query(`INSERT INTO PROYECTOS ( nombre, observaciones, id_cliente, es_ote)
+        .query(`INSERT INTO PROYECTOS ( nombre, observaciones, id_cliente, es_ote, id_usuario)
               OUTPUT inserted.id
-              VALUES (  @nombre, @observaciones, null, @es_ote)`);
+              VALUES (  @nombre, @observaciones, null, @es_ote, @id_usuario)`);
     } else {
       result = await request
+        .input("id_usuario", sql.Int, id_usuario)
         .input("id_cliente", sql.Int, id_cliente)
         .input("nombre", sql.VarChar, nombre)
         .input("observaciones", sql.VarChar, observaciones)
         .input("es_ote", sql.Bit, es_ote)
-        .query(`INSERT INTO PROYECTOS ( nombre, observaciones, id_cliente, es_ote)
+        .query(`INSERT INTO PROYECTOS ( nombre, observaciones, id_cliente, es_ote, id_usuario)
                 OUTPUT inserted.id
-                VALUES ( @nombre, @observaciones, @id_cliente, @es_ote)`);
+                VALUES ( @nombre, @observaciones, @id_cliente, @es_ote, @id_usuario)`);
     }
 
     // Insertar la entrada en el calendario
     await request
       .input("fecha", sql.Date, fechaCalendario)
-      .input("id_usuario", sql.Int, id_usuario)
       .input("id_proyecto", sql.Int, result.recordset[0].id)
       .query(`INSERT INTO CALENDARIO ( fecha, id_usuario, id_proyecto)
                     VALUES ( @fecha, @id_usuario, @id_proyecto)`);
