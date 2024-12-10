@@ -33,8 +33,6 @@ const cambiarDetallesDoc = async (details) => {
               total_linea = @total_linea
           WHERE id = @id 
         `);
-
-    console.log("Detalle doc actualizado en la base de datos:", result);
   } catch (error) {
     console.error("Error al actualizar el detalles doc:", details);
     throw error;
@@ -108,6 +106,7 @@ const obtenerDetallesDocDb = async (id) => {
         WHERE 
             dd.cabecera_Id = @id
     `);
+    console.log("Detalles doc",result.recordset)
     return result.recordset;
 } catch (error) {
     console.error("Error fetching data: ", error);
