@@ -68,14 +68,14 @@ const getProyectos = async (ids) => {
     ids.length > 1 ? (idsString = ids.join(",")) : (idsString = ids);
 
     const query = `SELECT 
-    PROYECTOS.*, 
+    Orden_Trabajo.*, 
     CLIENTES.nombre_empresa AS nombre_cliente
     FROM 
-        PROYECTOS
+        Orden_Trabajo
     LEFT JOIN 
-        CLIENTES ON PROYECTOS.id_cliente = CLIENTES.id
+        CLIENTES ON Orden_Trabajo.id_cliente = CLIENTES.id
     WHERE 
-        PROYECTOS.id IN (${idsString});
+        Orden_Trabajo.id IN (${idsString});
 `;
 
     let result = await pool.request().query(query);
@@ -90,7 +90,7 @@ const cambiarEstadoProyecto = async (id, estado) => {
   try {
     const pool = await connectToDb();
 
-    const query = `UPDATE Proyectos
+    const query = `UPDATE Orden_Trabajo
       SET estado = '${estado}'
       WHERE id = ${id};
 `;
@@ -132,7 +132,7 @@ const addProyecto = async (
         .input("nombre", sql.VarChar, nombre)
         .input("observaciones", sql.VarChar, observaciones)
         .input("es_ote", sql.Bit, es_ote)
-        .query(`INSERT INTO PROYECTOS ( nombre, observaciones, id_cliente, es_ote, id_usuario)
+        .query(`INSERT INTO Orden_Trabajo ( nombre, observaciones, id_cliente, es_ote, id_usuario)
               OUTPUT inserted.id
               VALUES (  @nombre, @observaciones, null, @es_ote, @id_usuario)`);
     } else {
@@ -142,7 +142,7 @@ const addProyecto = async (
         .input("nombre", sql.VarChar, nombre)
         .input("observaciones", sql.VarChar, observaciones)
         .input("es_ote", sql.Bit, es_ote)
-        .query(`INSERT INTO PROYECTOS ( nombre, observaciones, id_cliente, es_ote, id_usuario)
+        .query(`INSERT INTO Orden_Trabajo ( nombre, observaciones, id_cliente, es_ote, id_usuario)
                 OUTPUT inserted.id
                 VALUES ( @nombre, @observaciones, @id_cliente, @es_ote, @id_usuario)`);
     }
