@@ -52,7 +52,6 @@ jobs:
         with:
           app-name: 'LaTorre'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_E0B0BC16066244CC9E40FD4B42615262 }}
           package: .
 
       - name: Set up Node.js version
