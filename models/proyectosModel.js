@@ -27,6 +27,22 @@ const getIdProyectos = async (userId, date) => {
   }
 };
 
+const getIdContrato = async (orden_trabajo_id) => {
+  try {
+    const pool = await connectToDb();
+    const query = `SELECT c.id
+        FROM contrato c
+        INNER JOIN orden_trabajo ot ON c.ID_Cliente = ot.id_cliente AND c.id_servicio_origen = ot.id_servicio_origen
+        WHERE ot.id = ${orden_trabajo_id};
+        `;
+    const result = await pool.request().query(query);
+    return result.recordset[0].id;
+  } catch (error) {
+    console.error("Error al obtener contrato:", error.message);
+    throw error;
+  }
+};
+
 const getContrato = async (id_contrato) => {
   try {
     const pool = await connectToDb();
@@ -50,7 +66,7 @@ WHERE
 
 
 `;
-    
+
     const result = await pool.request().query(query);
     return result.recordset[0];
   } catch (error) {
@@ -110,7 +126,7 @@ const addProyecto = async (
   id_usuario,
   id_cliente,
   fechaCalendario,
-  es_ote,
+  es_ote
 ) => {
   let transaction;
   try {
@@ -178,4 +194,5 @@ module.exports = {
   addProyecto,
   cambiarEstadoProyecto,
   getContrato,
+  getIdContrato,
 };

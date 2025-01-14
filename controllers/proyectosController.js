@@ -3,7 +3,8 @@ const {
   getProyectos,
   addProyecto,
   cambiarEstadoProyecto,
-  getContrato
+  getContrato,
+  getIdContrato,
 } = require("../models/proyectosModel");
 
 const obtenerIdProyectos = async (req, res) => {
@@ -16,11 +17,9 @@ const obtenerIdProyectos = async (req, res) => {
     res.status(200).json(idProyectos);
   } catch (error) {
     console.error("Error al obtener los id de los proyectos:", error.message);
-    res
-      .status(500)
-      .json({
-        message: "Error del servidor al obtener los partes del usuario.",
-      });
+    res.status(500).json({
+      message: "Error del servidor al obtener los partes del usuario.",
+    });
   }
 };
 const cambiarEstado = async (req, res) => {
@@ -35,21 +34,20 @@ const cambiarEstado = async (req, res) => {
     console.error("Error al crear proyecto:", error.message);
     res.status(500).send("Error del servidor");
   }
-}
+};
 
 const obtenerProyectosPorIds = async (req, res) => {
   const { ids } = req.body;
   try {
     const proyectos = await getProyectos(ids);
+    console.log("En controller", proyectos);
 
     res.status(200).json(proyectos);
   } catch (error) {
     console.error("Error al obtener los proyectos por IDs:", error.message);
-    res
-      .status(500)
-      .json({
-        message: "Error del servidor al obtener los proyectos por IDs.",
-      });
+    res.status(500).json({
+      message: "Error del servidor al obtener los proyectos por IDs.",
+    });
   }
 };
 
@@ -80,13 +78,19 @@ const crearProyecto = async (req, res) => {
 };
 
 const obtenerContrato = async (req, res) => {
+  let contrato = null;
   try {
-    const { id_contrato } = req.body;
+    const { orden_trabajo_id } = req.body;
 
-    // Obtener proyecto por Id
-    const contrato = await getContrato(id_contrato);
+    const id_contrato = await getIdContrato(orden_trabajo_id);
 
-    res.status(201).json(contrato);
+    if (id_contrato) {
+      // Obtener proyecto por Id
+      contrato = await getContrato(id_contrato);
+      res.status(201).json(contrato);
+    } else {
+      res.status(201).json(null);
+    }
   } catch (error) {
     console.error("Error al obtener contrato:", error.message);
     res.status(500).send("Error del servidor");
@@ -113,5 +117,5 @@ module.exports = {
   crearProyecto,
   obtenerProyecto,
   cambiarEstado,
-  obtenerContrato
+  obtenerContrato,
 };
