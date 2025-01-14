@@ -3,7 +3,6 @@ const config = require("../config/dbConfig");
 
 const cambiarDetallesDoc = async (details) => {
   try {
-    console.log("para actualizar model",details)
     const pool = await sql.connect(config);
     const result = await pool
       .request()
@@ -106,10 +105,9 @@ const obtenerDetallesDocDb = async (id) => {
         WHERE 
             dd.cabecera_Id = @id
     `);
-    console.log("Detalles doc",result.recordset)
     return result.recordset;
 } catch (error) {
-    console.error("Error fetching data: ", error);
+    console.error("Error obteniendo detalles doc data: ", error);
     throw error;
 }
 

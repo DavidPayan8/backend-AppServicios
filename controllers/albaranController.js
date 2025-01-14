@@ -5,7 +5,6 @@ const {
   obtenerDetallesDocDb,
   crearCabeceraDoc,
   obtenerCabeceraDoc,
-  cambiarCabeceraDoc,
 } = require("../models/albaranModel");
 
 const obtenerCabeceraOt = async (req, res) => {
@@ -46,7 +45,6 @@ const obtenerDetallesDoc = async (req, res) => {
 const cambiarDetalleAlbaran = async (req, res) => {
   try {
     const { detallesDoc } = req.body;
-    console.log("desde controller",req.body)
 
     // Obtener listado articulos por Id de la Orden Trabajo
     const result = await cambiarDetallesDoc(detallesDoc);

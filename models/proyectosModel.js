@@ -27,6 +27,22 @@ const getIdProyectos = async (userId, date) => {
   }
 };
 
+const getIdContrato = async (orden_trabajo_id) => {
+  try {
+    const pool = await connectToDb();
+    const query = `SELECT c.id
+        FROM contrato c
+        INNER JOIN orden_trabajo ot ON c.ID_Cliente = ot.id_cliente AND c.id_servicio_origen = ot.id_servicio_origen
+        WHERE ot.id = ${orden_trabajo_id};
+        `;
+    const result = await pool.request().query(query);
+    return result.recordset[0].id;
+  } catch (error) {
+    console.error("Error al obtener contrato:", error.message);
+    throw error;
+  }
+};
+
 const getContrato = async (id_contrato) => {
   try {
     const pool = await connectToDb();
@@ -50,7 +66,7 @@ WHERE
 
 
 `;
-    
+
     const result = await pool.request().query(query);
     return result.recordset[0];
   } catch (error) {
@@ -68,14 +84,14 @@ const getProyectos = async (ids) => {
     ids.length > 1 ? (idsString = ids.join(",")) : (idsString = ids);
 
     const query = `SELECT 
-    PROYECTOS.*, 
+    Orden_Trabajo.*, 
     CLIENTES.nombre_empresa AS nombre_cliente
     FROM 
-        PROYECTOS
+        Orden_Trabajo
     LEFT JOIN 
-        CLIENTES ON PROYECTOS.id_cliente = CLIENTES.id
+        CLIENTES ON Orden_Trabajo.id_cliente = CLIENTES.id
     WHERE 
-        PROYECTOS.id IN (${idsString});
+        Orden_Trabajo.id IN (${idsString});
 `;
 
     let result = await pool.request().query(query);
@@ -90,7 +106,7 @@ const cambiarEstadoProyecto = async (id, estado) => {
   try {
     const pool = await connectToDb();
 
-    const query = `UPDATE Proyectos
+    const query = `UPDATE Orden_Trabajo
       SET estado = '${estado}'
       WHERE id = ${id};
 `;
@@ -110,7 +126,7 @@ const addProyecto = async (
   id_usuario,
   id_cliente,
   fechaCalendario,
-  es_ote,
+  es_ote
 ) => {
   let transaction;
   try {
@@ -132,7 +148,7 @@ const addProyecto = async (
         .input("nombre", sql.VarChar, nombre)
         .input("observaciones", sql.VarChar, observaciones)
         .input("es_ote", sql.Bit, es_ote)
-        .query(`INSERT INTO PROYECTOS ( nombre, observaciones, id_cliente, es_ote, id_usuario)
+        .query(`INSERT INTO Orden_Trabajo ( nombre, observaciones, id_cliente, es_ote, id_usuario)
               OUTPUT inserted.id
               VALUES (  @nombre, @observaciones, null, @es_ote, @id_usuario)`);
     } else {
@@ -142,7 +158,7 @@ const addProyecto = async (
         .input("nombre", sql.VarChar, nombre)
         .input("observaciones", sql.VarChar, observaciones)
         .input("es_ote", sql.Bit, es_ote)
-        .query(`INSERT INTO PROYECTOS ( nombre, observaciones, id_cliente, es_ote, id_usuario)
+        .query(`INSERT INTO Orden_Trabajo ( nombre, observaciones, id_cliente, es_ote, id_usuario)
                 OUTPUT inserted.id
                 VALUES ( @nombre, @observaciones, @id_cliente, @es_ote, @id_usuario)`);
     }
@@ -178,4 +194,5 @@ module.exports = {
   addProyecto,
   cambiarEstadoProyecto,
   getContrato,
+  getIdContrato,
 };
