@@ -52,7 +52,7 @@ jobs:
         with:
           app-name: 'server-app-fichaje'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_E0B0BC16066244CC9E40FD4B42615262 }}
+          publish-profile: ${{ secrets.AZURE_APP_PUBLISH_PROFILE }}
           package: .
 
       - name: Set up Node.js version
