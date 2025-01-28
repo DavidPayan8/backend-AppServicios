@@ -57,7 +57,11 @@ jobs:
         with:
           app-name: 'Server-LaTorre'
           slot-name: 'Production'
+<<<<<<< HEAD:.github/workflows/latorre_latorre.yml
           publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
+=======
+          publish-profile: ${{ secrets.AZURE_APP_PUBLISH_PROFILE }}
+>>>>>>> main:.github/workflows/main_server-app-fichaje.yml
           package: .
 
       - name: Set up Node.js version
