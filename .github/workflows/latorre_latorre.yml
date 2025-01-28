@@ -1,12 +1,12 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy Node.js app to Azure Web App - server-app-fichaje
+name: Build and deploy Node.js app to Azure Web App - Server-LaTorre
 
 on:
   push:
     branches:
-      - main
+      - LaTorre
   workflow_dispatch:
 
 jobs:
@@ -45,14 +45,23 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: node-app
+          
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'server-app-fichaje'
+          app-name: 'Server-LaTorre'
           slot-name: 'Production'
+<<<<<<< HEAD:.github/workflows/latorre_latorre.yml
+          publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
+=======
           publish-profile: ${{ secrets.AZURE_APP_PUBLISH_PROFILE }}
+>>>>>>> main:.github/workflows/main_server-app-fichaje.yml
           package: .
 
       - name: Set up Node.js version
