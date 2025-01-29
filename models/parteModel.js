@@ -32,7 +32,6 @@ const crearParteTrabajo = async ({
   fecha,
   localizacion,
 }) => {
-  console.log("Entrando en crearParteTrabajo en el modelo");
 
   try {
     const pool = await sql.connect(config);
@@ -134,7 +133,6 @@ const actualizarParteTrabajo = async (
         WHERE id = @id
       `);
 
-    console.log("Parte de trabajo actualizado en la base de datos:", result);
   } catch (error) {
     console.error(
       "Error al actualizar el parte de trabajo:",

@@ -40,7 +40,6 @@ const obtenerProyectosPorIds = async (req, res) => {
   const { ids } = req.body;
   try {
     const proyectos = await getProyectos(ids);
-    console.log("En controller", proyectos);
 
     res.status(200).json(proyectos);
   } catch (error) {
@@ -84,16 +83,12 @@ const obtenerContrato = async (req, res) => {
 
     const id_contrato = await getIdContrato(orden_trabajo_id);
 
-    if (id_contrato) {
       // Obtener proyecto por Id
       contrato = await getContrato(id_contrato);
       res.status(201).json(contrato);
-    } else {
-      res.status(201).json(null);
-    }
   } catch (error) {
     console.error("Error al obtener contrato:", error.message);
-    res.status(500).send("Error del servidor");
+    res.status(500).json({ message:"Error del servidor", data:null });
   }
 };
 
