@@ -33,8 +33,6 @@ const obtenerDetallesDoc = async (req, res) => {
     // Obtener listado articulos por Id de la Orden Trabajo
     const result = await obtenerDetallesDocDb(id);
 
-    /* console.log(result) */
-
     res.status(201).json(result);
   } catch (error) {
     console.error("Error al cambiar detalles doc:", error.message);
