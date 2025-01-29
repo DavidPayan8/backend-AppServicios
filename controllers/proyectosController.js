@@ -81,19 +81,18 @@ const obtenerContrato = async (req, res) => {
   let contrato = null;
   try {
     const { orden_trabajo_id } = req.body;
-
+    
     const id_contrato = await getIdContrato(orden_trabajo_id);
 
     if (id_contrato) {
+
       // Obtener proyecto por Id
       contrato = await getContrato(id_contrato);
       res.status(201).json(contrato);
-    } else {
-      res.status(201).json(null);
     }
   } catch (error) {
     console.error("Error al obtener contrato:", error.message);
-    res.status(500).send("Error del servidor");
+    res.status(500).json({message: "Error en el servidor", data: contrato})
   }
 };
 

@@ -31,10 +31,13 @@ const getIdContrato = async (orden_trabajo_id) => {
   try {
     const pool = await connectToDb();
     const query = `SELECT c.id
-        FROM contrato c
-        INNER JOIN orden_trabajo ot ON c.ID_Cliente = ot.id_cliente AND c.id_servicio_origen = ot.id_servicio_origen
-        WHERE ot.id = ${orden_trabajo_id};
-        `;
+                FROM contrato c
+                INNER JOIN orden_trabajo ot 
+                    ON c.ID_Cliente = ot.id_cliente 
+                    AND c.id_servicio_origen = ot.id_servicio_origen
+                WHERE ot.id = ${orden_trabajo_id}
+                    AND ot.id_cliente IS NOT NULL
+                    AND ot.id_servicio_origen IS NOT NULL;`;
     const result = await pool.request().query(query);
     return result.recordset[0].id;
   } catch (error) {
@@ -52,19 +55,12 @@ const getContrato = async (id_contrato) => {
     c.ID_Cliente, 
     c.Fecha_Alta, 
     c.Fecha_Vencimiento, 
-    c.ID_Articulo, 
     c.Monto, 
-    c.Activo,
-    a.numero_serie,
-    a.nombre AS nombre_articulo  
+    c.Activo
 FROM 
     CONTRATO c
-LEFT JOIN 
-    ARTICULOS a ON c.ID_Articulo = a.id 
 WHERE 
     c.id = ${id_contrato};
-
-
 `;
 
     const result = await pool.request().query(query);
