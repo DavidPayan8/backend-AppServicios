@@ -6,7 +6,7 @@ name: Build and deploy Node.js app to Azure Web App - server-app-fichaje
 on:
   push:
     branches:
-      - main
+      - THR
   workflow_dispatch:
 
 jobs:
@@ -26,6 +26,7 @@ jobs:
           npm install
           npm run build --if-present
           npm run test --if-present
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
@@ -45,13 +46,13 @@ jobs:
         with:
           name: node-app
 
-      - name: 'Deploy to Azure Web App'
+      - name: 'Deploy to Azure Web Thr'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'server-app-fichaje'
+          app-name: 'Thr'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZURE_APP_PUBLISH_PROFILE }}
+          publish-profile: ${{ secrets.AZURE_THR_PUBLISH_PROFILE }}
           package: .
 
       - name: Set up Node.js version
