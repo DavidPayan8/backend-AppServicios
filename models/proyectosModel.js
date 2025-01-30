@@ -26,7 +26,6 @@ const getIdProyectos = async (userId, date) => {
     throw error;
   }
 };
-
 const getIdContrato = async (orden_trabajo_id) => {
   try {
     const pool = await connectToDb();
