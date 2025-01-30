@@ -1,13 +1,15 @@
 const nodemailer = require("nodemailer");
 
-const ADMIN_EMAIL = "davidpayanalvarado@gmail.com";
+const ADMIN_EMAIL = "pruebasinternas@kongconsulting.es";
 
 // Configurar Nodemailer
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "cp7073.webempresa.eu", // Servidor SMTP
+  port: 465, // Puerto para  SSL
+  secure: true, // Utilizar SSL
   auth: {
-    user: "davidpayanalvarado@gmail.com",
-    pass: "fwli umam vixv ltai", // Contraseña de verificación de dos pasos o la contraseña de la cuenta
+    user: ADMIN_EMAIL, // Correo
+    pass: "Pruebas2025.", // Contraseña del correo
   },
 });
 
@@ -20,7 +22,7 @@ const transporter = nodemailer.createTransport({
  */
 const enviarEmail = async (to, subject, text, pdfBuffer) => {
   const mailOptions = {
-    from: ADMIN_EMAIL,
+    from: `Kong Consulting <${ADMIN_EMAIL}>`,
     to: to,
     subject: subject,
     text: text,
