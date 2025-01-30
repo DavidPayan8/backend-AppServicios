@@ -135,15 +135,16 @@ const crearCabeceraDoc = async (cabecera) => {
       .input("entidad_id", sql.Int, cabecera.entidad_id)
       .input("base", sql.Float, cabecera.base)
       .input("tipo_IVA", sql.Int, cabecera.tipo_iva)
+      .input("id_Servicio_origen", sql.Int, cabecera.id_servicio_origen)
       .input("orden_trabajo_id", sql.Int, cabecera.orden_trabajo_id).query(`
         INSERT INTO CABECERA
-          (fecha, numero, entidad_id, base, tipo_IVA, orden_trabajo_id)
+          (fecha, numero, entidad_id, base, tipo_IVA, id_Servicio_origen, orden_trabajo_id)
         OUTPUT 
           INSERTED.*
         VALUES 
-          (@fecha, @numero, @entidad_id, @base, @tipo_IVA, @orden_trabajo_id)
+          (@fecha, @numero, @entidad_id, @base, @tipo_IVA, @id_Servicio_origen, @orden_trabajo_id)
       `);
-
+      console.log(cabecera)
     return result.recordset[0];
   } catch (error) {
     console.error("Error al actualizar el detalles doc:", details);
