@@ -54,19 +54,12 @@ const getContrato = async (id_contrato) => {
     c.ID_Cliente, 
     c.Fecha_Alta, 
     c.Fecha_Vencimiento, 
-    c.ID_Articulo, 
     c.Monto, 
-    c.Activo,
-    a.numero_serie,
-    a.nombre AS nombre_articulo  
+    c.Activo
 FROM 
     CONTRATO c
-LEFT JOIN 
-    ARTICULOS a ON c.ID_Articulo = a.id 
 WHERE 
     c.id = ${id_contrato};
-
-
 `;
 
     const result = await pool.request().query(query);
