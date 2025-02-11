@@ -1,20 +1,19 @@
 const parteService = require("../models/parteModel");
 
 const checkParteAbierto = async (req, res) => {
-  const { id_proyecto, fecha } = req.body;
+  const { id_proyecto } = req.body;
   const id_usuario = req.user.id;
 
   try {
     const hayParteAbierto = await parteService.checkParteAbierto(
       id_usuario,
-      id_proyecto,
-      fecha
+      id_proyecto
     );
 
     if (hayParteAbierto) {
-      res.status(200).json({ message: "Existe un parte abierto." });
+      res.status(200).json(hayParteAbierto);
     } else {
-      res.status(200).json({ message: "No hay partes abiertos." });
+      res.status(200).json(hayParteAbierto);
     }
   } catch (error) {
     res.status(500).json({

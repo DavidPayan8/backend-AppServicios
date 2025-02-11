@@ -7,12 +7,10 @@ const checkParteAbierto = async (id_usuario, id_proyecto, fecha) => {
     const result = await pool
       .request()
       .input("id_usuario", sql.Int, id_usuario)
-      .input("id_proyecto", sql.Int, id_proyecto)
-      .input("fecha", sql.Date, fecha).query(`SELECT * 
+      .input("id_proyecto", sql.Int, id_proyecto).query(`SELECT * 
                     FROM PARTES_TRABAJO 
                     WHERE id_usuario = @id_usuario 
                       AND id_proyecto = @id_proyecto 
-                      AND fecha = @fecha 
                       AND hora_salida IS NULL`);
 
     return result.recordset.length > 0; // Devuelve true si hay partes abiertos, false si no
