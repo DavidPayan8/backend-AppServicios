@@ -28,7 +28,7 @@ const crearParteTrabajo = async ({
   id_proyecto,
   hora_entrada,
   fecha,
-  localizacion,
+  localizacion_entrada,
 }) => {
 
   try {
@@ -45,10 +45,10 @@ const crearParteTrabajo = async ({
       .input("id_proyecto", sql.Int, id_proyecto)
       .input("hora_entrada", sql.Time, hora_entrada)
       .input("fecha", sql.Date, fecha)
-      .input("localizacion", sql.VarChar, localizacion)
-      .query(`INSERT INTO PARTES_TRABAJO ( id_usuario, id_capitulo , id_partida ,id_proyecto, hora_entrada, fecha, localizacion)
+      .input("localizacion_entrada", sql.VarChar, localizacion_entrada)
+      .query(`INSERT INTO PARTES_TRABAJO ( id_usuario, id_capitulo , id_partida ,id_proyecto, hora_entrada, fecha, localizacion_entrada)
               OUTPUT INSERTED.id
-              VALUES (@id_usuario, @id_capitulo, @id_partida ,@id_proyecto, @hora_entrada, @fecha, @localizacion)`);
+              VALUES (@id_usuario, @id_capitulo, @id_partida ,@id_proyecto, @hora_entrada, @fecha, @localizacion_entrada)`);
 
     return result.recordset[0].id; // Retornar el ID del nuevo registro
   } catch (error) {
@@ -108,7 +108,8 @@ const actualizarParteTrabajo = async (
   id_proyecto,
   hora_salida,
   horas_extra,
-  horas_festivo
+  horas_festivo,
+  localizacion_salida
 ) => {
   try {
     const pool = await sql.connect(config);
@@ -120,14 +121,16 @@ const actualizarParteTrabajo = async (
       .input("id_proyecto", sql.Int, id_proyecto)
       .input("hora_salida", sql.Time, hora_salida)
       .input("horas_festivo", sql.Int, horas_festivo)
-      .input("horas_extra", sql.Int, horas_extra).query(`
+      .input("horas_extra", sql.Int, horas_extra)
+      .input("localizacion_salida", sql.VarChar, localizacion_salida).query(`
         UPDATE PARTES_TRABAJO 
         SET id_capitulo = @id_capitulo,
             id_partida = @id_partida,
             id_proyecto = @id_proyecto,
             hora_salida = @hora_salida, 
             horas_festivo = @horas_festivo, 
-            horas_extra = @horas_extra 
+            horas_extra = @horas_extra,
+            localizacion_salida = @localizacion_salida
         WHERE id = @id
       `);
 

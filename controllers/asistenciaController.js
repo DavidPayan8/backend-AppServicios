@@ -3,16 +3,16 @@ const { getParteAbierto, getPartesUsuarioFecha, ficharEntrada, ficharSalida } = 
 
 const ficharEntradaHandler = async (req, res) => {
     const userId = req.user.id;
-    const { date, horaEntrada } = req.body; // Recibe date (dd/mm/yyyy) y horaSalida (HH:mm:ss) desde el frontend
+    const { date, horaEntrada, localizacion_entrada } = req.body; // Recibe date (dd/mm/yyyy) y horaSalida (HH:mm:ss) desde el frontend
 
     try {
         const fecha = formatFecha(date);
 
-        const parteAbierto = await getParteAbierto(userId, fecha);
+        const parteAbierto = await getParteAbierto(userId, fecha, localizacion_entrada);
         if (parteAbierto) {
             res.status(400).json({ message: 'Ya tienes un parte abierto para hoy. Debes fichar salida.' });
         } else {
-            await ficharEntrada(userId, fecha, horaEntrada);
+            await ficharEntrada(userId, fecha, horaEntrada, localizacion_entrada);
             res.status(201).json({ message: 'Fichado de entrada registrado correctamente.' });
         }
     } catch (error) {
@@ -23,16 +23,16 @@ const ficharEntradaHandler = async (req, res) => {
 
 const ficharSalidaHandler = async (req, res) => {
     const userId = req.user.id;
-    const { date, horaSalida } = req.body;
+    const { date, horaSalida , localizacion_salida} = req.body;
 
     try {
         const fecha = formatFecha(date);
 
-        const parteAbierto = await getParteAbierto(userId, fecha);
+        const parteAbierto = await getParteAbierto(userId, fecha, localizacion_salida);
         if (!parteAbierto) {
             res.status(400).json({ message: 'No tienes un parte abierto para hoy. Debes fichar entrada primero.' });
         } else {
-            await ficharSalida(parteAbierto.id, horaSalida);
+            await ficharSalida(parteAbierto.id, horaSalida, localizacion_salida);
             res.status(200).json({ message: 'Fichado de salida registrado correctamente.' });
         }
     } catch (error) {

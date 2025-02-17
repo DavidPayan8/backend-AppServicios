@@ -30,7 +30,7 @@ const crearParteTrabajo = async (req, res) => {
     id_proyecto,
     hora_entrada,
     fecha,
-    localizacion,
+    localizacion_entrada,
     horas_extra,
     horas_festivo,
   } = req.body;
@@ -44,7 +44,7 @@ const crearParteTrabajo = async (req, res) => {
       id_proyecto,
       hora_entrada,
       fecha,
-      localizacion,
+      localizacion_entrada,
       horas_extra,
       horas_festivo,
     });
@@ -114,6 +114,7 @@ const actualizarParteTrabajo = async (req, res) => {
     hora_salida,
     horas_festivo,
     horas_extra,
+    localizacion_salida
   } = req.body;
 
   try {
@@ -124,7 +125,8 @@ const actualizarParteTrabajo = async (req, res) => {
       id_proyecto,
       hora_salida,
       horas_festivo,
-      horas_extra
+      horas_extra,
+      localizacion_salida
     );
     res
       .status(200)
