@@ -31,13 +31,13 @@ const getIdContrato = async (orden_trabajo_id) => {
     const pool = await connectToDb();
     const query = `SELECT c.id
                     FROM contrato c
-                    Left JOIN orden_trabajo ot 
+                    LEFT JOIN orden_trabajo ot 
                         ON c.id = ot.id_contrato
                     WHERE ot.id = ${orden_trabajo_id};`;
     const result = await pool.request().query(query);
-    return result.recordset[0].id;
+    return result.recordset[0]?.id;
   } catch (error) {
-    console.error("Error al obtener contrato:", error.message);
+    console.error("Error al obtener id contrato:", error.message);
     throw error;
   }
 };
