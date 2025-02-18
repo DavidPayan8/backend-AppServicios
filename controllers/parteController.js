@@ -1,20 +1,19 @@
 const parteService = require("../models/parteModel");
 
 const checkParteAbierto = async (req, res) => {
-  const { id_proyecto, fecha } = req.body;
+  const { id_proyecto } = req.body;
   const id_usuario = req.user.id;
 
   try {
     const hayParteAbierto = await parteService.checkParteAbierto(
       id_usuario,
-      id_proyecto,
-      fecha
+      id_proyecto
     );
 
     if (hayParteAbierto) {
-      res.status(200).json({ message: "Existe un parte abierto." });
+      res.status(200).json(hayParteAbierto);
     } else {
-      res.status(200).json({ message: "No hay partes abiertos." });
+      res.status(200).json(hayParteAbierto);
     }
   } catch (error) {
     res.status(500).json({
@@ -31,7 +30,7 @@ const crearParteTrabajo = async (req, res) => {
     id_proyecto,
     hora_entrada,
     fecha,
-    localizacion,
+    localizacion_entrada,
     horas_extra,
     horas_festivo,
   } = req.body;
@@ -45,7 +44,7 @@ const crearParteTrabajo = async (req, res) => {
       id_proyecto,
       hora_entrada,
       fecha,
-      localizacion,
+      localizacion_entrada,
       horas_extra,
       horas_festivo,
     });
@@ -115,6 +114,7 @@ const actualizarParteTrabajo = async (req, res) => {
     hora_salida,
     horas_festivo,
     horas_extra,
+    localizacion_salida
   } = req.body;
 
   try {
@@ -125,7 +125,8 @@ const actualizarParteTrabajo = async (req, res) => {
       id_proyecto,
       hora_salida,
       horas_festivo,
-      horas_extra
+      horas_extra,
+      localizacion_salida
     );
     res
       .status(200)

@@ -77,15 +77,15 @@ const crearProyecto = async (req, res) => {
 };
 
 const obtenerContrato = async (req, res) => {
+  let contrato
   try {
     const { orden_trabajo_id } = req.body;
     
     const id_contrato = await getIdContrato(orden_trabajo_id);
 
+    if(id_contrato) contrato = await getContrato(id_contrato);
 
-      // Obtener proyecto por Id
-      contrato = await getContrato(id_contrato);
-      res.status(201).json(contrato);
+    res.status(200).json(contrato);
   } catch (error) {
     console.error("Error al obtener contrato:", error.message);
     res.status(500).json({message: "Error en el servidor", data: null})
@@ -99,9 +99,9 @@ const obtenerProyecto = async (req, res) => {
     // Obtener proyecto por Id
     const proyecto = await getProyectos(id);
 
-    res.status(201).json(proyecto[0]);
+    res.status(200).json(proyecto[0]);
   } catch (error) {
-    console.error("Error al crear proyecto:", error.message);
+    console.error("Error obtener proyecto:", error.message);
     res.status(500).send("Error del servidor");
   }
 };

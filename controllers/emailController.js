@@ -1,9 +1,18 @@
 const nodemailer = require("nodemailer");
 
-const ADMIN_EMAIL = "pruebasinternas@kongconsulting.es";
+const ADMIN_EMAIL = "davidpayanalvarado@gmail.com";
 
 // Configurar Nodemailer
 const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: ADMIN_EMAIL,
+    pass: "ofhx zqmi xhos fdpu",
+  },
+});
+
+
+/* const transporter = nodemailer.createTransport({
   host: "cp7073.webempresa.eu", // Servidor SMTP
   port: 465, // Puerto para  SSL
   secure: true, // Utilizar SSL
@@ -11,7 +20,7 @@ const transporter = nodemailer.createTransport({
     user: ADMIN_EMAIL, // Correo
     pass: "Pruebas2025.", // Contraseña del correo
   },
-});
+}); */
 
 /**
  * Función común para enviar correos electrónicos
@@ -47,7 +56,6 @@ const enviarEmail = async (to, subject, text, pdfBuffer) => {
  */
 const enviarEmails = async (req, res) => {
   const { email, pdf } = req.body;
-
   try {
     // Convertir el PDF de base64 a Buffer
     const pdfBuffer = Buffer.from(pdf, "base64");
