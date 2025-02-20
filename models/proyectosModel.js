@@ -77,7 +77,7 @@ const getProyectos = async (ids) => {
 
     const query = `SELECT 
     Orden_Trabajo.*, 
-    CLIENTES.nombre_empresa AS nombre_cliente
+    CLIENTES.nombre AS nombre_cliente
     FROM 
         Orden_Trabajo
     LEFT JOIN 
