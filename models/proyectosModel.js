@@ -45,19 +45,7 @@ const getIdContrato = async (orden_trabajo_id) => {
 const getContrato = async (id_contrato) => {
   try {
     const pool = await connectToDb();
-    const query = `SELECT 
-    c.id, 
-    c.Numero_Contrato, 
-    c.ID_Cliente, 
-    c.Fecha_Alta, 
-    c.Fecha_Vencimiento, 
-    c.Monto, 
-    c.Activo
-FROM 
-    CONTRATO c
-WHERE 
-    c.id = ${id_contrato};
-`;
+    const query = `SELECT * FROM CONTRATO WHERE id = ${id_contrato};`;
 
     const result = await pool.request().query(query);
     return result.recordset[0];

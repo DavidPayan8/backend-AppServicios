@@ -78,18 +78,17 @@ const crearProyecto = async (req, res) => {
 };
 
 const obtenerContrato = async (req, res) => {
-  let cabecera
-  let detalles
+
   try {
     const { orden_trabajo_id } = req.body;
     
     const id_contrato = await getIdContrato(orden_trabajo_id);
 
-    if(id_contrato) cabecera = await getContrato(id_contrato);
+    const cabecera = await getContrato(id_contrato);
+    const detalles = await getDetallesContrato(id_contrato)
 
-    if(id_contrato) detalles = await getDetallesContrato(id_contrato)
+    const contrato = {cabecera, detalles}
 
-    const contrato = {...cabecera, ...detalles}
     console.log("Contrato", contrato)
     res.status(200).json(contrato);
   } catch (error) {
