@@ -45,19 +45,7 @@ const getIdContrato = async (orden_trabajo_id) => {
 const getContrato = async (id_contrato) => {
   try {
     const pool = await connectToDb();
-    const query = `SELECT 
-    c.id, 
-    c.Numero_Contrato, 
-    c.ID_Cliente, 
-    c.Fecha_Alta, 
-    c.Fecha_Vencimiento, 
-    c.Monto, 
-    c.Activo
-FROM 
-    CONTRATO c
-WHERE 
-    c.id = ${id_contrato};
-`;
+    const query = `SELECT * FROM CONTRATO WHERE id = ${id_contrato};`;
 
     const result = await pool.request().query(query);
     return result.recordset[0];
@@ -66,6 +54,20 @@ WHERE
     throw error;
   }
 };
+
+const getDetallesContrato = async (id_contrato) => {
+  try {
+    const pool = await connectToDb();
+    const query = `SELECT * FROM DETALLES_CONTRATO WHERE id_contrato = ${id_contrato};`;
+
+    const result = await pool.request().query(query);
+    return result.recordset;
+  } catch (error) {
+    console.error("Error al obtener detalles contrato:", error.message);
+    throw error;
+  }
+};
+
 // Obtiene los proyectos por ids
 const getProyectos = async (ids) => {
   try {
@@ -77,7 +79,7 @@ const getProyectos = async (ids) => {
 
     const query = `SELECT 
     Orden_Trabajo.*, 
-    CLIENTES.nombre_empresa AS nombre_cliente
+    CLIENTES.nombre AS nombre_cliente
     FROM 
         Orden_Trabajo
     LEFT JOIN 
@@ -187,4 +189,5 @@ module.exports = {
   cambiarEstadoProyecto,
   getContrato,
   getIdContrato,
+  getDetallesContrato
 };
