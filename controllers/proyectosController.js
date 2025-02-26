@@ -85,11 +85,10 @@ const obtenerContrato = async (req, res) => {
     const id_contrato = await getIdContrato(orden_trabajo_id);
 
     const cabecera = await getContrato(id_contrato);
-    const detalles = await getDetallesContrato(id_contrato)
+
+    const detalles = await getDetallesContrato(id_contrato);
 
     const contrato = {cabecera, detalles}
-
-    console.log("Contrato", contrato)
     res.status(200).json(contrato);
   } catch (error) {
     console.error("Error al obtener contrato:", error.message);

@@ -13,6 +13,7 @@ const articulosRoutes = require("./routes/articulosRoutes")
 const albaranRoutes = require("./routes/albaranRoutes")
 const emailRoutes = require("./routes/emailRoutes")
 const configuracionesRoutes = require("./routes/configuracionRoutes")
+const estadisticasRoutes = require("./routes/estadisticasRoutes")
 const authenticateToken = require("./middleware/authMiddleware");
 
 const app = express();
@@ -36,6 +37,7 @@ app.use("/api/clientes", clientesRoutes);
 app.use("/api/partes", parteRoutes);
 app.use("/api/notificaciones", notificacionesRoutes);
 app.use("/api/configuraciones", configuracionesRoutes);
+app.use("/api/estadisticas", estadisticasRoutes);
 app.get("/protected", authenticateToken, (req, res) => {
   res.json({ message: "Acceso autorizado", user: req.user });
 });
