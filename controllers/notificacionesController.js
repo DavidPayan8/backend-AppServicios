@@ -1,9 +1,13 @@
-const notificacionesService = require("../models/notificacionesModel");
+const {
+  obtenerNotificacionesModel,
+  obtenerArchivadasModel,
+  marcarLeidaModel
+}  = require("../models/notificacionesModel");
 
 const obtenerNotificaciones = async (req, res) => {
   const id_usuario = req.user.id;
   try {
-    const notificaciones = await notificacionesService.obtenerNotificaciones(
+    const notificaciones = await obtenerNotificacionesModel(
       id_usuario
     );
     res.status(200).json(notificaciones);
@@ -17,7 +21,7 @@ const obtenerNotificaciones = async (req, res) => {
 const obtenerArchivadas = async (req, res) => {
   const id_usuario = req.user.id;
   try {
-    const notificaciones = await notificacionesService.obtenerArchivadas(
+    const notificaciones = await obtenerArchivadasModel(
       id_usuario
     );
     res.status(200).json(notificaciones);
@@ -33,7 +37,7 @@ const obtenerArchivadas = async (req, res) => {
 const marcarLeida = async (req, res) => {
   const id_notificacion = req.body.id_notificacion;
   try {
-    const estaLeida = await notificacionesService.marcarLeida(
+    const estaLeida = await marcarLeidaModel(
       id_notificacion
     );
     res.status(200).json(estaLeida);
