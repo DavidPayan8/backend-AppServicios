@@ -82,7 +82,7 @@ const crearDetallesDoc = async (details) => {
                 @total_linea
             )
         `);
-    return  result.recordset[0].id
+    return result.recordset[0].id;
   } catch (error) {
     console.error("Error al crear detalles doc:", details);
     throw error;
@@ -106,11 +106,10 @@ const obtenerDetallesDocDb = async (id) => {
             dd.cabecera_Id = @id
     `);
     return result.recordset;
-} catch (error) {
+  } catch (error) {
     console.error("Error obteniendo detalles doc data: ", error);
     throw error;
-}
-
+  }
 };
 
 const borrarDetalleDoc = async (id) => {
@@ -128,10 +127,15 @@ const borrarDetalleDoc = async (id) => {
 const crearCabeceraDoc = async (cabecera) => {
   try {
     const pool = await sql.connect(config);
+
+    // Obtener el último número y sumarle 1
+    const lastNumber = await pool.request().query(`
+      SELECT COALESCE(MAX(numero), 0) + 1 AS nuevoNumero FROM CABECERA
+    `);
     const result = await pool
       .request()
       .input("fecha", sql.Date, cabecera.fecha)
-      .input("numero", sql.Int, cabecera.numero)
+      .input("numero", sql.Int, lastNumber)
       .input("entidad_id", sql.Int, cabecera.entidad_id)
       .input("base", sql.Float, cabecera.base)
       .input("tipo_IVA", sql.Int, cabecera.tipo_iva)
@@ -144,7 +148,7 @@ const crearCabeceraDoc = async (cabecera) => {
         VALUES 
           (@fecha, @numero, @entidad_id, @base, @tipo_IVA, @id_Servicio_origen, @orden_trabajo_id)
       `);
-      console.log(cabecera)
+    console.log(cabecera);
     return result.recordset[0];
   } catch (error) {
     console.error("Error al actualizar el detalles doc:", details);

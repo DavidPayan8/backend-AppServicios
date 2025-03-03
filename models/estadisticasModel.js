@@ -16,7 +16,7 @@ const obtenerDatosHoras = async (id_usuario, anio) => {
         GROUP BY YEAR(hora_entrada), MONTH(hora_entrada);`);
     return result.recordset;
   } catch (error) {
-    console.error("Error al obtener notificaciones:", error.message);
+    console.error("Error al obtener estadisticas año:", error.message);
     throw error;
   }
 };
