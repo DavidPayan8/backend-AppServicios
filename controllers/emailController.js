@@ -3,14 +3,26 @@ const nodemailer = require("nodemailer");
 const ADMIN_EMAIL = "davidpayanalvarado@gmail.com";
 
 // Configurar Nodemailer
-const transporter = nodemailer.createTransport({
+/* const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: ADMIN_EMAIL,
     pass: "ofhx zqmi xhos fdpu",
   },
-});
+}); */
 
+const transporter = nodemailer.createTransport({
+  host: "smtp.thrspain.com",
+  port: 25,
+  secure: false,
+  auth: {
+      user: "administracion@thrspain.com",
+      pass: "Administracion2021!",
+  },
+  tls: {
+      rejectUnauthorized: false,
+  },
+});
 
 /* const transporter = nodemailer.createTransport({
   host: "cp7073.webempresa.eu", // Servidor SMTP
