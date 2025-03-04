@@ -1,10 +1,10 @@
-const configuracionService = require("../models/configuracionesModel");
+const { obtenerDiasEditables,getConfigEmpresa } = require("../models/configuracionesModel");
 
-const obtenerDiasEditables = async (req, res) => {
+const getDiasEditables = async (req, res) => {
   const { rol } = req.body;
 
   try {
-    const config = await configuracionService.obtenerDiasEditables(rol);
+    const config = await obtenerDiasEditables(rol);
 
     res.status(200).json(config);
   } catch (error) {
@@ -16,6 +16,21 @@ const obtenerDiasEditables = async (req, res) => {
   }
 };
 
+const obtenerConfigEmpresa = async (req,res) => {
+  try {
+    const config = await getConfigEmpresa();
+
+    res.status(200).json(config);
+  } catch (error) {
+    console.error("Error al obtener config empresa:", error.message);
+    res.status(500).json({
+      message: "Error al obtener configuracion empresa",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
-  obtenerDiasEditables,
+  getDiasEditables,
+  obtenerConfigEmpresa
 };
