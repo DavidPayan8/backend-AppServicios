@@ -57,7 +57,7 @@ jobs:
         with:
           app-name: 'Ezeq'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
+          publish-profile: ${{ secrets.AZURE_EZEQ_PUBLISH_PROFILE }}
           package: .
 
       - name: Set up Node.js version
