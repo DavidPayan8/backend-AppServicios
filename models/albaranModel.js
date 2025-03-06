@@ -135,7 +135,7 @@ const crearCabeceraDoc = async (cabecera) => {
     const result = await pool
       .request()
       .input("fecha", sql.Date, cabecera.fecha)
-      .input("numero", sql.Int, lastNumber)
+      .input("numero", sql.Int, lastNumber.recordset[0].nuevoNumero)
       .input("entidad_id", sql.Int, cabecera.entidad_id)
       .input("base", sql.Float, cabecera.base)
       .input("tipo_IVA", sql.Int, cabecera.tipo_iva)
@@ -151,7 +151,7 @@ const crearCabeceraDoc = async (cabecera) => {
     console.log(cabecera);
     return result.recordset[0];
   } catch (error) {
-    console.error("Error al actualizar el detalles doc:", details);
+    console.error("Error al actualizar el crear doc:", error)
     throw error;
   }
 };
