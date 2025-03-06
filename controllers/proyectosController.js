@@ -1,12 +1,57 @@
 const {
+  getObras,
   getIdProyectos,
   getProyectos,
   addProyecto,
   cambiarEstadoProyecto,
   getContrato,
   getIdContrato,
-  getDetallesContrato
+  getDetallesContrato,
+  createOtObra
 } = require("../models/proyectosModel");
+
+
+
+const obtenerObras = async (req,res) =>{
+  try {
+    const obras = await getObras();
+
+    res.status(200).json(obras);
+  } catch (error) {
+    console.error("Error al obtener las obras", error.message);
+    res.status(500).json({
+      message: "Error del servidor al obtener las obras",
+    });
+  }
+}
+
+
+const crearOtObra = async (req,res) =>{
+  try {
+    const { nombre, id_cliente, id_obra, fechaCalendario,es_ote } =
+      req.body;
+    const id_usuario = req.user.id;
+
+    // Crear el proyecto y calendario
+    const nuevoProyecto = await createOtObra(
+      id_usuario,
+      nombre,
+      id_cliente,
+      id_obra,
+      fechaCalendario,
+      es_ote
+    );
+
+    res.status(201).json({
+      mensaje: "Proyecto creado con exito",
+      proyectoId: nuevoProyecto.id,
+    });
+  } catch (error) {
+    console.error("Error al crear proyecto:", error.message);
+    res.status(500).send("Error del servidor al crear proyecto");
+  }
+}
+
 
 const obtenerIdProyectos = async (req, res) => {
   const userId = req.user.id; // Obtener el ID del usuario desde el token de autenticación
@@ -68,12 +113,12 @@ const crearProyecto = async (req, res) => {
     );
 
     res.status(201).json({
-      mensaje: "Proyecto y calendario creados exitosamente",
+      mensaje: "Orden Trabajo y calendario creados exitosamente",
       proyectoId: nuevoProyecto.id,
     });
   } catch (error) {
     console.error("Error al crear proyecto:", error.message);
-    res.status(500).send("Error del servidor");
+    res.status(500).send("Error del servidor al crear proyecto");
   }
 };
 
@@ -85,11 +130,10 @@ const obtenerContrato = async (req, res) => {
     const id_contrato = await getIdContrato(orden_trabajo_id);
 
     const cabecera = await getContrato(id_contrato);
-    const detalles = await getDetallesContrato(id_contrato)
+
+    const detalles = await getDetallesContrato(id_contrato);
 
     const contrato = {cabecera, detalles}
-
-    console.log("Contrato", contrato)
     res.status(200).json(contrato);
   } catch (error) {
     console.error("Error al obtener contrato:", error.message);
@@ -119,4 +163,6 @@ module.exports = {
   cambiarEstado,
   obtenerContrato,
   getDetallesContrato,
+  obtenerObras,
+  crearOtObra
 };

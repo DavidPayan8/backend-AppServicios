@@ -21,7 +21,7 @@ const obtenerCabeceraOt = async (req, res) => {
       res.status(201).json(cabeceraCreada);
     }
   } catch (error) {
-    console.error("Error al cambiar detalles doc:", error.message);
+    console.error("Error al obtener cabecera doc:", error.message);
     res.status(500).send("Error del servidor");
   }
 };

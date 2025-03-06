@@ -10,6 +10,69 @@ const connectToDb = async () => {
   return poolPromise;
 };
 
+const getObras = async () => {
+  try {
+    const pool = await connectToDb();
+    const result = await pool.request().query(`SELECT * From Proyectos`);
+    return result.recordset;
+  } catch (error) {
+    console.error("Error al obtener registro de asistencia:", error.message);
+    throw error;
+  }
+};
+
+const createOtObra = async (
+  id_usuario,
+  nombre,
+  id_cliente,
+  id_obra,
+  fechaCalendario,
+  es_ote
+) => {
+  try {
+    // Conexión a la base de datos
+    const pool = await connectToDb();
+
+    // Crear la solicitud para el insert
+    const request = new sql.Request(pool);
+
+    // Insertar los datos en la tabla, parametrizado
+    let result = await request
+      .input("id_usuario", sql.Int, id_usuario)
+      .input("nombre", sql.NVarChar, nombre)
+      .input("id_cliente", sql.Int, id_cliente)
+      .input("id_obra", sql.Int, id_obra)
+      .input("es_ote", sql.Bit, es_ote).query(`
+        INSERT INTO ORDEN_TRABAJO (
+          id_usuario,
+          nombre,
+          id_cliente,
+          id_servicio_origen,
+          es_ote
+        )
+          OUTPUT inserted.id
+        VALUES (
+          @id_usuario,
+          @nombre,
+          @id_cliente,
+          @id_obra,
+          @es_ote
+        );`);
+
+       // Insertar la entrada en el calendario
+    await request
+    .input("fecha", sql.Date, fechaCalendario)
+    .input("id_proyecto", sql.Int, result.recordset[0].id)
+    .query(`INSERT INTO CALENDARIO ( fecha, id_usuario, id_proyecto)
+                  VALUES ( @fecha, @id_usuario, @id_proyecto)`);
+                  
+    return { id: result.recordset[0].id };
+  } catch (error) {
+    console.error("Error al crear Ote Obra:", error.message);
+    throw error;
+  }
+};
+
 // Obtiene los ids de los proyectos, por usuario
 const getIdProyectos = async (userId, date) => {
   try {
@@ -26,6 +89,7 @@ const getIdProyectos = async (userId, date) => {
     throw error;
   }
 };
+
 const getIdContrato = async (orden_trabajo_id) => {
   try {
     const pool = await connectToDb();
@@ -183,11 +247,13 @@ const addProyecto = async (
 };
 
 module.exports = {
+  getObras,
+  createOtObra,
   getIdProyectos,
   getProyectos,
   addProyecto,
   cambiarEstadoProyecto,
   getContrato,
   getIdContrato,
-  getDetallesContrato
+  getDetallesContrato,
 };

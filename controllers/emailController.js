@@ -3,13 +3,13 @@ const nodemailer = require("nodemailer");
 const ADMIN_EMAIL = "davidpayanalvarado@gmail.com";
 
 // Configurar Nodemailer
-const transporter = nodemailer.createTransport({
+/* const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: ADMIN_EMAIL,
     pass: "ofhx zqmi xhos fdpu",
   },
-});
+}); */
 
 
 /* const transporter = nodemailer.createTransport({
@@ -21,6 +21,21 @@ const transporter = nodemailer.createTransport({
     pass: "Pruebas2025.", // Contraseña del correo
   },
 }); */
+
+
+const transporter = nodemailer.createTransport({
+  host: "smtp.thrspain.com",
+  port: 25,
+  secure: false,
+  requireTLS: true,
+  auth: {
+      user: "administracion@thrspain.com",
+      pass: "Administracion2021!",
+  },
+  tls: {
+      rejectUnauthorized: false,
+  },
+});
 
 /**
  * Función común para enviar correos electrónicos
@@ -44,7 +59,9 @@ const enviarEmail = async (to, subject, text, pdfBuffer) => {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Correo enviado:", info); // Para depuración
+    return info;
   } catch (error) {
     console.error("Error enviando correo:", error);
     throw new Error("Error enviando el correo");

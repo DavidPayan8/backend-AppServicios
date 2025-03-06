@@ -1,10 +1,11 @@
 const express = require('express');
-const { obtenerDiasEditables } = require('../controllers/configuracionesController');
+const { getDiasEditables,obtenerConfigEmpresa } = require('../controllers/configuracionesController');
 const authenticateToken = require('../middleware/authMiddleware');
 const router = express.Router();
 
 router.use(authenticateToken);
 
-router.post('/obtener-dias-editables', obtenerDiasEditables);
+router.post('/obtener-dias-editables', getDiasEditables);
+router.get('/obtener-config-empresa' , obtenerConfigEmpresa)
 
 module.exports = router;
