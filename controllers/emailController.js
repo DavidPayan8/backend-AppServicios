@@ -1,6 +1,6 @@
 const nodemailer = require("nodemailer");
 
-const ADMIN_EMAIL = "davidpayanalvarado@gmail.com";
+const ADMIN_EMAIL = "administracion@thrspain.com";
 
 // Configurar Nodemailer
 /* const transporter = nodemailer.createTransport({
