@@ -46,7 +46,7 @@ const transporter = nodemailer.createTransport({
  */
 const enviarEmail = async (to, subject, text, pdfBuffer) => {
   const mailOptions = {
-    from: `Kong Consulting <${ADMIN_EMAIL}>`,
+    from: ADMIN_EMAIL,
     to: to,
     subject: subject,
     text: text,
