@@ -1,6 +1,6 @@
 const nodemailer = require("nodemailer");
 
-const ADMIN_EMAIL = "davidpayanalvarado@gmail.com";
+const ADMIN_EMAIL = "pruebasinternas@kongconsulting.es"; //pruebasinternas@kongconsulting.es
 
 // Configurar Nodemailer
 /* const transporter = nodemailer.createTransport({
@@ -12,7 +12,7 @@ const ADMIN_EMAIL = "davidpayanalvarado@gmail.com";
 }); */
 
 
-/* const transporter = nodemailer.createTransport({
+const transporter = nodemailer.createTransport({
   host: "cp7073.webempresa.eu", // Servidor SMTP
   port: 465, // Puerto para  SSL
   secure: true, // Utilizar SSL
@@ -20,10 +20,10 @@ const ADMIN_EMAIL = "davidpayanalvarado@gmail.com";
     user: ADMIN_EMAIL, // Correo
     pass: "Pruebas2025.", // Contraseña del correo
   },
-}); */
+});
 
 
-const transporter = nodemailer.createTransport({
+/* const transporter = nodemailer.createTransport({
   host: "smtp.thrspain.com",
   port: 25,
   secure: false,
@@ -35,7 +35,7 @@ const transporter = nodemailer.createTransport({
   tls: {
       rejectUnauthorized: false,
   },
-});
+}); */
 
 /**
  * Función común para enviar correos electrónicos
@@ -46,7 +46,7 @@ const transporter = nodemailer.createTransport({
  */
 const enviarEmail = async (to, subject, text, pdfBuffer) => {
   const mailOptions = {
-    from: `Kong Consulting <${ADMIN_EMAIL}>`,
+    from: ADMIN_EMAIL,
     to: to,
     subject: subject,
     text: text,
