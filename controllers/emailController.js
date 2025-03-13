@@ -2,16 +2,9 @@ const nodemailer = require("nodemailer");
 
 const ADMIN_EMAIL = "pruebasinternas@kongconsulting.es"; //pruebasinternas@kongconsulting.es
 
-// Configurar Nodemailer
-/* const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: ADMIN_EMAIL,
-    pass: "ofhx zqmi xhos fdpu",
-  },
-}); */
 
-
+// secure = true para 465, false para otros puertos
+// TLS reemplaza a SSL (deprecated)
 const transporter = nodemailer.createTransport({
   host: "cp7073.webempresa.eu", // Servidor SMTP
   port: 465, // Puerto para  SSL
@@ -22,12 +15,20 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Configurar Nodemailer
+/* const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: ADMIN_EMAIL,
+    pass: "ofhx zqmi xhos fdpu",
+  },
+}); */
 
 /* const transporter = nodemailer.createTransport({
   host: "smtp.thrspain.com",
   port: 25,
-  secure: false,
-  requireTLS: true,
+  secure: false, // true para 465, false para otros puertos
+  requireTLS: true, // TLS reemplaza a SSL (deprecated)
   auth: {
       user: "administracion@thrspain.com",
       pass: "Administracion2021!",
