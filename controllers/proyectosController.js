@@ -14,7 +14,9 @@ const {
 
 const obtenerObras = async (req,res) =>{
   try {
-    const obras = await getObras();
+    const empresa = req.user.empresa;
+
+    const obras = await getObras(empresa);
 
     res.status(200).json(obras);
   } catch (error) {
@@ -30,6 +32,7 @@ const crearOtObra = async (req,res) =>{
   try {
     const { nombre, id_cliente, id_obra, fechaCalendario,es_ote } =
       req.body;
+    const empresa = req.user.empresa;
     const id_usuario = req.user.id;
 
     // Crear el proyecto y calendario
@@ -39,7 +42,8 @@ const crearOtObra = async (req,res) =>{
       id_cliente,
       id_obra,
       fechaCalendario,
-      es_ote
+      es_ote,
+      empresa
     );
 
     res.status(201).json({
@@ -54,11 +58,12 @@ const crearOtObra = async (req,res) =>{
 
 
 const obtenerIdProyectos = async (req, res) => {
-  const userId = req.user.id; // Obtener el ID del usuario desde el token de autenticación
+  const userId = req.user.id;
+  const empresa = req.user.empresa;
   const { date } = req.query;
 
   try {
-    const idProyectos = await getIdProyectos(userId, date);
+    const idProyectos = await getIdProyectos(userId, date, empresa);
 
     res.status(200).json(idProyectos);
   } catch (error) {
@@ -70,10 +75,11 @@ const obtenerIdProyectos = async (req, res) => {
 };
 const cambiarEstado = async (req, res) => {
   try {
+    const empresa = req.user.empresa;
     const { id, estado } = req.body;
 
     // Cambiar estado del proyecto
-    await cambiarEstadoProyecto(id, estado);
+    await cambiarEstadoProyecto(id, estado, empresa);
 
     res.status(201);
   } catch (error) {
@@ -83,9 +89,10 @@ const cambiarEstado = async (req, res) => {
 };
 
 const obtenerProyectosPorIds = async (req, res) => {
+  const empresa = req.user.empresa;
   const { ids } = req.body;
   try {
-    const proyectos = await getProyectos(ids);
+    const proyectos = await getProyectos(ids, empresa);
 
     res.status(200).json(proyectos);
   } catch (error) {
@@ -100,6 +107,7 @@ const crearProyecto = async (req, res) => {
   try {
     const { nombre, observaciones, id_cliente, fechaCalendario, es_ote } =
       req.body;
+    const empresa = req.user.empresa;
     const id_usuario = req.user.id;
 
     // Crear el proyecto y calendario
@@ -109,7 +117,8 @@ const crearProyecto = async (req, res) => {
       id_usuario,
       id_cliente,
       fechaCalendario,
-      es_ote
+      es_ote,
+      empresa
     );
 
     res.status(201).json({
@@ -125,9 +134,10 @@ const crearProyecto = async (req, res) => {
 const obtenerContrato = async (req, res) => {
 
   try {
+    const empresa = req.user.empresa;
     const { orden_trabajo_id } = req.body;
     
-    const id_contrato = await getIdContrato(orden_trabajo_id);
+    const id_contrato = await getIdContrato(orden_trabajo_id, empresa);
 
     const cabecera = await getContrato(id_contrato);
 
@@ -143,10 +153,11 @@ const obtenerContrato = async (req, res) => {
 
 const obtenerProyecto = async (req, res) => {
   try {
+    const empresa = req.user.empresa;
     const { id } = req.body;
 
     // Obtener proyecto por Id
-    const proyecto = await getProyectos(id);
+    const proyecto = await getProyectos(id, empresa);
 
     res.status(200).json(proyecto[0]);
   } catch (error) {

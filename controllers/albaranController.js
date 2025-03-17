@@ -9,15 +9,16 @@ const {
 
 const obtenerCabeceraOt = async (req, res) => {
   try {
+    const { empresa } = req.user.empresa;
     const { id, cabecera } = req.body;
 
     // Obtener listado articulos por Id de la Orden Trabajo
-    const result = await obtenerCabeceraDoc(id);
+    const result = await obtenerCabeceraDoc(id, empresa);
 
     if (result[0]) {
       res.status(201).json(result[0]);
     } else {
-      const cabeceraCreada = await crearCabeceraDoc(cabecera);
+      const cabeceraCreada = await crearCabeceraDoc(cabecera, empresa);
       res.status(201).json(cabeceraCreada);
     }
   } catch (error) {
@@ -31,7 +32,7 @@ const obtenerDetallesDoc = async (req, res) => {
     const { id } = req.body;
 
     // Obtener listado articulos por Id de la Orden Trabajo
-    const result = await obtenerDetallesDocDb(id);
+    const result = await obtenerDetallesDocDb(id, empresa);
 
     res.status(201).json(result);
   } catch (error) {

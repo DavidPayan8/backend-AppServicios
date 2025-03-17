@@ -13,10 +13,12 @@ const connectToDb = async () => {
 const getObras = async () => {
   try {
     const pool = await connectToDb();
-    const result = await pool.request().query(`SELECT * From Proyectos`);
+    const result = await pool.request()
+    .input("id_empresa", sql.Int, empresa)
+    .query(`SELECT * From Proyectos Where id_empresa = @id_empresa;`);
     return result.recordset;
   } catch (error) {
-    console.error("Error al obtener registro de asistencia:", error.message);
+    console.error("Error al obtener obras:", error.message);
     throw error;
   }
 };
@@ -42,13 +44,16 @@ const createOtObra = async (
       .input("nombre", sql.NVarChar, nombre)
       .input("id_cliente", sql.Int, id_cliente)
       .input("id_obra", sql.Int, id_obra)
-      .input("es_ote", sql.Bit, es_ote).query(`
+      .input("es_ote", sql.Bit, es_ote)
+      .input("id_empresa", sql.Int, empresa)
+      .query(`
         INSERT INTO ORDEN_TRABAJO (
           id_usuario,
           nombre,
           id_cliente,
           id_servicio_origen,
-          es_ote
+          es_ote,
+          id_empresa
         )
           OUTPUT inserted.id
         VALUES (
@@ -56,7 +61,8 @@ const createOtObra = async (
           @nombre,
           @id_cliente,
           @id_obra,
-          @es_ote
+          @es_ote,
+          @id_empresa
         );`);
 
        // Insertar la entrada en el calendario
@@ -85,20 +91,21 @@ const getIdProyectos = async (userId, date) => {
                     WHERE (id_usuario = @userId OR id_usuario = 0) AND fecha = @date`);
     return result.recordset;
   } catch (error) {
-    console.error("Error al obtener registro de asistencia:", error.message);
+    console.error("Error al obtener calendario:", error.message);
     throw error;
   }
 };
 
-const getIdContrato = async (orden_trabajo_id) => {
+const getIdContrato = async (orden_trabajo_id,empresa) => {
   try {
     const pool = await connectToDb();
     const query = `SELECT c.id
                     FROM contrato c
                     LEFT JOIN orden_trabajo ot 
                         ON c.id = ot.id_contrato
-                    WHERE ot.id = ${orden_trabajo_id};`;
-    const result = await pool.request().query(query);
+                    WHERE ot.id = ${orden_trabajo_id} AND c.id_empresa = ${empresa};`;
+    const result = await pool.request()
+    .query(query);
     return result.recordset[0]?.id;
   } catch (error) {
     console.error("Error al obtener id contrato:", error.message);
@@ -109,7 +116,7 @@ const getIdContrato = async (orden_trabajo_id) => {
 const getContrato = async (id_contrato) => {
   try {
     const pool = await connectToDb();
-    const query = `SELECT * FROM CONTRATO WHERE id = ${id_contrato};`;
+    const query = `SELECT * FROM CONTRATO WHERE id = ${id_contrato} AND c.id_empresa = ${empresa};`;
 
     const result = await pool.request().query(query);
     return result.recordset[0];
@@ -133,7 +140,7 @@ const getDetallesContrato = async (id_contrato) => {
 };
 
 // Obtiene los proyectos por ids
-const getProyectos = async (ids) => {
+const getProyectos = async (ids,empresa) => {
   try {
     let idsString = "";
     const pool = await connectToDb();
@@ -149,7 +156,7 @@ const getProyectos = async (ids) => {
     LEFT JOIN 
         CLIENTES ON Orden_Trabajo.id_cliente = CLIENTES.id
     WHERE 
-        Orden_Trabajo.id IN (${idsString});
+        Orden_Trabajo.id IN (${idsString}) and Orden_Trabajo.id_empresa = ${empresa};
 `;
 
     let result = await pool.request().query(query);
@@ -184,7 +191,8 @@ const addProyecto = async (
   id_usuario,
   id_cliente,
   fechaCalendario,
-  es_ote
+  es_ote,
+  empresa
 ) => {
   let transaction;
   try {
@@ -206,9 +214,10 @@ const addProyecto = async (
         .input("nombre", sql.VarChar, nombre)
         .input("observaciones", sql.VarChar, observaciones)
         .input("es_ote", sql.Bit, es_ote)
-        .query(`INSERT INTO Orden_Trabajo ( nombre, observaciones, id_cliente, es_ote, id_usuario)
+        .input("id_empresa", sql.Int, empresa)
+        .query(`INSERT INTO Orden_Trabajo ( nombre, observaciones, id_cliente, es_ote, id_usuario, id_empresa)
               OUTPUT inserted.id
-              VALUES (  @nombre, @observaciones, null, @es_ote, @id_usuario)`);
+              VALUES (  @nombre, @observaciones, null, @es_ote, @id_usuario, @id_empresa)`);
     } else {
       result = await request
         .input("id_usuario", sql.Int, id_usuario)
@@ -216,9 +225,10 @@ const addProyecto = async (
         .input("nombre", sql.VarChar, nombre)
         .input("observaciones", sql.VarChar, observaciones)
         .input("es_ote", sql.Bit, es_ote)
-        .query(`INSERT INTO Orden_Trabajo ( nombre, observaciones, id_cliente, es_ote, id_usuario)
+        .input("id_empresa", sql.Int, empresa)
+        .query(`INSERT INTO Orden_Trabajo ( nombre, observaciones, id_cliente, es_ote, id_usuario, id_empresa)
                 OUTPUT inserted.id
-                VALUES ( @nombre, @observaciones, @id_cliente, @es_ote, @id_usuario)`);
+                VALUES ( @nombre, @observaciones, @id_cliente, @es_ote, @id_usuario, @id_empresa)`);
     }
 
     // Insertar la entrada en el calendario
