@@ -129,8 +129,12 @@ const crearCabeceraDoc = async (cabecera,empresa) => {
     const pool = await sql.connect(config);
 
     // Obtener el último número y sumarle 1
-    const lastNumber = await pool.request().query(`
-      SELECT COALESCE(MAX(numero), 0) + 1 AS nuevoNumero FROM CABECERA
+    const lastNumber = await pool.request() 
+    .input("empresaId", empresa)
+    .query(`
+      SELECT COALESCE(MAX(numero), 0) + 1 AS nuevoNumero 
+      FROM CABECERA 
+      WHERE id_empresa = @empresaId
     `);
     const result = await pool
       .request()
