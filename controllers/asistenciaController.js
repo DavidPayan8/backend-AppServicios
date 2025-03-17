@@ -42,7 +42,7 @@ const ficharSalidaHandler = async (req, res) => {
 };
 
 const obtenerPartesUsuarioFecha = async (req, res) => {
-    const userId = req.user.id; // Obtener el ID del usuario desde el token de autenticación
+    const userId = req.user.id;
     const { date } = req.query; 
     
     try {
