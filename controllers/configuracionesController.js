@@ -18,7 +18,9 @@ const getDiasEditables = async (req, res) => {
 
 const obtenerConfigEmpresa = async (req,res) => {
   try {
-    const config = await getConfigEmpresa();
+    const empresa = req.user.empresa;
+
+    const config = await getConfigEmpresa(empresa);
 
     res.status(200).json(config);
   } catch (error) {
