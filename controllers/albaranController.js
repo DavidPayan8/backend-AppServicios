@@ -9,7 +9,7 @@ const {
 
 const obtenerCabeceraOt = async (req, res) => {
   try {
-    const { empresa } = req.user.empresa;
+    const empresa= req.user.empresa;
     const { id, cabecera } = req.body;
 
     // Obtener listado articulos por Id de la Orden Trabajo
@@ -32,11 +32,11 @@ const obtenerDetallesDoc = async (req, res) => {
     const { id } = req.body;
 
     // Obtener listado articulos por Id de la Orden Trabajo
-    const result = await obtenerDetallesDocDb(id, empresa);
+    const result = await obtenerDetallesDocDb(id);
 
     res.status(201).json(result);
   } catch (error) {
-    console.error("Error al cambiar detalles doc:", error.message);
+    console.error("Error al obtener detalles doc:", error.message);
     res.status(500).send("Error del servidor");
   }
 };

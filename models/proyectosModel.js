@@ -96,7 +96,7 @@ const getIdProyectos = async (userId, date) => {
   }
 };
 
-const getIdContrato = async (orden_trabajo_id,empresa) => {
+const getIdContrato = async (orden_trabajo_id, empresa) => {
   try {
     const pool = await connectToDb();
     const query = `SELECT c.id
@@ -116,7 +116,7 @@ const getIdContrato = async (orden_trabajo_id,empresa) => {
 const getContrato = async (id_contrato) => {
   try {
     const pool = await connectToDb();
-    const query = `SELECT * FROM CONTRATO WHERE id = ${id_contrato} AND c.id_empresa = ${empresa};`;
+    const query = `SELECT * FROM CONTRATO WHERE id = ${id_contrato}`;
 
     const result = await pool.request().query(query);
     return result.recordset[0];

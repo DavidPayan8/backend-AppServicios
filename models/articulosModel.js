@@ -43,7 +43,7 @@ const getVehiculos = async (id_usuario) => {
   }
 };
 
-const get_iva_and_descuento = async () => {
+const get_iva_and_descuento = async (empresa) => {
   try {
     const pool = await connectToDb();
     const ivas = await pool.request()
