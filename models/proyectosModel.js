@@ -10,7 +10,7 @@ const connectToDb = async () => {
   return poolPromise;
 };
 
-const getObras = async () => {
+const getObras = async (empresa) => {
   try {
     const pool = await connectToDb();
     const result = await pool.request()
@@ -29,7 +29,8 @@ const createOtObra = async (
   id_cliente,
   id_obra,
   fechaCalendario,
-  es_ote
+  es_ote,
+  empresa
 ) => {
   try {
     // Conexión a la base de datos
