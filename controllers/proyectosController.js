@@ -47,7 +47,7 @@ const crearOtObra = async (req, res) => {
       proyectoId: nuevoProyecto.id,
     });
   } catch (error) {
-    console.error("Error al crear proyecto:", error.message);
+    console.error("Error al crear ot obra:", error.message);
     res.status(500).send("Error del servidor al crear proyecto");
   }
 };
