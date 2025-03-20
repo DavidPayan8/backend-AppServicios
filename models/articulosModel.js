@@ -48,11 +48,11 @@ const get_iva_and_descuento = async () => {
     const ivas = await pool.request()
     .query(`
         SELECT *
-        From Tipos_Iva Where ;
+        From Tipos_Iva;
 `);
     const descuentos = await pool.request()
     .query(`
-        SELECT  * FROM DESCUENTOS ;
+        SELECT  * FROM DESCUENTOS;
       `);
     const ivas_descuentos = {
       tipos_iva: ivas.recordset,
