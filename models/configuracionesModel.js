@@ -16,12 +16,11 @@ const obtenerDiasEditables = async (rol) => {
   }
 };
 
-const getConfigEmpresa = async (empresa) => {
+const getConfigEmpresa = async () => {
   try {
     const pool = await sql.connect(config);
     const result = await pool.request()
-    .input("id_empresa", sql.Int, empresa)
-    .query(`SELECT * FROM CONFIG_EMPRESA WHERE id_empresa = @id_empresa`);
+    .query(`SELECT * FROM CONFIG_EMPRESA`);
     return result.recordset[0];
   } catch (error) {
     console.error("Error al obtener config de empresa:", error.message);

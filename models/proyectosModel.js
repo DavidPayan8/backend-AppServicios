@@ -14,8 +14,7 @@ const getObras = async () => {
   try {
     const pool = await connectToDb();
     const result = await pool.request()
-    .input("id_empresa", sql.Int, empresa)
-    .query(`SELECT * From Proyectos Where id_empresa = @id_empresa;`);
+    .query(`SELECT * From Proyectos`);
     return result.recordset;
   } catch (error) {
     console.error("Error al obtener obras:", error.message);
@@ -45,15 +44,13 @@ const createOtObra = async (
       .input("id_cliente", sql.Int, id_cliente)
       .input("id_obra", sql.Int, id_obra)
       .input("es_ote", sql.Bit, es_ote)
-      .input("id_empresa", sql.Int, empresa)
       .query(`
         INSERT INTO ORDEN_TRABAJO (
           id_usuario,
           nombre,
           id_cliente,
           id_servicio_origen,
-          es_ote,
-          id_empresa
+          es_ote
         )
           OUTPUT inserted.id
         VALUES (
@@ -61,8 +58,7 @@ const createOtObra = async (
           @nombre,
           @id_cliente,
           @id_obra,
-          @es_ote,
-          @id_empresa
+          @es_ote
         );`);
 
        // Insertar la entrada en el calendario
@@ -96,14 +92,14 @@ const getIdProyectos = async (userId, date) => {
   }
 };
 
-const getIdContrato = async (orden_trabajo_id, empresa) => {
+const getIdContrato = async (orden_trabajo_id) => {
   try {
     const pool = await connectToDb();
     const query = `SELECT c.id
                     FROM contrato c
                     LEFT JOIN orden_trabajo ot 
                         ON c.id = ot.id_contrato
-                    WHERE ot.id = ${orden_trabajo_id} AND c.id_empresa = ${empresa};`;
+                    WHERE ot.id = ${orden_trabajo_id}`;
     const result = await pool.request()
     .query(query);
     return result.recordset[0]?.id;
@@ -140,7 +136,7 @@ const getDetallesContrato = async (id_contrato) => {
 };
 
 // Obtiene los proyectos por ids
-const getProyectos = async (ids,empresa) => {
+const getProyectos = async (ids) => {
   try {
     let idsString = "";
     const pool = await connectToDb();
@@ -156,7 +152,7 @@ const getProyectos = async (ids,empresa) => {
     LEFT JOIN 
         CLIENTES ON Orden_Trabajo.id_cliente = CLIENTES.id
     WHERE 
-        Orden_Trabajo.id IN (${idsString}) and Orden_Trabajo.id_empresa = ${empresa};
+        Orden_Trabajo.id IN (${idsString});
 `;
 
     let result = await pool.request().query(query);
@@ -191,8 +187,7 @@ const addProyecto = async (
   id_usuario,
   id_cliente,
   fechaCalendario,
-  es_ote,
-  empresa
+  es_ote
 ) => {
   let transaction;
   try {
@@ -214,10 +209,9 @@ const addProyecto = async (
         .input("nombre", sql.VarChar, nombre)
         .input("observaciones", sql.VarChar, observaciones)
         .input("es_ote", sql.Bit, es_ote)
-        .input("id_empresa", sql.Int, empresa)
-        .query(`INSERT INTO Orden_Trabajo ( nombre, observaciones, id_cliente, es_ote, id_usuario, id_empresa)
+        .query(`INSERT INTO Orden_Trabajo ( nombre, observaciones, id_cliente, es_ote, id_usuario)
               OUTPUT inserted.id
-              VALUES (  @nombre, @observaciones, null, @es_ote, @id_usuario, @id_empresa)`);
+              VALUES (  @nombre, @observaciones, null, @es_ote, @id_usuario)`);
     } else {
       result = await request
         .input("id_usuario", sql.Int, id_usuario)
@@ -225,10 +219,9 @@ const addProyecto = async (
         .input("nombre", sql.VarChar, nombre)
         .input("observaciones", sql.VarChar, observaciones)
         .input("es_ote", sql.Bit, es_ote)
-        .input("id_empresa", sql.Int, empresa)
-        .query(`INSERT INTO Orden_Trabajo ( nombre, observaciones, id_cliente, es_ote, id_usuario, id_empresa)
+        .query(`INSERT INTO Orden_Trabajo ( nombre, observaciones, id_cliente, es_ote, id_usuario)
                 OUTPUT inserted.id
-                VALUES ( @nombre, @observaciones, @id_cliente, @es_ote, @id_usuario, @id_empresa)`);
+                VALUES ( @nombre, @observaciones, @id_cliente, @es_ote, @id_usuario)`);
     }
 
     // Insertar la entrada en el calendario

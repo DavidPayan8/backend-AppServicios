@@ -3,12 +3,11 @@ const {
 }  = require("../models/estadisticasModel");
 
   const obtenerHorasTotales = async (req, res) => {
-    const empresa = req.user.empresa;
     const id_usuario = req.user.id;
     const anio = req.body.anio
     try {
       const datosTotales = await obtenerDatosHoras(
-        id_usuario, anio, empresa
+        id_usuario, anio
       );
       res.status(200).json(datosTotales);
     } catch (error) {

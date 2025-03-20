@@ -9,16 +9,15 @@ const {
 
 const obtenerCabeceraOt = async (req, res) => {
   try {
-    const empresa= req.user.empresa;
     const { id, cabecera } = req.body;
 
     // Obtener listado articulos por Id de la Orden Trabajo
-    const result = await obtenerCabeceraDoc(id, empresa);
+    const result = await obtenerCabeceraDoc(id);
 
     if (result[0]) {
       res.status(201).json(result[0]);
     } else {
-      const cabeceraCreada = await crearCabeceraDoc(cabecera, empresa);
+      const cabeceraCreada = await crearCabeceraDoc(cabecera);
       res.status(201).json(cabeceraCreada);
     }
   } catch (error) {
