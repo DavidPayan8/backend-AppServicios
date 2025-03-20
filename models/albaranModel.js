@@ -30,9 +30,10 @@ const cambiarDetallesDoc = async (details) => {
               iva_porcentaje = @iva_porcentaje,
               cuota_iva = @cuota_iva,
               total_linea = @total_linea,
-              actualizar = 1
           WHERE id = @id 
         `);
+        await updateCabecera(details.id);
+
   } catch (error) {
     console.error("Error al actualizar el detalles doc:", details);
     throw error;
@@ -84,10 +85,7 @@ const crearDetallesDoc = async (details) => {
             )
         `);
 
-    await pool.request().query(`
-            UPDATE CABECERA
-            SET actualizar = 1
-            WHERE id = ${details.cabecera_Id}`);
+        await updateCabecera(result.recordset[0].id);
 
     return result.recordset[0].id;
   } catch (error) {
@@ -119,19 +117,13 @@ const obtenerDetallesDocDb = async (id) => {
   }
 };
 
-const borrarDetalleDoc = async (id) => {
+const updateCabecera = async (id) => {
   try {
-    const pool = await sql.connect(config);
-    //Borrar el detalles_doc
-    await pool.request().input("id", sql.Int, id).query(`
-                DELETE FROM DETALLES_DOC
-                WHERE id = @id
-            `);
-
+    // Obtener el cabecera_id a partir del id de detalles_doc
     const result = await pool
       .request()
       .input("id", sql.Int, id)
-      .query("SELECT cabecera_Id FROM detalles_doc WHERE id = @id");
+      .query("SELECT cabecera_id FROM detalles_doc WHERE id = @id");
 
     if (result.recordset.length > 0) {
       const cabeceraId = result.recordset[0].cabecera_id;
@@ -142,6 +134,21 @@ const borrarDetalleDoc = async (id) => {
         .input("cabeceraId", sql.Int, cabeceraId)
         .query("UPDATE CABECERA SET actualizar = 1 WHERE id = @cabeceraId");
     }
+  } catch (error) {
+    console.error('Error al actualizar la cabecera:', error);
+  }
+};
+
+const borrarDetalleDoc = async (id) => {
+  try {
+    const pool = await sql.connect(config);
+    //Borrar el detalles_doc
+    await pool.request().input("id", sql.Int, id).query(`
+                DELETE FROM DETALLES_DOC
+                WHERE id = @id
+            `);
+
+   await updateCabecera(id);
   } catch (error) {
     console.error("Error al eliminar el detalle Doc:", error);
   }
@@ -219,7 +226,8 @@ const cambiarCabeceraDoc = async (cabecera, empresa) => {
               entidad_id = @entidad_id,
               base = @base, 
               tipo_IVA = @tipo_IVA, 
-              tarifa_id = @tarifa_id
+              tarifa_id = @tarifa_id,
+              actualizar = 1
           WHERE orden_trabajo_id = @orden_trabajo_id AND id_empresa = @id_empresa
       `);
 
