@@ -9,11 +9,6 @@ const obtenerTotalVacaciones = async (id_usuario, id_empresa) => {
 		.request()
 		.input("id_usuario", sql.Int, id_usuario)
 		.query(`
-			SELECT SUM(DATEDIFF(DAY, desde, hasta) + 1) "dias", aceptado
-			FROM vacaciones, rangos_vacacion
-			WHERE id_usuario = @id_usuario AND vacaciones.id = id_vacacion
-			GROUP BY aceptado
-			UNION
 			SELECT COUNT(dia) "dias", aceptado
 			FROM vacaciones, dias_vacacion
 			WHERE id_usuario = @id_usuario AND vacaciones.id = id_vacacion
@@ -26,7 +21,6 @@ const obtenerTotalVacaciones = async (id_usuario, id_empresa) => {
 		pendientes: 0,
 	};
 
-	// La consulta anterior devolverá máximo 4 resultados, hay que sumarlos
 	for (let i = 0; i < resultVacaciones.recordset.length; i++) {
 		const record = resultVacaciones.recordset[i];
 
@@ -79,18 +73,10 @@ const obtenerVacaciones = async (id_usuario, tipo, aceptadas) => {
 			.input("aceptadas", sql.Bit, aceptadas ? 1 : 0)
 			.input("tipo", sql.Int, tipo)
 			.query(`
-				SELECT vacaciones.id, desde, hasta
-				FROM vacaciones, rangos_vacacion
-				WHERE vacaciones.id = rangos_vacacion.id_vacacion
-				AND tipo = @tipo AND id_usuario = @id_usuario AND aceptado = @aceptadas
-				UNION
-				SELECT vacaciones.id, dia "desde", NULL "hasta"
+				SELECT vacaciones.id, dia
 				FROM vacaciones, dias_vacacion
 				WHERE vacaciones.id = dias_vacacion.id_vacacion
 				AND tipo = @tipo AND id_usuario = @id_usuario AND aceptado = @aceptadas;`);
-
-		// Los días de vacaciones sueltos están guardados en la tabla DIAS_VACACIONES.
-		// La sentencia busca los rangos y luego busca los dias sueltos, poniendo un null en el campo hasta
 
 		return result.recordset;
 	} catch (error) {
