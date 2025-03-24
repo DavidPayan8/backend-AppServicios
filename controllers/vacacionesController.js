@@ -1,4 +1,4 @@
-const { obtenerTotalVacaciones, obtenerTiposVacacion, obtenerVacaciones } = require('../models/vacacionesModel');
+const { obtenerTotalVacaciones, obtenerTiposVacacion, obtenerVacaciones, solicitarVacaciones } = require('../models/vacacionesModel');
 
 const obtenerTotalVacacionesHandler = async (req, res) => {
 	try {
@@ -42,9 +42,26 @@ const obtenerVacacionesSolicitadas = async (req, res) => {
 	}
 }
 
+const solicitarVacacionesHandler = async (req, res) => {
+	try {
+		const { tipo, dias } = req.body;
+		const invalido = await solicitarVacaciones(req.user.id, tipo, dias);
+
+		if (invalido === undefined) {
+			res.json({})
+		} else {
+			res.status(403).send('Fecha inválida');
+		}
+	} catch (error) {
+		console.error('Error solicitar vacaciones: ', error.message);
+		res.status(500).send('Error del servidor');
+	}
+}
+
 module.exports = {
 	obtenerTotalVacaciones: obtenerTotalVacacionesHandler,
 	obtenerTiposVacacion: obtenerTiposVacacionHandler,
 	obtenerVacacionesAceptadas,
 	obtenerVacacionesSolicitadas,
+	solicitarVacaciones: solicitarVacacionesHandler,
 }

@@ -41,7 +41,7 @@ const obtenerTotalVacaciones = async (id_usuario, id_empresa) => {
 			SELECT SUM(COALESCE(cantidad_dias, 0)) "dias"
 			FROM tipos_vacacion
 			WHERE id_empresa IS NULL OR id_empresa = NULL;`);
-	
+
 	vacaciones.pendientes = resultTipos.recordset[0].dias - total;
 
 	return vacaciones;
@@ -85,8 +85,56 @@ const obtenerVacaciones = async (id_usuario, tipo, aceptadas) => {
 	}
 }
 
+const solicitarVacaciones = async (id_usuario, tipo, dias) => {
+	try {
+		// Validar días
+		for (const diaJson of dias) {
+			const dia = new Date(diaJson.year, diaJson.month, diaJson.date);
+
+			if (!esDiaValido(dia)) {
+				return dia;
+			}
+		}
+
+		const pool = await sql.connect(config);
+		const result = await pool
+			.request()
+			.input("id_usuario", sql.Int, id_usuario)
+			.input("tipo", sql.Int, tipo)
+			.query(`INSERT INTO vacaciones
+					OUTPUT INSERTED.id
+					VALUES (0, @tipo, @id_usuario)`);
+
+		const id = result.recordset[0].id;
+
+		// Insertar todos los días
+		const table = new sql.Table("dias_vacacion");
+		table.create = false;
+		table.columns.add("id_vacacion", sql.Int, { nullable: false });
+		table.columns.add("dia", sql.Date, { nullable: false });
+
+		for (const diaJson of dias) {
+			console.log(diaJson)
+			table.rows.add(id, new Date(diaJson.year, diaJson.month, diaJson.date));
+		}
+
+		await pool.request().bulk(table);
+	} catch (error) {
+		console.error("Error al solicitar vacaciones.");
+		throw error;
+	}
+
+	return undefined;
+}
+
+const esDiaValido = (dia) => {
+	// Verifica que el día sea mayor que hoy y no un fin de semana
+	return dia > new Date() && dia.getDay() !== 0 && dia.getDay() !== 6;
+}
+
 module.exports = {
 	obtenerTotalVacaciones,
 	obtenerTiposVacacion,
 	obtenerVacaciones,
+	solicitarVacaciones,
 };

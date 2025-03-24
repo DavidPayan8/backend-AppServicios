@@ -1,5 +1,5 @@
 const express = require('express');
-const { obtenerTotalVacaciones, obtenerTiposVacacion, obtenerVacacionesAceptadas, obtenerVacacionesSolicitadas } = require('../controllers/vacacionesController');
+const { obtenerTotalVacaciones, obtenerTiposVacacion, obtenerVacacionesAceptadas, obtenerVacacionesSolicitadas, solicitarVacaciones } = require('../controllers/vacacionesController');
 const authenticateToken = require('../middleware/authMiddleware');
 const router = express.Router();
 
@@ -9,5 +9,6 @@ router.get('/total', authenticateToken, obtenerTotalVacaciones);
 router.get('/tipos', authenticateToken, obtenerTiposVacacion);
 router.post('/aceptadas', authenticateToken, obtenerVacacionesAceptadas);
 router.post('/solicitadas', authenticateToken, obtenerVacacionesSolicitadas);
+router.put('/solicitar', authenticateToken, solicitarVacaciones);
 
 module.exports = router;
