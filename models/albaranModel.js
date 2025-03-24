@@ -129,8 +129,7 @@ const crearCabeceraDoc = async (cabecera) => {
     const pool = await sql.connect(config);
 
     // Obtener el último número y sumarle 1
-    const lastNumber = await pool.request()
-    .query(`
+    const lastNumber = await pool.request().query(`
       SELECT COALESCE(MAX(numero), 0) + 1 AS nuevoNumero 
       FROM CABECERA
     `);
@@ -150,10 +149,23 @@ const crearCabeceraDoc = async (cabecera) => {
         VALUES 
           (@fecha, @numero, @entidad_id, @base, @tipo_IVA, @id_Servicio_origen, @orden_trabajo_id)
       `);
-    console.log(cabecera);
     return result.recordset[0];
   } catch (error) {
-    console.error("Error al actualizar el crear doc:", error)
+    console.error("Error al actualizar el crear doc:", error);
+    throw error;
+  }
+};
+
+const setEstadoCabeceraDB = async (cabecera_id) => {
+  try {
+    const pool = await sql.connect(config);
+    await pool.request().input("cabecera_id", sql.Int, cabecera_id).query(`
+      UPDATE CABECERA 
+        SET actualizar = 1
+        WHERE id = @cabecera_id
+    `);
+  } catch (error) {
+    console.error("Error al actualizar el cabecera:", details);
     throw error;
   }
 };
@@ -161,14 +173,11 @@ const crearCabeceraDoc = async (cabecera) => {
 const obtenerCabeceraDoc = async (id) => {
   try {
     const pool = await sql.connect(config);
-    const result = await pool.request()
-    .input("id", sql.Int, id)
-    .query(`
+    const result = await pool.request().input("id", sql.Int, id).query(`
           SELECT * 
           FROM CABECERA
           WHERE orden_trabajo_id = @id
         `);
-
     return result.recordset;
   } catch (error) {
     console.error("Error al obtener el cabecera doc", error.message);
@@ -212,4 +221,5 @@ module.exports = {
   obtenerCabeceraDoc,
   cambiarCabeceraDoc,
   obtenerDetallesDocDb,
+  setEstadoCabeceraDB,
 };
