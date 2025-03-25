@@ -88,13 +88,14 @@ const obtenerVacaciones = async (id_usuario, tipo, aceptadas) => {
 const solicitarVacaciones = async (id_usuario, tipo, dias) => {
 	try {
 		// Validar días
-		for (const diaJson of dias) {
-			const dia = new Date(diaJson.year, diaJson.month, diaJson.date);
+		for (const diaStr of dias) {
+			const dia = new Date(formatFecha(diaStr));
 
 			if (!esDiaValido(dia)) {
 				return dia;
 			}
 		}
+
 
 		const pool = await sql.connect(config);
 		const result = await pool
@@ -113,9 +114,12 @@ const solicitarVacaciones = async (id_usuario, tipo, dias) => {
 		table.columns.add("id_vacacion", sql.Int, { nullable: false });
 		table.columns.add("dia", sql.Date, { nullable: false });
 
-		for (const diaJson of dias) {
-			console.log(diaJson)
-			table.rows.add(id, new Date(diaJson.year, diaJson.month, diaJson.date));
+		for (const diaStr of dias) {
+			const dia = formatFecha(diaStr);
+			console.log(dia);
+
+			console.log("FECHA LOCAL: " + dia);
+			table.rows.add(id, dia);
 		}
 
 		await pool.request().bulk(table);
@@ -131,6 +135,12 @@ const esDiaValido = (dia) => {
 	// Verifica que el día sea mayor que hoy y no un fin de semana
 	return dia > new Date() && dia.getDay() !== 0 && dia.getDay() !== 6;
 }
+
+// Función para formatear la fecha en 'YYYY-MM-DD', recibiendo dd/mm/yyyy
+const formatFecha = (fecha) => {
+    const [dia, mes, anio] = fecha.split('/');
+    return `${anio}-${mes}-${dia}`;
+};
 
 module.exports = {
 	obtenerTotalVacaciones,
