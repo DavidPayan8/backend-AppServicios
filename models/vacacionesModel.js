@@ -116,9 +116,6 @@ const solicitarVacaciones = async (id_usuario, tipo, dias) => {
 
 		for (const diaStr of dias) {
 			const dia = formatFecha(diaStr);
-			console.log(dia);
-
-			console.log("FECHA LOCAL: " + dia);
 			table.rows.add(id, dia);
 		}
 
