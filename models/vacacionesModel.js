@@ -87,17 +87,34 @@ const obtenerVacaciones = async (id_usuario, tipo, aceptadas) => {
 
 const solicitarVacaciones = async (id_usuario, tipo, dias) => {
 	try {
-		// Validar días
-		for (const diaStr of dias) {
-			const dia = new Date(formatFecha(diaStr));
+		const pool = await sql.connect(config);
 
+		for (const diaStr of dias) {
+			const fecha = formatFecha(diaStr);
+			const dia = new Date(fecha);
+
+			// Validar día
 			if (!esDiaValido(dia)) {
-				return dia;
+				return "Fecha inválida";
+			}
+
+			// Verificar que el usuario no tenga un día de vacación para ese día
+			const result = await pool
+				.request()
+				.input("id_usuario", sql.Int, id_usuario)
+				.input("fecha", sql.Date, fecha)
+				.query(`
+					SELECT COUNT(dia) "count"
+					FROM vacaciones, dias_vacacion
+					WHERE id_usuario = @id_usuario
+					AND vacaciones.id = id_vacacion
+					AND dia = @fecha;`);
+
+			if (result.recordset[0].count > 0) {
+				return "Vacación existente para la fecha";
 			}
 		}
 
-
-		const pool = await sql.connect(config);
 		const result = await pool
 			.request()
 			.input("id_usuario", sql.Int, id_usuario)
@@ -135,8 +152,8 @@ const esDiaValido = (dia) => {
 
 // Función para formatear la fecha en 'YYYY-MM-DD', recibiendo dd/mm/yyyy
 const formatFecha = (fecha) => {
-    const [dia, mes, anio] = fecha.split('/');
-    return `${anio}-${mes}-${dia}`;
+	const [dia, mes, anio] = fecha.split('/');
+	return `${anio}-${mes}-${dia}`;
 };
 
 module.exports = {

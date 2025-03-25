@@ -45,12 +45,12 @@ const obtenerVacacionesSolicitadas = async (req, res) => {
 const solicitarVacacionesHandler = async (req, res) => {
 	try {
 		const { tipo, dias } = req.body;
-		const invalido = await solicitarVacaciones(req.user.id, tipo, dias);
+		const err = await solicitarVacaciones(req.user.id, tipo, dias);
 
-		if (invalido === undefined) {
+		if (err === undefined) {
 			res.json({})
 		} else {
-			res.status(403).send('Fecha inválida');
+			res.json({ err })
 		}
 	} catch (error) {
 		console.error('Error solicitar vacaciones: ', error.message);
