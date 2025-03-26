@@ -26,9 +26,9 @@ const setEstadoCabecera = async (req,res) =>{
     const { cabecera_id } = req.body;
 
     // Obtener listado articulos por Id de la Orden Trabajo
-    const result = await setEstadoCabeceraDB(cabecera_id);
+    await setEstadoCabeceraDB(cabecera_id);
 
-    res.status(201).json(result[0]);
+    res.status(201)
   } catch (error) {
     console.error("Error al cambiar estado cabecera:", error.message);
     res.status(500).send("Error del servidor");
