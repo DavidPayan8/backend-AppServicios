@@ -13,10 +13,11 @@ const connectToDb = async () => {
 const getObras = async () => {
   try {
     const pool = await connectToDb();
-    const result = await pool.request().query(`SELECT * From Proyectos`);
+    const result = await pool.request()
+    .query(`SELECT * From Proyectos`);
     return result.recordset;
   } catch (error) {
-    console.error("Error al obtener registro de asistencia:", error.message);
+    console.error("Error al obtener obras:", error.message);
     throw error;
   }
 };
@@ -42,7 +43,8 @@ const createOtObra = async (
       .input("nombre", sql.NVarChar, nombre)
       .input("id_cliente", sql.Int, id_cliente)
       .input("id_obra", sql.Int, id_obra)
-      .input("es_ote", sql.Bit, es_ote).query(`
+      .input("es_ote", sql.Bit, es_ote)
+      .query(`
         INSERT INTO ORDEN_TRABAJO (
           id_usuario,
           nombre,
@@ -85,7 +87,7 @@ const getIdProyectos = async (userId, date) => {
                     WHERE (id_usuario = @userId OR id_usuario = 0) AND fecha = @date`);
     return result.recordset;
   } catch (error) {
-    console.error("Error al obtener registro de asistencia:", error.message);
+    console.error("Error al obtener calendario:", error.message);
     throw error;
   }
 };
@@ -97,8 +99,9 @@ const getIdContrato = async (orden_trabajo_id) => {
                     FROM contrato c
                     LEFT JOIN orden_trabajo ot 
                         ON c.id = ot.id_contrato
-                    WHERE ot.id = ${orden_trabajo_id};`;
-    const result = await pool.request().query(query);
+                    WHERE ot.id = ${orden_trabajo_id}`;
+    const result = await pool.request()
+    .query(query);
     return result.recordset[0]?.id;
   } catch (error) {
     console.error("Error al obtener id contrato:", error.message);
@@ -109,7 +112,7 @@ const getIdContrato = async (orden_trabajo_id) => {
 const getContrato = async (id_contrato) => {
   try {
     const pool = await connectToDb();
-    const query = `SELECT * FROM CONTRATO WHERE id = ${id_contrato};`;
+    const query = `SELECT * FROM CONTRATO WHERE id = ${id_contrato}`;
 
     const result = await pool.request().query(query);
     return result.recordset[0];

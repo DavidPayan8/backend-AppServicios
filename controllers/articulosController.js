@@ -6,7 +6,6 @@ const {
 
   const obtenerArticulos = async (req, res) => {
     try {
-  
       // Obtener articulos
       const articulos = await getArticulos();
   
@@ -33,10 +32,9 @@ const {
 
   const get_iva_descuento = async (req, res) => {
     try {
-  
       // Obtener articulos
       const result = await get_iva_and_descuento();
-  
+
       res.status(201).json(result);
     } catch (error) {
       console.error("Error al obtener porcentajes:", error.message);

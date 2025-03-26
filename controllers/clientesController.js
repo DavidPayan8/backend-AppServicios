@@ -2,7 +2,8 @@ const { getClientes } = require('../models/clientesModel');
 
 const getClientesHandler = async (req, res) => {
   try {
-    let clientes = await getClientes();
+
+    const clientes = await getClientes();
     res.json(clientes);
   } catch (error) {
     console.error('Error al obtener clientes:', error.message);

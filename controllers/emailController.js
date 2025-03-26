@@ -1,5 +1,6 @@
 const nodemailer = require("nodemailer");
 
+
 const ADMIN_EMAIL = "administracion@thrspain.com";
 
 // Configurar Nodemailer
@@ -12,7 +13,9 @@ const ADMIN_EMAIL = "administracion@thrspain.com";
 }); */
 
 
-/* const transporter = nodemailer.createTransport({
+// secure = true para 465, false para otros puertos
+// TLS reemplaza a SSL (deprecated)
+/*const transporter = nodemailer.createTransport({
   host: "cp7073.webempresa.eu", // Servidor SMTP
   port: 465, // Puerto para  SSL
   secure: true, // Utilizar SSL
@@ -22,12 +25,20 @@ const ADMIN_EMAIL = "administracion@thrspain.com";
   },
 }); */
 
+// Configurar Nodemailer
+/* const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: ADMIN_EMAIL,
+    pass: "ofhx zqmi xhos fdpu",
+  },
+}); */
 
 const transporter = nodemailer.createTransport({
   host: "smtp.thrspain.com",
   port: 25,
-  secure: false,
-  requireTLS: true,
+  secure: false, // true para 465, false para otros puertos
+  requireTLS: true, // TLS reemplaza a SSL (deprecated)
   auth: {
       user: "administracion@thrspain.com",
       pass: "Administracion2021!",
@@ -35,7 +46,7 @@ const transporter = nodemailer.createTransport({
   tls: {
       rejectUnauthorized: false,
   },
-});
+}); 
 
 /**
  * Función común para enviar correos electrónicos

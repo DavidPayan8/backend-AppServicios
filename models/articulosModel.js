@@ -13,7 +13,8 @@ const connectToDb = async () => {
 const getArticulos = async () => {
   try {
     const pool = await connectToDb();
-    const result = await pool.request().query(`
+    const result = await pool.request()
+    .query(`
         SELECT *
         From Articulos;
 `); //Poner limite de articulos.
@@ -44,12 +45,14 @@ const getVehiculos = async (id_usuario) => {
 const get_iva_and_descuento = async () => {
   try {
     const pool = await connectToDb();
-    const ivas = await pool.request().query(`
+    const ivas = await pool.request()
+    .query(`
         SELECT *
         From Tipos_Iva;
 `);
-    const descuentos = await pool.request().query(`
-        SELECT  * FROM DESCUENTOS
+    const descuentos = await pool.request()
+    .query(`
+        SELECT  * FROM DESCUENTOS;
       `);
     const ivas_descuentos = {
       tipos_iva: ivas.recordset,
