@@ -40,7 +40,7 @@ const obtenerTotalVacaciones = async (id_usuario, id_empresa) => {
 		.query(`
 			SELECT SUM(COALESCE(cantidad_dias, 0)) "dias"
 			FROM tipos_vacacion
-			WHERE id_empresa IS NULL OR id_empresa = NULL;`);
+			WHERE id_empresa IS NULL OR id_empresa = @id_empresa;`);
 
 	vacaciones.pendientes = resultTipos.recordset[0].dias - total;
 
