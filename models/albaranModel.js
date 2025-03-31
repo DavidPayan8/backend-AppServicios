@@ -160,9 +160,9 @@ const crearCabeceraDoc = async (cabecera, empresa) => {
 
     // Obtener el último número y sumarle 1
     const lastNumber = await pool.request().input("empresaId", empresa).query(`
+
       SELECT COALESCE(MAX(numero), 0) + 1 AS nuevoNumero 
-      FROM CABECERA 
-      WHERE id_empresa = @empresaId
+      FROM CABECERA WHERE id_empresa = @empresaId
     `);
     const result = await pool
       .request()
@@ -172,16 +172,14 @@ const crearCabeceraDoc = async (cabecera, empresa) => {
       .input("base", sql.Float, cabecera.base)
       .input("tipo_IVA", sql.Int, cabecera.tipo_iva)
       .input("id_Servicio_origen", sql.Int, cabecera.id_servicio_origen)
-      .input("orden_trabajo_id", sql.Int, cabecera.orden_trabajo_id)
-      .input("id_empresa", sql.Int, empresa).query(`
+      .input("orden_trabajo_id", sql.Int, cabecera.orden_trabajo_id).query(`
         INSERT INTO CABECERA
-          (fecha, numero, entidad_id, base, tipo_IVA, id_Servicio_origen, orden_trabajo_id,id_empresa)
+          (fecha, numero, entidad_id, base, tipo_IVA, id_Servicio_origen, orden_trabajo_id)
         OUTPUT 
           INSERTED.*
         VALUES 
-          (@fecha, @numero, @entidad_id, @base, @tipo_IVA, @id_Servicio_origen, @orden_trabajo_id, @id_empresa)
+          (@fecha, @numero, @entidad_id, @base, @tipo_IVA, @id_Servicio_origen, @orden_trabajo_id)
       `);
-    console.log(cabecera);
     return result.recordset[0];
   } catch (error) {
     console.error("Error al actualizar el crear doc:", error);
@@ -189,6 +187,19 @@ const crearCabeceraDoc = async (cabecera, empresa) => {
   }
 };
 
+const setEstadoCabeceraDB = async (cabecera_id) => {
+  try {
+    const pool = await sql.connect(config);
+    await pool.request().input("cabecera_id", sql.Int, cabecera_id).query(`
+      UPDATE CABECERA 
+        SET actualizar = 1
+        WHERE id = @cabecera_id
+    `);
+  } catch (error) {
+    console.error("Error al actualizar el cabecera:", details);
+    throw error;
+  }
+};
 const obtenerCabeceraDoc = async (id, empresa) => {
   try {
     const pool = await sql.connect(config);
@@ -198,9 +209,8 @@ const obtenerCabeceraDoc = async (id, empresa) => {
       .input("id_empresa", sql.Int, empresa).query(`
           SELECT * 
           FROM CABECERA
-          WHERE orden_trabajo_id = @id AND id_empresa = @id_empresa
+          WHERE orden_trabajo_id = @id
         `);
-
     return result.recordset;
   } catch (error) {
     console.error("Error al obtener el cabecera doc", error.message);
@@ -208,7 +218,9 @@ const obtenerCabeceraDoc = async (id, empresa) => {
   }
 };
 
+
 const cambiarCabeceraDoc = async (cabecera, empresa) => {
+
   try {
     const pool = await sql.connect(config);
     const result = await pool
@@ -218,8 +230,7 @@ const cambiarCabeceraDoc = async (cabecera, empresa) => {
       .input("entidad_id", sql.Int, cabecera.entidad_id)
       .input("base", sql.Float, cabecera.base)
       .input("tipo_IVA", sql.Int, cabecera.tipo_IVA)
-      .input("orden_trabajo_id", sql.Int, cabecera.orden_trabajo_id)
-      .input("id_empresa", sql.Int, empresa).query(`
+      .input("orden_trabajo_id", sql.Int, cabecera.orden_trabajo_id).query(`
         UPDATE CABECERA 
           SET fecha = @fecha,
               numero = @numero,
@@ -246,4 +257,5 @@ module.exports = {
   obtenerCabeceraDoc,
   cambiarCabeceraDoc,
   obtenerDetallesDocDb,
+  setEstadoCabeceraDB,
 };
