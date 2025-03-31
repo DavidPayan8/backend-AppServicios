@@ -10,9 +10,10 @@ const {
 
 const crearCabeceraAlbaran = async (req, res) => {
   try {
+    const { empresa } = req.user
     const { cabecera } = req.body;
 
-    const cabeceraCreada = await crearCabeceraDoc(cabecera);
+    const cabeceraCreada = await crearCabeceraDoc(cabecera, empresa);
 
     res.status(201).json(cabeceraCreada);
   } catch (error) {

@@ -2,7 +2,7 @@ const sql = require("mssql");
 const config = require("../config/dbConfig");
 
 
-const obtenerDatosTabla = async ( fechaInicio, fechaFin ) => {
+const obtenerDatosTabla = async ( id_usuario,fechaInicio, fechaFin ) => {
   try {
     const pool = await sql.connect(config);
     // Consulta para obtener las horas trabajadas por cada día dentro del rango
