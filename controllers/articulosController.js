@@ -6,8 +6,9 @@ const {
 
   const obtenerArticulos = async (req, res) => {
     try {
+      const { empresa } = req.user
       // Obtener articulos
-      const articulos = await getArticulos();
+      const articulos = await getArticulos(empresa);
   
       res.status(201).json(articulos);
     } catch (error) {
@@ -32,8 +33,9 @@ const {
 
   const get_iva_descuento = async (req, res) => {
     try {
+      const { empresa } = req.user
       // Obtener articulos
-      const result = await get_iva_and_descuento();
+      const result = await get_iva_and_descuento(empresa);
 
       res.status(201).json(result);
     } catch (error) {

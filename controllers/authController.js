@@ -16,13 +16,14 @@ const login = async (req, res) => {
       return res.status(401).json({ message: "Invalid password" });
     }
 
+    console.log(user.id_empresa)
+
     // Generar un nuevo token JWT
     const token = jwt.sign(
-      { id: user.id, username: user.nomapes},
+      { id: user.id, username: user.nomapes, empresa: user.id_empresa},
       JWT_SECRET,
       { expiresIn: "1h" }
     );
-
     return res.json({ token });
   } catch (err) {
     console.error("Error during login:", err);

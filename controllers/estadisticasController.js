@@ -35,7 +35,6 @@ const obtenerHorasformatoTabla = async (req, res) => {
   const id_usuario = req.user.id;
   const { fechas, tipo } = req.body;
   let fechaInicio, fechaFin;
-  console.log(fechas)
   if (tipo === "anio") {
     // Si solo es un año (por ejemplo, '2025')
     fechaInicio = new Date(`${fechas}-01-01`);

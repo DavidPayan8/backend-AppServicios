@@ -14,7 +14,8 @@ const getObras = async (empresa) => {
   try {
     const pool = await connectToDb();
     const result = await pool.request()
-    .query(`SELECT * From Proyectos`);
+    .input("id_empresa", sql.Int, empresa)
+    .query(`SELECT * From Proyectos where id_empresa = @id_empresa`);
     return result.recordset;
   } catch (error) {
     console.error("Error al obtener obras:", error.message);
@@ -45,13 +46,15 @@ const createOtObra = async (
       .input("id_cliente", sql.Int, id_cliente)
       .input("id_obra", sql.Int, id_obra)
       .input("es_ote", sql.Bit, es_ote)
+      .input("id_empresa", sql.Int, empresa)
       .query(`
         INSERT INTO ORDEN_TRABAJO (
           id_usuario,
           nombre,
           id_cliente,
           id_servicio_origen,
-          es_ote
+          es_ote,
+          id_empresa
         )
           OUTPUT inserted.id
         VALUES (
@@ -59,7 +62,8 @@ const createOtObra = async (
           @nombre,
           @id_cliente,
           @id_obra,
-          @es_ote
+          @es_ote,
+          @id_empresa
         );`);
 
        // Insertar la entrada en el calendario
@@ -139,6 +143,8 @@ const getDetallesContrato = async (id_contrato) => {
 // Obtiene los proyectos por ids
 const getProyectos = async (ids) => {
   try {
+
+    console.log("Id",ids)
     let idsString = "";
     const pool = await connectToDb();
 
@@ -156,7 +162,8 @@ const getProyectos = async (ids) => {
         Orden_Trabajo.id IN (${idsString});
 `;
 
-    let result = await pool.request().query(query);
+    const result = await pool.request().query(query);
+  
     return result.recordset;
   } catch (error) {
     console.error("Error al obtener los proyectos por IDs:", error.message);
@@ -176,7 +183,7 @@ const cambiarEstadoProyecto = async (id, estado) => {
     let result = await pool.request().query(query);
     return result.recordset;
   } catch (error) {
-    console.error("Error al obtener los proyectos por IDs:", error.message);
+    console.error("Error al cambiar estado de proyectos :", error.message);
     throw error;
   }
 };
@@ -188,7 +195,8 @@ const addProyecto = async (
   id_usuario,
   id_cliente,
   fechaCalendario,
-  es_ote
+  es_ote,
+  empresa
 ) => {
   let transaction;
   try {
@@ -210,9 +218,10 @@ const addProyecto = async (
         .input("nombre", sql.VarChar, nombre)
         .input("observaciones", sql.VarChar, observaciones)
         .input("es_ote", sql.Bit, es_ote)
-        .query(`INSERT INTO Orden_Trabajo ( nombre, observaciones, id_cliente, es_ote, id_usuario)
+        .input("id_empresa", sql.Int, empresa)
+        .query(`INSERT INTO Orden_Trabajo ( nombre, observaciones, id_cliente, es_ote, id_usuario, id_empresa)
               OUTPUT inserted.id
-              VALUES (  @nombre, @observaciones, null, @es_ote, @id_usuario)`);
+              VALUES (  @nombre, @observaciones, null, @es_ote, @id_usuario, @id_empresa)`);
     } else {
       result = await request
         .input("id_usuario", sql.Int, id_usuario)
@@ -220,9 +229,10 @@ const addProyecto = async (
         .input("nombre", sql.VarChar, nombre)
         .input("observaciones", sql.VarChar, observaciones)
         .input("es_ote", sql.Bit, es_ote)
-        .query(`INSERT INTO Orden_Trabajo ( nombre, observaciones, id_cliente, es_ote, id_usuario)
+        .input("id_empresa", sql.Int, empresa)
+        .query(`INSERT INTO Orden_Trabajo ( nombre, observaciones, id_cliente, es_ote, id_usuario, id_empesa)
                 OUTPUT inserted.id
-                VALUES ( @nombre, @observaciones, @id_cliente, @es_ote, @id_usuario)`);
+                VALUES ( @nombre, @observaciones, @id_cliente, @es_ote, @id_usuario, @id_empresa)`);
     }
 
     // Insertar la entrada en el calendario
