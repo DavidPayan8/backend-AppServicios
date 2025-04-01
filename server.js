@@ -15,6 +15,7 @@ const emailRoutes = require("./routes/emailRoutes")
 const configuracionesRoutes = require("./routes/configuracionRoutes")
 const estadisticasRoutes = require("./routes/estadisticasRoutes")
 const vacacionesRoutes = require("./routes/vacacionesRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 const authenticateToken = require("./middleware/authMiddleware");
 
 const app = express();
@@ -40,6 +41,7 @@ app.use("/api/notificaciones", notificacionesRoutes);
 app.use("/api/configuraciones", configuracionesRoutes);
 app.use("/api/estadisticas", estadisticasRoutes);
 app.use("/api/vacaciones", vacacionesRoutes);
+app.use("/api/admin", adminRoutes);
 app.get("/protected", authenticateToken, (req, res) => {
   res.json({ message: "Acceso autorizado", user: req.user });
 });
