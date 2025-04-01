@@ -144,11 +144,8 @@ const obtenerContrato = async (req, res) => {
 };
 
 const obtenerProyecto = async (req, res) => {
-  console.log("id en contro", req.body)
   try {
     const { id } = req.body;
-
-    console.log("id en contro", id)
 
     // Obtener proyecto por Id
     const proyecto = await getProyectos(id);
