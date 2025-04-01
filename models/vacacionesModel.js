@@ -1,7 +1,7 @@
 const sql = require("mssql");
 const config = require("../config/dbConfig");
 
-const obtenerTotalVacaciones = async (id_usuario, id_empresa) => {
+const obtenerTotalVacaciones = async (id_usuario) => {
 	const pool = await sql.connect(config);
 
 	// Consulta la cantidad de días de vacación
@@ -36,27 +36,27 @@ const obtenerTotalVacaciones = async (id_usuario, id_empresa) => {
 	// Consulta la cantidad de días disponibles en los tipos de vacación
 	const resultTipos = await pool
 		.request()
-		.input("id_empresa", sql.Int, id_empresa)
+		.input("id_usuario", sql.Int, id_usuario)
 		.query(`
 			SELECT SUM(COALESCE(cantidad_dias, 0)) "dias"
 			FROM tipos_vacacion
-			WHERE id_empresa IS NULL OR id_empresa = NULL;`);
+			WHERE id_empresa IS NULL OR id_empresa = (SELECT id_empresa FROM usuarios WHERE id = @id_usuario);`);
 
 	vacaciones.pendientes = resultTipos.recordset[0].dias - total;
 
 	return vacaciones;
 }
 
-const obtenerTiposVacacion = async (id_empresa) => {
+const obtenerTiposVacacion = async (id_usuario) => {
 	try {
 		const pool = await sql.connect(config);
 		const result = await pool
 			.request()
-			.input("id_empresa", sql.Int, id_empresa)
+			.input("id_usuario", sql.Int, id_usuario)
 			.query(`
 				SELECT id, nombre, cantidad_dias "dias", es_dias_naturales
 				FROM tipos_vacacion
-				WHERE id_empresa IS NULL OR id_empresa = @id_empresa;`);
+				WHERE id_empresa IS NULL OR id_empresa = (SELECT id_empresa FROM usuarios WHERE id = @id_usuario);`);
 		return result.recordset;
 	} catch (error) {
 		console.error("Error al obtener tipos de vacacion.");

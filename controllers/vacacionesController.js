@@ -2,7 +2,7 @@ const { obtenerTotalVacaciones, obtenerTiposVacacion, obtenerVacaciones, solicit
 
 const obtenerTotalVacacionesHandler = async (req, res) => {
 	try {
-		let total = await obtenerTotalVacaciones(req.user.id, req.user.id_empresa);
+		let total = await obtenerTotalVacaciones(req.user.id);
 		res.json(total);
 	} catch (error) {
 		console.error('Error al obtener total de vacaciones:', error.message);
@@ -12,7 +12,7 @@ const obtenerTotalVacacionesHandler = async (req, res) => {
 
 const obtenerTiposVacacionHandler = async (req, res) => {
 	try {
-		let tipos = await obtenerTiposVacacion(req.user.id_empresa);
+		let tipos = await obtenerTiposVacacion(req.user.id);
 		res.json(tipos);
 	} catch (error) {
 		console.error('Error al obtener tipos de vacacion: ', error.message);
