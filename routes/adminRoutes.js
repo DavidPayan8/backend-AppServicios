@@ -1,10 +1,12 @@
 const express = require("express");
-const router = express.Router();
+const { darAltaEmpleado, getEmpleados } = require("../controllers/adminController");
+
 const authenticateToken = require('../middleware/authMiddleware');
-const { darAltaEmpleado } = require("../controllers/adminController");
+const router = express.Router();
 
 router.use(authenticateToken);
 
 router.put("/alta", darAltaEmpleado);
+router.post("/empleados", getEmpleados)
 
 module.exports = router;
