@@ -3,7 +3,6 @@ const nodemailer = require("nodemailer");
 
 const ADMIN_EMAIL = "pruebasinternas@kongconsulting.es";
 
-
 // secure = true para 465, false para otros puertos
 // TLS reemplaza a SSL (deprecated)
 const transporter = nodemailer.createTransport({
