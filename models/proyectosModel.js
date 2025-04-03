@@ -15,7 +15,7 @@ const getObras = async (empresa) => {
     const pool = await connectToDb();
     const result = await pool.request()
     .input("id_empresa", sql.Int, empresa)
-    .query(`SELECT * From Proyectos Where id_empresa = @id_empresa;`);
+    .query(`SELECT * From Proyectos where id_empresa = @id_empresa`);
     return result.recordset;
   } catch (error) {
     console.error("Error al obtener obras:", error.message);
@@ -97,14 +97,14 @@ const getIdProyectos = async (userId, date) => {
   }
 };
 
-const getIdContrato = async (orden_trabajo_id, empresa) => {
+const getIdContrato = async (orden_trabajo_id) => {
   try {
     const pool = await connectToDb();
     const query = `SELECT c.id
                     FROM contrato c
                     LEFT JOIN orden_trabajo ot 
                         ON c.id = ot.id_contrato
-                    WHERE ot.id = ${orden_trabajo_id} AND c.id_empresa = ${empresa};`;
+                    WHERE ot.id = ${orden_trabajo_id}`;
     const result = await pool.request()
     .query(query);
     return result.recordset[0]?.id;
@@ -141,8 +141,10 @@ const getDetallesContrato = async (id_contrato) => {
 };
 
 // Obtiene los proyectos por ids
-const getProyectos = async (ids,empresa) => {
+const getProyectos = async (ids) => {
   try {
+
+    console.log("Id",ids)
     let idsString = "";
     const pool = await connectToDb();
 
@@ -157,10 +159,11 @@ const getProyectos = async (ids,empresa) => {
     LEFT JOIN 
         CLIENTES ON Orden_Trabajo.id_cliente = CLIENTES.id
     WHERE 
-        Orden_Trabajo.id IN (${idsString}) and Orden_Trabajo.id_empresa = ${empresa};
+        Orden_Trabajo.id IN (${idsString});
 `;
 
-    let result = await pool.request().query(query);
+    const result = await pool.request().query(query);
+  
     return result.recordset;
   } catch (error) {
     console.error("Error al obtener los proyectos por IDs:", error.message);
@@ -180,7 +183,7 @@ const cambiarEstadoProyecto = async (id, estado) => {
     let result = await pool.request().query(query);
     return result.recordset;
   } catch (error) {
-    console.error("Error al obtener los proyectos por IDs:", error.message);
+    console.error("Error al cambiar estado de proyectos :", error.message);
     throw error;
   }
 };
@@ -227,7 +230,7 @@ const addProyecto = async (
         .input("observaciones", sql.VarChar, observaciones)
         .input("es_ote", sql.Bit, es_ote)
         .input("id_empresa", sql.Int, empresa)
-        .query(`INSERT INTO Orden_Trabajo ( nombre, observaciones, id_cliente, es_ote, id_usuario, id_empresa)
+        .query(`INSERT INTO Orden_Trabajo ( nombre, observaciones, id_cliente, es_ote, id_usuario, id_empesa)
                 OUTPUT inserted.id
                 VALUES ( @nombre, @observaciones, @id_cliente, @es_ote, @id_usuario, @id_empresa)`);
     }

@@ -6,7 +6,7 @@ const getClientes = async (empresa) => {
       let pool = await sql.connect(config);
       let result = await pool.request()
       .input("id_empresa", sql.Int, empresa)
-      .query('SELECT * FROM CLIENTES WHERE id_empresa = @id_empresa');
+      .query('SELECT * FROM CLIENTES where id_empresa = @id_empresa');
       return result.recordset;
     } catch (error) {
       console.error('Error al obtener clientes:', error.message);
