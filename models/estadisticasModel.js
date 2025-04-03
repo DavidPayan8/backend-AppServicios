@@ -1,6 +1,49 @@
 const sql = require("mssql");
 const config = require("../config/dbConfig");
 
+
+const obtenerDatosTabla = async ( id_usuario,fechaInicio, fechaFin ) => {
+  try {
+    const pool = await sql.connect(config);
+    // Consulta para obtener las horas trabajadas por cada día dentro del rango
+    const rows = await pool
+      .request()
+      .input("id_usuario", sql.Int, id_usuario)
+      .input("fechaInicio", sql.Date, fechaInicio)
+      .input("fechaFin", sql.Date, fechaFin).query(`
+        SELECT * 
+        FROM CONTROL_ASISTENCIAS 
+        WHERE id_usuario = @id_usuario AND FECHA BETWEEN @fechaInicio AND @fechaFin;  
+      `);
+
+    // Consulta para obtener el total de horas trabajadas en el rango de fechas
+    const resultTotalRango = await pool
+      .request()
+      .input("id_usuario", sql.Int, id_usuario)
+      .input("fechaInicio", sql.Date, fechaInicio)
+      .input("fechaFin", sql.Date, fechaFin).query(`
+        SELECT 
+          SUM(DATEDIFF(MINUTE, hora_entrada, hora_salida)) / 60.0 AS total_rango
+        FROM control_asistencias
+        WHERE id_usuario = @id_usuario
+          AND hora_entrada BETWEEN @fechaInicio AND @fechaFin;
+      `);
+
+    return {
+      registros: rows.recordset,
+      totalHoras: resultTotalRango.recordset[0]?.total_rango || 0,
+    };
+  } catch (error) {
+    console.error(
+      "Error al obtener estadísticas por rango de fechas:",
+      error.message
+    );
+    throw error;
+  }
+};
+
+
+
 const obtenerDatosDias = async (id_usuario, fechaInicio, fechaFin) => {
   try {
     const pool = await sql.connect(config);
@@ -153,4 +196,5 @@ module.exports = {
   obtenerDatosDias,
   obtenerDatosMes,
   obtenerDatosAnio,
+  obtenerDatosTabla
 };
