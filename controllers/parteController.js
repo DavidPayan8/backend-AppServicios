@@ -35,7 +35,6 @@ const crearParteTrabajo = async (req, res) => {
     horas_festivo,
   } = req.body;
   const id_usuario = req.user.id;
-
   try {
     const newParteId = await parteService.crearParteTrabajo({
       id_usuario,
@@ -116,7 +115,6 @@ const actualizarParteTrabajo = async (req, res) => {
     horas_extra,
     localizacion_salida
   } = req.body;
-
   try {
     await parteService.actualizarParteTrabajo(
       id,

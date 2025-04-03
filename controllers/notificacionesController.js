@@ -7,7 +7,9 @@ const {
 const obtenerNotificaciones = async (req, res) => {
   const id_usuario = req.user.id;
   try {
+    const { empresa } = req.user
     const notificaciones = await obtenerNotificacionesModel(
+      empresa,
       id_usuario
     );
     res.status(200).json(notificaciones);

@@ -42,6 +42,7 @@ const obtenerTotalVacaciones = async (id_usuario) => {
 			FROM tipos_vacacion
 			WHERE id_empresa IS NULL OR id_empresa = (SELECT id_empresa FROM usuarios WHERE id = @id_usuario);`);
 
+
 	vacaciones.pendientes = resultTipos.recordset[0].dias - total;
 
 	return vacaciones;
