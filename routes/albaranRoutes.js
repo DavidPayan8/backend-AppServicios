@@ -6,7 +6,9 @@ const {
   crearDetalleAlbaran,
   borrarDetalleAlbaran,
   obtenerCabeceraOt,
-  obtenerDetallesDoc
+  obtenerDetallesDoc,
+  crearCabeceraAlbaran,
+  setEstadoCabecera
 } = require("../controllers/albaranController");
 
 router.use(authenticateToken);
@@ -19,8 +21,8 @@ router.post("/borrar-detallesDoc", borrarDetalleAlbaran);
 
 //Rutas para cabecera doc
 router.post("/obtener-cabecera", obtenerCabeceraOt);
-/* router.post('/crear-cabecera', cambiarDetallesAlbaran);
-router.post('/borrar-cabecera', cambiarDetallesAlbaran);
- */
+router.post('/crear-cabecera', crearCabeceraAlbaran);
+router.post('/cambiar-estado-albaran', setEstadoCabecera);
+ 
 
 module.exports = router;

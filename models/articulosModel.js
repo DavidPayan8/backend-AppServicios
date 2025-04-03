@@ -11,13 +11,14 @@ const connectToDb = async () => {
 };
 
 const getArticulos = async (empresa) => {
+  
   try {
     const pool = await connectToDb();
     const result = await pool.request()
     .input("id_empresa", sql.Int, empresa)
     .query(`
         SELECT *
-        From Articulos Where id_empresa = @id_empresa;
+        From Articulos where id_empresa = @id_empresa;
 `); //Poner limite de articulos.
 
     return result.recordset;
@@ -55,7 +56,7 @@ const get_iva_and_descuento = async (empresa) => {
     const descuentos = await pool.request()
     .input("id_empresa", sql.Int, empresa)
     .query(`
-        SELECT  * FROM DESCUENTOS WHERE id_empresa = @id_empresa;
+        SELECT  * FROM DESCUENTOS where id_empresa = @id_empresa;
       `);
     const ivas_descuentos = {
       tipos_iva: ivas.recordset,

@@ -2,7 +2,8 @@ const { getClientes } = require('../models/clientesModel');
 
 const getClientesHandler = async (req, res) => {
   try {
-    const empresa = req.user.empresa;
+    const { empresa } = req.user
+
     const clientes = await getClientes(empresa);
     res.json(clientes);
   } catch (error) {

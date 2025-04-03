@@ -6,7 +6,7 @@ const {
 
   const obtenerArticulos = async (req, res) => {
     try {
-      const empresa = req.user.empresa;
+      const { empresa } = req.user
       // Obtener articulos
       const articulos = await getArticulos(empresa);
   
@@ -33,7 +33,7 @@ const {
 
   const get_iva_descuento = async (req, res) => {
     try {
-      const empresa = req.user.empresa;
+      const { empresa } = req.user
       // Obtener articulos
       const result = await get_iva_and_descuento(empresa);
 
