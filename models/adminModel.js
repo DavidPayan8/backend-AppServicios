@@ -75,15 +75,15 @@ const getEmpleados = async (id_admin, pagina, empleadosPorPagina, ordenarPor, es
 		const result = await pool
 			.request()
 			.input("id_admin", sql.Int, id_admin)
-			.input("user_name", sql.VarChar, filtros?.username)
-			.input("nomapes", sql.VarChar, filtros?.nombreApellidos)
-			.input("dni", sql.VarChar, filtros?.dni)
-			.input("num_seguridad_social", sql.VarChar, filtros?.seguridadSocial)
+			.input("user_name", sql.VarChar, filtros?.username?.trim())
+			.input("nomapes", sql.VarChar, filtros?.nombreApellidos?.trim())
+			.input("dni", sql.VarChar, filtros?.dni?.trim())
+			.input("num_seguridad_social", sql.VarChar, filtros?.seguridadSocial?.trim())
 			.input("order", sql.VarChar, ordenarPor)
 			.input("filas", sql.Int, empleadosPorPagina)
 			.input("offset", sql.Int, (pagina - 1) * empleadosPorPagina)
 			.query(`
-				SELECT id, user_name, nomapes, dni, num_seguridad_social
+				SELECT id, user_name "username", nomapes "nombreApellidos", dni, num_seguridad_social "seguridadSocial"
 				FROM usuarios
 				WHERE id_empresa = (SELECT id_empresa FROM usuarios WHERE id = @id_admin)
 				${construirFiltros(filtros)}
@@ -113,19 +113,19 @@ const construirFiltros = (filtros) => {
 	const query = [""];
 
 	// Construir filtros
-	if (filtros?.username) {
+	if (filtros?.username && filtros.username.trim().length > 0) {
 		query.push("LOWER(user_name) COLLATE SQL_Latin1_General_Cp1_CI_AI LIKE LOWER('%' + @user_name + '%')");
 	}
 
-	if (filtros?.nombreApellidos) {
+	if (filtros?.nombreApellidos && filtros.nombreApellidos.trim().length > 0) {
 		query.push("LOWER(nomapes) COLLATE SQL_Latin1_General_Cp1_CI_AI LIKE LOWER('%' + @nomapes + '%')");
 	}
 
-	if (filtros?.dni) {
+	if (filtros?.dni && filtros.dni.trim().length > 0) {
 		query.push("LOWER(dni) LIKE LOWER('%' + @dni + '%')");
 	}
 
-	if (filtros?.seguridadSocial) {
+	if (filtros?.seguridadSocial && filtros.seguridadSocial.trim().length > 0) {
 		query.push("LOWER(num_seguridad_social) LIKE LOWER('%' + @num_seguridad_social + '%')");
 	}
 
