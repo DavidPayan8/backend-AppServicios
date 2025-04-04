@@ -49,7 +49,7 @@ const marcarLeidaModel = async (id_notificaciones, id_usuario) => {
               UPDATE Notificaciones_Usuarios
               SET leido = 1,
               fecha_leido = GETDATE()
-              WHERE id = @id AND id_usuario = @id_usuario;
+              WHERE id_notificacion = @id AND id_usuario = @id_usuario;
               `);
     return result.rowsAffected[0];
   } catch (error) {
