@@ -5,10 +5,10 @@ const router = express.Router();
 
 router.use(authenticateToken);
 
-router.get('/total', authenticateToken, obtenerTotalVacaciones);
-router.get('/tipos', authenticateToken, obtenerTiposVacacion);
-router.post('/aceptadas', authenticateToken, obtenerVacacionesAceptadas);
-router.post('/solicitadas', authenticateToken, obtenerVacacionesSolicitadas);
-router.put('/solicitar', authenticateToken, solicitarVacaciones);
+router.get('/total', obtenerTotalVacaciones);
+router.get('/tipos', obtenerTiposVacacion);
+router.post('/aceptadas', obtenerVacacionesAceptadas);
+router.post('/solicitadas', obtenerVacacionesSolicitadas);
+router.put('/solicitar', solicitarVacaciones);
 
 module.exports = router;

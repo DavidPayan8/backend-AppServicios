@@ -35,19 +35,18 @@ const obtenerHorasformatoTabla = async (req, res) => {
   const id_usuario = req.user.id;
   const { fechas, tipo } = req.body;
   let fechaInicio, fechaFin;
+
   if (tipo === "anio") {
     // Si solo es un año (por ejemplo, '2025')
-    fechaInicio = new Date(`${fechas}-01-01`);
-    fechaFin = new Date(`${fechas}-12-31`);  
+    fechaInicio = new Date(`${fechas.anio}-01-01`);
+    fechaFin = new Date(`${fechas.anio}-12-31`);
   } else if (tipo === "mes") {
     const [anio, mes] = fechas.split('-');
     fechaInicio = new Date(`${anio}-${mes}-01`);
-    // El último día del mes se calcula con el siguiente mes y día 0
-    fechaFin = new Date(`${anio}-${mes}-01`);
-    fechaFin.setMonth(fechaFin.getMonth() + 1);  
-    fechaFin.setDate(0); 
+    fechaFin = new Date(anio, mes, 0);
+
   } else {
-    const [inicio, fin] = fechas.split(' ');
+    const { inicio, fin } = fechas;
     fechaInicio = new Date(inicio); 
     fechaFin = new Date(fin);
   }

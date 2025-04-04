@@ -6,14 +6,14 @@ const obtenerDatosTabla = async ( id_usuario,fechaInicio, fechaFin ) => {
   try {
     const pool = await sql.connect(config);
     // Consulta para obtener las horas trabajadas por cada día dentro del rango
-    const resultHorasPorDia = await pool
+    const rows = await pool
       .request()
       .input("id_usuario", sql.Int, id_usuario)
       .input("fechaInicio", sql.Date, fechaInicio)
       .input("fechaFin", sql.Date, fechaFin).query(`
         SELECT * 
         FROM CONTROL_ASISTENCIAS 
-        WHERE FECHA BETWEEN @fechaInicio AND @fechaFin;  
+        WHERE id_usuario = @id_usuario AND FECHA BETWEEN @fechaInicio AND @fechaFin;  
       `);
 
     // Consulta para obtener el total de horas trabajadas en el rango de fechas
@@ -30,7 +30,7 @@ const obtenerDatosTabla = async ( id_usuario,fechaInicio, fechaFin ) => {
       `);
 
     return {
-      horasPorDia: resultHorasPorDia.recordset,
+      registros: rows.recordset,
       totalHoras: resultTotalRango.recordset[0]?.total_rango || 0,
     };
   } catch (error) {
