@@ -1,6 +1,5 @@
 require("dotenv").config(); //dotenv
 const express = require("express");
-const bodyParser = require("body-parser");
 const cors = require("cors");
 const userRoutes = require("./routes/userRoutes");
 const clientesRoutes = require("./routes/clientesRoutes");
@@ -15,6 +14,7 @@ const emailRoutes = require("./routes/emailRoutes")
 const configuracionesRoutes = require("./routes/configuracionRoutes")
 const estadisticasRoutes = require("./routes/estadisticasRoutes")
 const vacacionesRoutes = require("./routes/vacacionesRoutes");
+const ftpRoutes = require("./routes/ftpRoutes")
 const adminRoutes = require("./routes/adminRoutes");
 const authenticateToken = require("./middleware/authMiddleware");
 
@@ -25,7 +25,7 @@ const port = process.env.PORT || 0;
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
-app.use(bodyParser.urlencoded({ limit:'10mb',extended: true }));
+app.use(express.urlencoded({ limit:'10mb',extended: true }));
 
 // Rutas
 app.use("/auth", authRoutes);
@@ -42,6 +42,7 @@ app.use("/api/configuraciones", configuracionesRoutes);
 app.use("/api/estadisticas", estadisticasRoutes);
 app.use("/api/vacaciones", vacacionesRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/ftp", ftpRoutes)
 app.get("/protected", authenticateToken, (req, res) => {
   res.json({ message: "Acceso autorizado", user: req.user });
 });
