@@ -13,7 +13,6 @@ const obtenerNotificacionesModel = async (id_usuario) => {
         WHERE nu.id_usuario = @id_usuario
           AND nu.leido = 0;
       `);
-      console.log(result.recordset);
     return result.recordset;
   } catch (error) {
     console.error("Error al obtener notificaciones:", error.message);
