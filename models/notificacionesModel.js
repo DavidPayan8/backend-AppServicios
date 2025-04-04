@@ -13,7 +13,6 @@ const obtenerNotificacionesModel = async (id_usuario) => {
         WHERE nu.id_usuario = @id_usuario
           AND nu.leido = 0;
       `);
-      console.log(result.recordset);
     return result.recordset;
   } catch (error) {
     console.error("Error al obtener notificaciones:", error.message);
@@ -50,7 +49,7 @@ const marcarLeidaModel = async (id_notificaciones, id_usuario) => {
               UPDATE Notificaciones_Usuarios
               SET leido = 1,
               fecha_leido = GETDATE()
-              WHERE id = @id AND id_usuario = @id_usuario;
+              WHERE id_notificacion = @id AND id_usuario = @id_usuario;
               `);
     return result.rowsAffected[0];
   } catch (error) {
