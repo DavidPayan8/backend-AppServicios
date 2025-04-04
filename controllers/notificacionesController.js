@@ -1,15 +1,13 @@
 const {
   obtenerNotificacionesModel,
   obtenerArchivadasModel,
-  marcarLeidaModel
-}  = require("../models/notificacionesModel");
+  marcarLeidaModel,
+} = require("../models/notificacionesModel");
 
 const obtenerNotificaciones = async (req, res) => {
   const id_usuario = req.user.id;
   try {
-    const { empresa } = req.user
     const notificaciones = await obtenerNotificacionesModel(
-      empresa,
       id_usuario
     );
     res.status(200).json(notificaciones);
@@ -23,9 +21,7 @@ const obtenerNotificaciones = async (req, res) => {
 const obtenerArchivadas = async (req, res) => {
   const id_usuario = req.user.id;
   try {
-    const notificaciones = await obtenerArchivadasModel(
-      id_usuario
-    );
+    const notificaciones = await obtenerArchivadasModel(id_usuario);
     res.status(200).json(notificaciones);
   } catch (error) {
     res.status(500).json({
@@ -35,13 +31,11 @@ const obtenerArchivadas = async (req, res) => {
   }
 };
 
-
 const marcarLeida = async (req, res) => {
+  const id_usuario = req.user.id;
   const id_notificacion = req.body.id_notificacion;
   try {
-    const estaLeida = await marcarLeidaModel(
-      id_notificacion
-    );
+    const estaLeida = await marcarLeidaModel(id_notificacion, id_usuario);
     res.status(200).json(estaLeida);
   } catch (error) {
     res.status(500).json({
