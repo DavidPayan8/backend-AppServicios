@@ -47,7 +47,7 @@ const solicitarVacacionesHandler = async (req, res) => {
 		const { tipo, dias } = req.body;
 		const err = await solicitarVacaciones(req.user.id, tipo, dias);
 
-		if (err === undefined) {
+		if (!err) {
 			res.status(201).json({})
 		} else {
 			res.json({ err })
