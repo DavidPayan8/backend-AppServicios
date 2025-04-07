@@ -83,7 +83,7 @@ const getEmpleados = async (id_admin, pagina, empleadosPorPagina, ordenarPor, es
 			.input("filas", sql.Int, empleadosPorPagina)
 			.input("offset", sql.Int, (pagina - 1) * empleadosPorPagina)
 			.query(`
-				SELECT id, user_name "username", nomapes "nombreApellidos", dni, num_seguridad_social "seguridadSocial"
+				SELECT id, user_name "username", nomapes "nombreApellidos", dni, num_seguridad_social "seguridadSocial", rol
 				FROM usuarios
 				WHERE id_empresa = (SELECT id_empresa FROM usuarios WHERE id = @id_admin)
 				${construirFiltros(filtros)}
@@ -132,8 +132,31 @@ const construirFiltros = (filtros) => {
 	return query.join(" AND ");
 }
 
+/**
+ * Obtiene los datos (excepto contraseña) de un empleado.
+ * @param {number} idEmpleado La id del empleado a consultar.
+ */
+const getDetalles = async (idEmpleado) => {
+	try {
+		const pool = await sql.connect(config);
+		const result = await pool
+			.request()
+			.input("id", sql.Int, idEmpleado)
+			.query(`
+				SELECT user_name "username", nomapes "nombreApellidos", dni, num_seguridad_social "seguridadSocial", rol
+				FROM usuarios
+				WHERE id = @id`);
+
+		return result.recordset[0];
+	} catch (error) {
+		console.error("Error al obtener detalles del empleado: ", idEmpleado);
+		throw error;
+	}
+}
+
 module.exports = {
 	darAltaEmpleado,
 	getEmpleados,
+	getDetalles,
 	ordenesValidos,
 }

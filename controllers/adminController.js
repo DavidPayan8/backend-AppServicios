@@ -1,4 +1,4 @@
-const { darAltaEmpleado, getEmpleados, ordenesValidos } = require("../models/adminModel");
+const { darAltaEmpleado, getEmpleados, ordenesValidos, getDetalles } = require("../models/adminModel");
 
 const darAltaEmpleadoHandler = async (req, res) => {
 	try {
@@ -57,7 +57,17 @@ const getEmpleadosHandler = async (req, res) => {
 		const empleados = await getEmpleados(req.user.id, pagina, empleadosPorPagina, ordenarPor, esAscendiente, filtros);
 		res.json(empleados);
 	} catch (error) {
-		console.error("Error al obtener empleados: ", error)
+		console.error("Error al obtener empleados: ", error);
+		res.status(500).send("Error del servidor");
+	}
+}
+
+const getDetallesHandler = async (req, res) => {
+	try {
+		const { id } = req.body;
+		res.json(await getDetalles(id));
+	} catch (error) {
+		console.error("Error al obtener detalles del empleado: ", error);
 		res.status(500).send("Error del servidor");
 	}
 }
@@ -65,4 +75,5 @@ const getEmpleadosHandler = async (req, res) => {
 module.exports = {
 	darAltaEmpleado: darAltaEmpleadoHandler,
 	getEmpleados: getEmpleadosHandler,
+	getDetalles: getDetallesHandler
 }
