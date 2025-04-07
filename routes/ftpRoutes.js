@@ -1,10 +1,20 @@
-const express = require('express');
-const { obtenerListadoFtp } = require('../controllers/ftpController');
-const authenticateToken = require('../middleware/authMiddleware');
+const express = require("express");
+const {
+  obtenerListadoFtp,
+  subirArchivoFtp,
+  eliminarArchivoFTP,
+  descargarArchivoFTP,
+} = require("../controllers/ftpController");
+const uploadMiddleware = require("../middleware/fileMiddleware");
+const authenticateToken = require("../middleware/authMiddleware");
 const router = express.Router();
 
 router.use(authenticateToken);
 
-router.get('/obtener-listado',obtenerListadoFtp);
+router.get("/listado", obtenerListadoFtp);
+router.get("/descargar", descargarArchivoFTP);
 
-module.exports = router
+router.post("/subir-archivo", uploadMiddleware, subirArchivoFtp); 
+router.delete("/eliminar", eliminarArchivoFTP);
+
+module.exports = router;
