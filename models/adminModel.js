@@ -1,7 +1,7 @@
 const sql = require("mssql");
 const config = require("../config/dbConfig");
 
-const darAltaEmpleado = async (id_admin, username, password, nombreApellidos, dni, segSocial) => {
+const darAltaEmpleado = async (id_admin, username, password, nombreApellidos, dni, segSocial, rol) => {
 	let codigoError;
 
 	try {
@@ -24,9 +24,10 @@ const darAltaEmpleado = async (id_admin, username, password, nombreApellidos, dn
 				.input("nomapes", sql.VarChar, nombreApellidos)
 				.input("dni", sql.VarChar, dni)
 				.input("num_seguridad_social", sql.VarChar, segSocial)
+				.input("rol", sql.VarChar, rol)
 				.query(`
-					INSERT INTO usuarios (user_name, contrasena, nomapes, dni, num_seguridad_social, id_empresa)
-					VALUES (@user_name, @contrasena, @nomapes, @dni, @num_seguridad_social, (SELECT id_empresa FROM usuarios WHERE id = @id_admin));
+					INSERT INTO usuarios (user_name, contrasena, nomapes, dni, num_seguridad_social, rol, id_empresa)
+					VALUES (@user_name, @contrasena, @nomapes, @dni, @num_seguridad_social, @rol, (SELECT id_empresa FROM usuarios WHERE id = @id_admin));
 				`);
 
 			if (result.rowsAffected != 1)
@@ -48,9 +49,10 @@ const darAltaEmpleado = async (id_admin, username, password, nombreApellidos, dn
  * @prop {string | undefined} username Filtro para user_name, o ningún filtro
  * @prop {string | undefined} dni Filtro para dni, o ningún filtro
  * @prop {string | undefined} seguridadSocial Filtro para num_seguridad_social, o ningún filtro
+ * @prop {string | undefined} rol El rol del empleado.
  */
 
-const ordenesValidos = ["id", "user_name", "nomapes", "dni", "num_seguridad_social"];
+const ordenesValidos = ["id", "user_name", "nomapes", "dni", "num_seguridad_social", "rol"];
 
 /**
  * Consulta los empleados de la empresa de un administrador.
@@ -79,6 +81,7 @@ const getEmpleados = async (id_admin, pagina, empleadosPorPagina, ordenarPor, es
 			.input("nomapes", sql.VarChar, filtros?.nombreApellidos?.trim())
 			.input("dni", sql.VarChar, filtros?.dni?.trim())
 			.input("num_seguridad_social", sql.VarChar, filtros?.seguridadSocial?.trim())
+			.input("rol", sql.VarChar, filtros?.rol?.trim())
 			.input("order", sql.VarChar, ordenarPor)
 			.input("filas", sql.Int, empleadosPorPagina)
 			.input("offset", sql.Int, (pagina - 1) * empleadosPorPagina)
@@ -127,6 +130,10 @@ const construirFiltros = (filtros) => {
 
 	if (filtros?.seguridadSocial && filtros.seguridadSocial.trim().length > 0) {
 		query.push("LOWER(num_seguridad_social) LIKE LOWER('%' + @num_seguridad_social + '%')");
+	}
+
+	if (filtros?.rol && filtros.rol.trim().length > 0) {
+		query.push("rol = @rol");
 	}
 
 	return query.join(" AND ");
