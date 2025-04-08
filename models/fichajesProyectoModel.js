@@ -94,7 +94,9 @@ const patchFichaje = async (id, fecha, horaEntrada, horaSalida, localizacionEntr
 			query += `hora_entrada = @horaEntrada, `;
 			request.input("horaEntrada", sql.DateTime, horaEntrada);
 		}
-		if (horaSalida) {
+		if (typeof horaSalida === 'string' && horaSalida.toUpperCase() === "NULL") {
+			query += `hora_salida = NULL, `;
+		} else if (horaSalida) {
 			query += `hora_salida = @horaSalida, `;
 			request.input("horaSalida", sql.DateTime, horaSalida);
 		}
@@ -102,7 +104,9 @@ const patchFichaje = async (id, fecha, horaEntrada, horaSalida, localizacionEntr
 			query += `localizacion_entrada = @localizacionEntrada, `;
 			request.input("localizacionEntrada", sql.VarChar, localizacionEntrada);
 		}
-		if (localizacionSalida) {
+		if (typeof localizacionSalida === 'string' &&  localizacionSalida.toUpperCase() === "NULL") {
+			query += `localizacion_salida = NULL, `;
+		} else if (localizacionSalida) {
 			query += `localizacion_salida = @localizacionSalida, `;
 			request.input("localizacionSalida", sql.VarChar, localizacionSalida);
 		}
