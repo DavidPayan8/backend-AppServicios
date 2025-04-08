@@ -1,5 +1,3 @@
-
-
 const {
   listadoArchivos,
   uploadToFtp,
@@ -19,7 +17,7 @@ const obtenerListadoFtp = async (req, res) => {
 
 const descargarArchivoFTP = async (req, res) => {
   const { nombreArchivo, tipo } = req.query;
-  const {id, empresa,} = req.user;
+  const { id, empresa } = req.user;
   try {
     const { buffer, fileName } = await descargarArchivo(
       nombreArchivo,
@@ -28,10 +26,42 @@ const descargarArchivoFTP = async (req, res) => {
       tipo
     );
 
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-    res.setHeader('Content-Type', 'application/octet-stream');
-    res.status(200).send(buffer);
+    const mime = require("mime-types");
 
+    res.setHeader(
+      "Content-Type",
+      mime.lookup(fileName) || "application/octet-stream"
+    );
+    // Para forzar la descarga del archivo
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    res.status(200).send(buffer);
+  } catch (error) {
+    console.error("Fallo en el controlador de descarga:", error);
+    if (!res.headersSent) {
+      res.status(500).send("Error al procesar la descarga.");
+    }
+  }
+};
+
+const visualizarArchivoFTP = async (req, res) => {
+  const { nombreArchivo, tipo } = req.query;
+  const { id, empresa } = req.user;
+  try {
+    const { buffer, fileName } = await descargarArchivo(
+      nombreArchivo,
+      id,
+      empresa,
+      tipo
+    );
+
+    const mime = require("mime-types");
+
+    res.setHeader(
+      "Content-Type",
+      mime.lookup(fileName) || "application/octet-stream"
+    );
+    res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
+    res.status(200).send(buffer);
   } catch (error) {
     console.error("Fallo en el controlador de descarga:", error);
     if (!res.headersSent) {
@@ -44,12 +74,10 @@ const subirArchivoFtp = async (req, res) => {
   const { nombre, tipo } = req.body;
   const { archivo } = req.files;
   const { id, empresa } = req.user;
-  console.log("En controller", req.user);
   try {
     await uploadToFtp(nombre, archivo, id, empresa, tipo);
     res.json({ message: "Archivo subido correctamente." });
   } catch (error) {
-    console.error("Subida fallida:", error.message);
     res.status(500).json({ error: error.message });
   }
 };
@@ -73,4 +101,5 @@ module.exports = {
   subirArchivoFtp,
   eliminarArchivoFTP,
   descargarArchivoFTP,
+  visualizarArchivoFTP,
 };

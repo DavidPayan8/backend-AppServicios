@@ -1,7 +1,7 @@
 const { Client } = require("basic-ftp");
 const path = require("path");
 const stream = require("stream");
-const { PassThrough } = require("stream");
+const { Writable } = require("stream");
 const FTP_CONFIG = require("../config/ftpcofig");
 
 // Declarar ruta
@@ -12,13 +12,11 @@ const createPath = (nombreArchivo, id_usuario, id_empresa, tipo) => {
   let filePath;
 
   if (!nombreArchivo) {
-    // Construcción del path final(Perosnal sujeto a cambios)
+    // Construcción del path final(Personal sujeto a cambios)
     filePath = `${basePath}/${dbname}/${id_empresa}/Personal/${id_usuario}/${tipo}`;
   } else {
     filePath = `${basePath}/${dbname}/${id_empresa}/Personal/${id_usuario}/${tipo}/${nombreArchivo}`;
   }
-
-  console.log("Ruta creada", filePath);
 
   return filePath;
 };
@@ -105,19 +103,18 @@ const descargarArchivo = async (nombreArchivo, id_usuario, id_empresa, tipo) => 
   try {
     await client.access(FTP_CONFIG);
 
-    const streamBuffer = new PassThrough();
-    const chunks = [];
-
-    streamBuffer.on("data", (chunk) => {
-      chunks.push(chunk);
+    const writableBuffer = [];
+    const writable = new Writable({
+      write(chunk, encoding, callback) {
+        writableBuffer.push(chunk);
+        callback();
+      }
     });
 
-    await client.downloadTo(streamBuffer, ruta);
-
-    const buffer = Buffer.concat(chunks);
+    await client.downloadTo(writable, ruta);
 
     return {
-      buffer,
+      buffer: Buffer.concat(writableBuffer),
       fileName: path.basename(ruta),
     };
   } catch (error) {
