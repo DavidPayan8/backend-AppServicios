@@ -17,6 +17,7 @@ const vacacionesRoutes = require("./routes/vacacionesRoutes");
 const ftpRoutes = require("./routes/ftpRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const authenticateToken = require("./middleware/authMiddleware");
+const fichajesProyectoRoutes = require("./routes/fichajesProyectoRoutes");
 
 const app = express();
 
@@ -50,6 +51,7 @@ app.use("/api/notificaciones", notificacionesRoutes);
 app.use("/api/configuraciones", configuracionesRoutes);
 app.use("/api/estadisticas", estadisticasRoutes);
 app.use("/api/vacaciones", vacacionesRoutes);
+app.use("/api/fichajes-proyecto", fichajesProyectoRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/ftp", ftpRoutes);
 
