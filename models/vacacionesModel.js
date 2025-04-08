@@ -1,5 +1,9 @@
 const sql = require("mssql");
 const config = require("../config/dbConfig");
+const { LocalDate, DateTimeFormatter, ZoneId, DayOfWeek } = require("@js-joda/core");
+const { Locale } = require("@js-joda/locale_es");
+require("@js-joda/timezone");
+
 
 const obtenerTotalVacaciones = async (id_usuario) => {
 	const pool = await sql.connect(config);
@@ -65,6 +69,13 @@ const obtenerTiposVacacion = async (id_usuario) => {
 	}
 }
 
+/**
+ * 
+ * @param {number} id_usuario ID del usuario
+ * @param {number} tipo ID del tipo de vacación
+ * @param {boolean} aceptadas Si se buscan las vacaciones aceptadas (de caso contrario, las solicitadas)
+ * @returns 
+ */
 const obtenerVacaciones = async (id_usuario, tipo, aceptadas) => {
 	try {
 		const pool = await sql.connect(config);
@@ -74,10 +85,12 @@ const obtenerVacaciones = async (id_usuario, tipo, aceptadas) => {
 			.input("aceptadas", sql.Bit, aceptadas ? 1 : 0)
 			.input("tipo", sql.Int, tipo)
 			.query(`
-				SELECT vacaciones.id, dia
+				SELECT vacaciones.id, CONVERT(VARCHAR(10), dia, 120) "dia"
 				FROM vacaciones, dias_vacacion
 				WHERE vacaciones.id = dias_vacacion.id_vacacion
 				AND tipo = @tipo AND id_usuario = @id_usuario AND aceptado = @aceptadas;`);
+		// Selecciono dia como una cadena para evitar que mssql
+		// convierta al dia a un Date de JavaScript		
 
 		return result.recordset;
 	} catch (error) {
@@ -86,13 +99,21 @@ const obtenerVacaciones = async (id_usuario, tipo, aceptadas) => {
 	}
 }
 
+
+/**
+ * @async
+ * @param {number} id_usuario ID del usuario solicitando vacaciones.
+ * @param {number} tipo ID del tipo de vacaciones.
+ * @param {string[]} dias Dias que el usuario está solicitando.
+ * @returns {string | null} Mensaje de error, si ocurre uno.
+ */
 const solicitarVacaciones = async (id_usuario, tipo, dias) => {
 	try {
 		const pool = await sql.connect(config);
+		const formatter = DateTimeFormatter.ofPattern("YYYY-MM-dd").withLocale(new Locale("es", "ES", "es"));
 
 		for (const diaStr of dias) {
-			const fecha = formatFecha(diaStr);
-			const dia = new Date(fecha);
+			const dia = LocalDate.parse(diaStr);
 
 			// Validar día
 			if (!esDiaValido(dia)) {
@@ -103,7 +124,7 @@ const solicitarVacaciones = async (id_usuario, tipo, dias) => {
 			const result = await pool
 				.request()
 				.input("id_usuario", sql.Int, id_usuario)
-				.input("fecha", sql.Date, fecha)
+				.input("fecha", sql.Date, dia.format(formatter))
 				.query(`
 					SELECT COUNT(dia) "count"
 					FROM vacaciones, dias_vacacion
@@ -133,8 +154,8 @@ const solicitarVacaciones = async (id_usuario, tipo, dias) => {
 		table.columns.add("dia", sql.Date, { nullable: false });
 
 		for (const diaStr of dias) {
-			const dia = formatFecha(diaStr);
-			table.rows.add(id, dia);
+			const dia = LocalDate.parse(diaStr);
+			table.rows.add(id, dia.format(formatter));
 		}
 
 		await pool.request().bulk(table);
@@ -143,19 +164,19 @@ const solicitarVacaciones = async (id_usuario, tipo, dias) => {
 		throw error;
 	}
 
-	return undefined;
+	return null;
 }
 
+/**
+ * Verifica que el día sea después del día actual y que sea un día de semana.
+ * @param {LocalDate} dia El día
+ * @returns {boolean}
+ */
 const esDiaValido = (dia) => {
-	// Verifica que el día sea mayor que hoy y no un fin de semana
-	return dia > new Date() && dia.getDay() !== 0 && dia.getDay() !== 6;
+	const dayOfWeek = dia.dayOfWeek();
+	const hoy = LocalDate.now(ZoneId.of("Europe/Madrid"));
+	return dia.isAfter(hoy) && dayOfWeek !== DayOfWeek.SATURDAY && dayOfWeek !== DayOfWeek.SUNDAY;
 }
-
-// Función para formatear la fecha en 'YYYY-MM-DD', recibiendo dd/mm/yyyy
-const formatFecha = (fecha) => {
-	const [dia, mes, anio] = fecha.split('/');
-	return `${anio}-${mes}-${dia}`;
-};
 
 module.exports = {
 	obtenerTotalVacaciones,
