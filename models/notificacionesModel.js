@@ -2,7 +2,6 @@ const sql = require("mssql");
 const config = require("../config/dbConfig");
 
 const obtenerNotificacionesModel = async (id_usuario) => {
-  console.log(id_usuario)
   try {
     const pool = await sql.connect(config);
     const result = await pool.request().input("id_usuario", sql.Int, id_usuario)
