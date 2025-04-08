@@ -74,7 +74,6 @@ const getDetallesHandler = async (req, res) => {
 
 const editarEmpleadoHandler = async (req, res) => {
 	try {
-		console.log(req.body);
 		const { id, username, password, nombreApellidos, dni, seguridadSocial, rol } = req.body;
 
 		if (!username && !password && !nombreApellidos && !dni && !seguridadSocial && !rol) {
