@@ -150,7 +150,7 @@ const getDetalles = async (idEmpleado) => {
 			.request()
 			.input("id", sql.Int, idEmpleado)
 			.query(`
-				SELECT user_name "username", nomapes "nombreApellidos", dni, num_seguridad_social "seguridadSocial", rol
+				SELECT id, user_name "username", nomapes "nombreApellidos", dni, num_seguridad_social "seguridadSocial", rol
 				FROM usuarios
 				WHERE id = @id`);
 
@@ -161,9 +161,86 @@ const getDetalles = async (idEmpleado) => {
 	}
 }
 
+const editarEmpleado = async (id_empleado, username, password, nombreApellidos, dni, seguridadSocial, rol) => {
+	let codigoError;
+
+	try {
+		const edicion = construirEdicion(username, password, nombreApellidos, dni, seguridadSocial, rol);
+
+		const pool = await sql.connect(config);
+		const duplicados = await pool
+			.request()
+			.input("user_name", sql.VarChar, username)
+			.input("id", sql.Int, id_empleado)
+			.query(`
+				SELECT count(*) "count"
+				FROM usuarios
+				WHERE lower(user_name) = lower(@user_name)
+				AND id <> @id;`);
+
+		if (duplicados.recordset[0].count === 0) {
+			const result = await pool
+				.request()
+				.input("id", sql.Int, id_empleado)
+				.input("user_name", sql.VarChar, username)
+				.input("contrasena", sql.VarChar, password)
+				.input("nomapes", sql.VarChar, nombreApellidos)
+				.input("dni", sql.VarChar, dni)
+				.input("num_seguridad_social", sql.VarChar, seguridadSocial)
+				.input("rol", sql.VarChar, rol)
+				.query(`
+					UPDATE usuarios
+					SET ${edicion}
+					WHERE id = @id;
+					`);
+
+			if (result.rowsAffected != 1)
+				codigoError = 500;
+		} else {
+			codigoError = 400;
+		}
+
+		return codigoError;
+	} catch (error) {
+		console.error("Error al editar empleado: ", id_empleado, username, password, nombreApellidos, dni, seguridadSocial, rol);
+		throw error;
+	}
+}
+
+const construirEdicion = (username, password, nombreApellidos, dni, seguridadSocial, rol) => {
+	const query = [];
+
+	if (username && username.trim().length > 0) {
+		query.push("user_name = @user_name");
+	}
+
+	if (password && password.length > 0) {
+		query.push("contrasena = @contrasena");
+	}
+
+	if (nombreApellidos && nombreApellidos.trim().length > 0) {
+		query.push("nomapes = @nomapes");
+	}
+
+	if (dni && dni.trim().length > 0) {
+		query.push("dni = @dni");
+	}
+
+	if (seguridadSocial && seguridadSocial.trim().length > 0) {
+		query.push("num_seguridad_social = @num_seguridad_social");
+	}
+
+	if (rol && rol.trim().length > 0) {
+		query.push("rol = @rol");
+	}
+
+	return query.join(", ")
+}
+
 module.exports = {
 	darAltaEmpleado,
 	getEmpleados,
 	getDetalles,
+	editarEmpleado,
 	ordenesValidos,
 }
