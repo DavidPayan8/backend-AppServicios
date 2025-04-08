@@ -1,7 +1,7 @@
 const sql = require("mssql");
 const config = require("../config/dbConfig");
 
-const darAltaEmpleado = async (id_admin, username, contrasenia, nombreApellidos, dni, segSocial) => {
+const darAltaEmpleado = async (id_admin, username, password, nombreApellidos, dni, segSocial) => {
 	let codigoError;
 
 	try {
@@ -20,7 +20,7 @@ const darAltaEmpleado = async (id_admin, username, contrasenia, nombreApellidos,
 				.request()
 				.input("id_admin", sql.Int, id_admin)
 				.input("user_name", sql.VarChar, username)
-				.input("contrasena", sql.VarChar, contrasenia)
+				.input("contrasena", sql.VarChar, password)
 				.input("nomapes", sql.VarChar, nombreApellidos)
 				.input("dni", sql.VarChar, dni)
 				.input("num_seguridad_social", sql.VarChar, segSocial)
@@ -35,7 +35,7 @@ const darAltaEmpleado = async (id_admin, username, contrasenia, nombreApellidos,
 			codigoError = 400;
 		}
 	} catch (error) {
-		console.error("Error al dar de alta a un nuevo empleado: ", id_admin, username, contrasenia, nombreApellidos);
+		console.error("Error al dar de alta a un nuevo empleado: ", id_admin, username, password, nombreApellidos);
 		throw error;
 	}
 

@@ -2,8 +2,8 @@ const { darAltaEmpleado, getEmpleados, ordenesValidos, getDetalles } = require("
 
 const darAltaEmpleadoHandler = async (req, res) => {
 	try {
-		const { username, contrasenia, nombreApellidos, dni, segSocial } = req.body;
-		const codigoError = await darAltaEmpleado(req.user.id, username, contrasenia, nombreApellidos, dni, segSocial);
+		const { username, password, nombreApellidos, dni, segSocial } = req.body;
+		const codigoError = await darAltaEmpleado(req.user.id, username, password, nombreApellidos, dni, segSocial);
 
 		switch (codigoError) {
 			case 400: {
