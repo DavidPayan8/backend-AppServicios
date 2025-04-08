@@ -1,7 +1,7 @@
 const sql = require("mssql");
 const config = require("../config/dbConfig");
 
-const darAltaEmpleado = async (id_admin, username, contrasenia, nombreApellidos, dni, segSocial) => {
+const darAltaEmpleado = async (id_admin, username, password, nombreApellidos, dni, segSocial, rol) => {
 	let codigoError;
 
 	try {
@@ -20,13 +20,14 @@ const darAltaEmpleado = async (id_admin, username, contrasenia, nombreApellidos,
 				.request()
 				.input("id_admin", sql.Int, id_admin)
 				.input("user_name", sql.VarChar, username)
-				.input("contrasena", sql.VarChar, contrasenia)
+				.input("contrasena", sql.VarChar, password)
 				.input("nomapes", sql.VarChar, nombreApellidos)
 				.input("dni", sql.VarChar, dni)
 				.input("num_seguridad_social", sql.VarChar, segSocial)
+				.input("rol", sql.VarChar, rol)
 				.query(`
-					INSERT INTO usuarios (user_name, contrasena, nomapes, dni, num_seguridad_social, id_empresa)
-					VALUES (@user_name, @contrasena, @nomapes, @dni, @num_seguridad_social, (SELECT id_empresa FROM usuarios WHERE id = @id_admin));
+					INSERT INTO usuarios (user_name, contrasena, nomapes, dni, num_seguridad_social, rol, id_empresa)
+					VALUES (@user_name, @contrasena, @nomapes, @dni, @num_seguridad_social, @rol, (SELECT id_empresa FROM usuarios WHERE id = @id_admin));
 				`);
 
 			if (result.rowsAffected != 1)
@@ -35,7 +36,7 @@ const darAltaEmpleado = async (id_admin, username, contrasenia, nombreApellidos,
 			codigoError = 400;
 		}
 	} catch (error) {
-		console.error("Error al dar de alta a un nuevo empleado: ", id_admin, username, contrasenia, nombreApellidos);
+		console.error("Error al dar de alta a un nuevo empleado: ", id_admin, username, password, nombreApellidos);
 		throw error;
 	}
 
@@ -48,9 +49,10 @@ const darAltaEmpleado = async (id_admin, username, contrasenia, nombreApellidos,
  * @prop {string | undefined} username Filtro para user_name, o ningún filtro
  * @prop {string | undefined} dni Filtro para dni, o ningún filtro
  * @prop {string | undefined} seguridadSocial Filtro para num_seguridad_social, o ningún filtro
+ * @prop {string | undefined} rol El rol del empleado.
  */
 
-const ordenesValidos = ["id", "user_name", "nomapes", "dni", "num_seguridad_social"];
+const ordenesValidos = ["id", "user_name", "nomapes", "dni", "num_seguridad_social", "rol"];
 
 /**
  * Consulta los empleados de la empresa de un administrador.
@@ -79,11 +81,12 @@ const getEmpleados = async (id_admin, pagina, empleadosPorPagina, ordenarPor, es
 			.input("nomapes", sql.VarChar, filtros?.nombreApellidos?.trim())
 			.input("dni", sql.VarChar, filtros?.dni?.trim())
 			.input("num_seguridad_social", sql.VarChar, filtros?.seguridadSocial?.trim())
+			.input("rol", sql.VarChar, filtros?.rol?.trim())
 			.input("order", sql.VarChar, ordenarPor)
 			.input("filas", sql.Int, empleadosPorPagina)
 			.input("offset", sql.Int, (pagina - 1) * empleadosPorPagina)
 			.query(`
-				SELECT id, user_name "username", nomapes "nombreApellidos", dni, num_seguridad_social "seguridadSocial"
+				SELECT id, user_name "username", nomapes "nombreApellidos", dni, num_seguridad_social "seguridadSocial", rol
 				FROM usuarios
 				WHERE id_empresa = (SELECT id_empresa FROM usuarios WHERE id = @id_admin)
 				${construirFiltros(filtros)}
@@ -129,11 +132,38 @@ const construirFiltros = (filtros) => {
 		query.push("LOWER(num_seguridad_social) LIKE LOWER('%' + @num_seguridad_social + '%')");
 	}
 
+	if (filtros?.rol && filtros.rol.trim().length > 0) {
+		query.push("rol = @rol");
+	}
+
 	return query.join(" AND ");
+}
+
+/**
+ * Obtiene los datos (excepto contraseña) de un empleado.
+ * @param {number} idEmpleado La id del empleado a consultar.
+ */
+const getDetalles = async (idEmpleado) => {
+	try {
+		const pool = await sql.connect(config);
+		const result = await pool
+			.request()
+			.input("id", sql.Int, idEmpleado)
+			.query(`
+				SELECT user_name "username", nomapes "nombreApellidos", dni, num_seguridad_social "seguridadSocial", rol
+				FROM usuarios
+				WHERE id = @id`);
+
+		return result.recordset[0];
+	} catch (error) {
+		console.error("Error al obtener detalles del empleado: ", idEmpleado);
+		throw error;
+	}
 }
 
 module.exports = {
 	darAltaEmpleado,
 	getEmpleados,
+	getDetalles,
 	ordenesValidos,
 }
