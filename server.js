@@ -1,6 +1,7 @@
 require("dotenv").config(); //dotenv
 const express = require("express");
 const cors = require("cors");
+const morgan= require ('morgan');
 const userRoutes = require("./routes/userRoutes");
 const clientesRoutes = require("./routes/clientesRoutes");
 const authRoutes = require("./routes/authRoutes");
@@ -16,8 +17,9 @@ const estadisticasRoutes = require("./routes/estadisticasRoutes");
 const vacacionesRoutes = require("./routes/vacacionesRoutes");
 const ftpRoutes = require("./routes/ftpRoutes");
 const adminRoutes = require("./routes/adminRoutes");
-const authenticateToken = require("./middleware/authMiddleware");
 const fichajesProyectoRoutes = require("./routes/fichajesProyectoRoutes");
+const geolocationRoutes = require("./routes/geolocationRoutes")
+const authenticateToken = require("./middleware/authMiddleware");
 
 const app = express();
 
@@ -25,6 +27,7 @@ const port = process.env.PORT || 0;
 
 // Middleware para cors
 app.use(cors());
+app.use(morgan('dev'));
 
 // Middleware para JSON y URL-encoded de forma condicional
 app.use((req, res, next) => {
@@ -54,6 +57,7 @@ app.use("/api/vacaciones", vacacionesRoutes);
 app.use("/api/fichajes-proyecto", fichajesProyectoRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/ftp", ftpRoutes);
+app.use("/api/geolocation",geolocationRoutes)
 
 // Rutas protegidas
 app.get("/protected", authenticateToken, (req, res) => {
