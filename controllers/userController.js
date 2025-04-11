@@ -1,4 +1,5 @@
-const { getUsers } = require('../models/userModel');
+const { getUsers, getUserById, actualizarPerfil } = require('../models/userModel');
+const identidad = require("../shared/identidad");
 
 const getUsersHandler = async (req, res) => {
   try {
@@ -10,6 +11,44 @@ const getUsersHandler = async (req, res) => {
   }
 };
 
+const getPerfilHandler = async (req, res) => {
+  try {
+    const user = await getUserById(req.user.id);
+
+    // Información confidencial
+    user.contrasena = undefined;
+    user.id_empresa = undefined;
+    user.id = undefined;
+    user.id_origen = undefined;
+    user.id_config = undefined;
+
+    res.json(user);
+  } catch (error) {
+    console.error('Error al obtener usuario:', error.message);
+    res.status(500).send('Error del servidor');
+  }
+}
+
+const actualizarPerfilHandler = async (req, res) => {
+  try {
+    const { nombreApellidos, password, dni, seguridadSocial } = req.body;
+
+    // Validación
+    if (!identidad.esDniValido(dni) && !identidad.esNieValido(dni)) {
+      res.status(400).send({ message: "DNI inválido" });
+      return;
+    }
+
+    await actualizarPerfil(req.user.id, nombreApellidos, password, dni, seguridadSocial);
+    res.status(200).send();
+  } catch (error) {
+    console.error('Error al actualizar perfil:', error.message);
+    res.status(500).send('Error del servidor');
+  }
+}
+
 module.exports = {
-  getUsers: getUsersHandler
+  getUsers: getUsersHandler,
+  getPerfil: getPerfilHandler,
+  actualizarPerfil: actualizarPerfilHandler,
 };
