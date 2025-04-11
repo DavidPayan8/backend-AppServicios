@@ -1,4 +1,4 @@
-const { darAltaEmpleado, getEmpleados, ordenesValidos, getDetalles } = require("../models/adminModel");
+const { darAltaEmpleado, getEmpleados, ordenesValidos, getDetalles, editarEmpleado } = require("../models/adminModel");
 
 const darAltaEmpleadoHandler = async (req, res) => {
 	try {
@@ -72,8 +72,39 @@ const getDetallesHandler = async (req, res) => {
 	}
 }
 
+const editarEmpleadoHandler = async (req, res) => {
+	try {
+		const { id, username, password, nombreApellidos, dni, seguridadSocial, rol } = req.body;
+
+		if (!username && !password && !nombreApellidos && !dni && !seguridadSocial && !rol) {
+			res.status(400).send({ message: "No se está editando ningúna columna" });
+			return;
+		}
+
+		const codigoError = await editarEmpleado(id, username, password, nombreApellidos, dni, seguridadSocial, rol);
+		switch (codigoError) {
+			case 400: {
+				res.status(400).send({ message: "Nombre de usuario en uso" });
+				break;
+			}
+			case undefined: {
+				// Exito
+				res.status(201).send();
+				break;
+			}
+			default: {
+				res.status(500).send("Error del servidor");
+			}
+		}
+	} catch (error) {
+		console.error("Error al editar empleado: ", error);
+		res.status(500).send("Error del servidor");
+	}
+}
+
 module.exports = {
 	darAltaEmpleado: darAltaEmpleadoHandler,
 	getEmpleados: getEmpleadosHandler,
-	getDetalles: getDetallesHandler
+	getDetalles: getDetallesHandler,
+	editarEmpleado: editarEmpleadoHandler,
 }
