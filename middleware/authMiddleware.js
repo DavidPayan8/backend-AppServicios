@@ -23,6 +23,7 @@ const authenticateToken = (req, res, next) => {
       console.error('Error verifying token:', err);
       return res.status(403).json({ message: err });
     }
+
     // 4. Almacenar los datos decodificados del usuario en el objeto de solicitud (req)
     req.user = decoded;
     // 5. Continuar con la ejecución del siguiente middleware o controlador

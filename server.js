@@ -1,29 +1,44 @@
 require("dotenv").config(); //dotenv
 const express = require("express");
-const bodyParser = require("body-parser");
 const cors = require("cors");
+const morgan= require ('morgan');
 const userRoutes = require("./routes/userRoutes");
 const clientesRoutes = require("./routes/clientesRoutes");
 const authRoutes = require("./routes/authRoutes");
 const asistenciaRoutes = require("./routes/asistenciaRoutes");
 const proyectosRoutes = require("./routes/proyectosRoutes");
 const parteRoutes = require("./routes/parteRoutes");
-const notificacionesRoutes =  require("./routes/notificacionesRoutes")
-const articulosRoutes = require("./routes/articulosRoutes")
-const albaranRoutes = require("./routes/albaranRoutes")
-const emailRoutes = require("./routes/emailRoutes")
-const configuracionesRoutes = require("./routes/configuracionRoutes")
-const estadisticasRoutes = require("./routes/estadisticasRoutes")
+const notificacionesRoutes = require("./routes/notificacionesRoutes");
+const articulosRoutes = require("./routes/articulosRoutes");
+const albaranRoutes = require("./routes/albaranRoutes");
+const emailRoutes = require("./routes/emailRoutes");
+const configuracionesRoutes = require("./routes/configuracionRoutes");
+const estadisticasRoutes = require("./routes/estadisticasRoutes");
+const vacacionesRoutes = require("./routes/vacacionesRoutes");
+const ftpRoutes = require("./routes/ftpRoutes");
+const adminRoutes = require("./routes/adminRoutes");
+const fichajesProyectoRoutes = require("./routes/fichajesProyectoRoutes");
+const geolocationRoutes = require("./routes/geolocationRoutes")
 const authenticateToken = require("./middleware/authMiddleware");
 
 const app = express();
 
 const port = process.env.PORT || 0;
 
-// Middleware
+// Middleware para cors
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
-app.use(bodyParser.urlencoded({ limit:'10mb',extended: true }));
+app.use(morgan('dev'));
+
+// Middleware para JSON y URL-encoded de forma condicional
+app.use((req, res, next) => {
+  if (req.is('application/json')) {
+    express.json({ limit: '10mb' })(req, res, next);
+  } else if (req.is('application/x-www-form-urlencoded')) {
+    express.urlencoded({ limit: '10mb', extended: true })(req, res, next);
+  } else {
+    next();
+  }
+});
 
 // Rutas
 app.use("/auth", authRoutes);
@@ -38,10 +53,18 @@ app.use("/api/partes", parteRoutes);
 app.use("/api/notificaciones", notificacionesRoutes);
 app.use("/api/configuraciones", configuracionesRoutes);
 app.use("/api/estadisticas", estadisticasRoutes);
+app.use("/api/vacaciones", vacacionesRoutes);
+app.use("/api/fichajes-proyecto", fichajesProyectoRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/ftp", ftpRoutes);
+app.use("/api/geolocation",geolocationRoutes)
+
+// Rutas protegidas
 app.get("/protected", authenticateToken, (req, res) => {
   res.json({ message: "Acceso autorizado", user: req.user });
 });
 
+// Ruta para verificar que el servidor funciona
 app.get("/", (req, res) => {
   res.json({ message: "Localhost funciona" });
 });

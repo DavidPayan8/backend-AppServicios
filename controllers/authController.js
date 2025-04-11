@@ -18,11 +18,16 @@ const login = async (req, res) => {
 
     // Generar un nuevo token JWT
     const token = jwt.sign(
-      { id: user.id, username: user.nomapes },
+      {
+        id: user.id,
+        nomapes: user.nomapes,
+        username: user.user_name,
+        empresa: user.id_empresa,
+        rol: user.rol
+      },
       JWT_SECRET,
       { expiresIn: "1h" }
     );
-
     return res.json({ token });
   } catch (err) {
     console.error("Error during login:", err);

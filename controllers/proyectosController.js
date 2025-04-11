@@ -7,14 +7,14 @@ const {
   getContrato,
   getIdContrato,
   getDetallesContrato,
-  createOtObra
+  createOtObra,
 } = require("../models/proyectosModel");
 
-
-
-const obtenerObras = async (req,res) =>{
+const obtenerObras = async (req, res) => {
   try {
-    const obras = await getObras();
+
+    const { empresa } = req.user
+    const obras = await getObras(empresa);
 
     res.status(200).json(obras);
   } catch (error) {
@@ -23,14 +23,13 @@ const obtenerObras = async (req,res) =>{
       message: "Error del servidor al obtener las obras",
     });
   }
-}
+};
 
-
-const crearOtObra = async (req,res) =>{
+const crearOtObra = async (req, res) => {
   try {
-    const { nombre, id_cliente, id_obra, fechaCalendario,es_ote } =
-      req.body;
+    const { nombre, id_cliente, id_obra, fechaCalendario, es_ote } = req.body;
     const id_usuario = req.user.id;
+    const {empresa} = req.user
 
     // Crear el proyecto y calendario
     const nuevoProyecto = await createOtObra(
@@ -39,7 +38,8 @@ const crearOtObra = async (req,res) =>{
       id_cliente,
       id_obra,
       fechaCalendario,
-      es_ote
+      es_ote,
+      empresa
     );
 
     res.status(201).json({
@@ -47,14 +47,13 @@ const crearOtObra = async (req,res) =>{
       proyectoId: nuevoProyecto.id,
     });
   } catch (error) {
-    console.error("Error al crear proyecto:", error.message);
+    console.error("Error al crear ot obra:", error.message);
     res.status(500).send("Error del servidor al crear proyecto");
   }
-}
-
+};
 
 const obtenerIdProyectos = async (req, res) => {
-  const userId = req.user.id; // Obtener el ID del usuario desde el token de autenticación
+  const userId = req.user.id;
   const { date } = req.query;
 
   try {
@@ -86,7 +85,6 @@ const obtenerProyectosPorIds = async (req, res) => {
   const { ids } = req.body;
   try {
     const proyectos = await getProyectos(ids);
-
     res.status(200).json(proyectos);
   } catch (error) {
     console.error("Error al obtener los proyectos por IDs:", error.message);
@@ -101,6 +99,7 @@ const crearProyecto = async (req, res) => {
     const { nombre, observaciones, id_cliente, fechaCalendario, es_ote } =
       req.body;
     const id_usuario = req.user.id;
+    const {empresa} = req.user;
 
     // Crear el proyecto y calendario
     const nuevoProyecto = await addProyecto(
@@ -109,7 +108,8 @@ const crearProyecto = async (req, res) => {
       id_usuario,
       id_cliente,
       fechaCalendario,
-      es_ote
+      es_ote,
+      empresa
     );
 
     res.status(201).json({
@@ -123,21 +123,23 @@ const crearProyecto = async (req, res) => {
 };
 
 const obtenerContrato = async (req, res) => {
-
   try {
     const { orden_trabajo_id } = req.body;
-    
+
     const id_contrato = await getIdContrato(orden_trabajo_id);
+    if (id_contrato) {
+      const cabecera = await getContrato(id_contrato);
 
-    const cabecera = await getContrato(id_contrato);
+      const detalles = await getDetallesContrato(id_contrato);
 
-    const detalles = await getDetallesContrato(id_contrato);
-
-    const contrato = {cabecera, detalles}
-    res.status(200).json(contrato);
+      const contrato = { cabecera, detalles };
+      res.status(200).json(contrato);
+    } else {
+      res.status(200).json(null);
+    }
   } catch (error) {
     console.error("Error al obtener contrato:", error.message);
-    res.status(500).json({message: "Error en el servidor", data: null})
+    res.status(500).json({ message: "Error en el servidor", data: null });
   }
 };
 
@@ -164,5 +166,5 @@ module.exports = {
   obtenerContrato,
   getDetallesContrato,
   obtenerObras,
-  crearOtObra
+  crearOtObra,
 };
