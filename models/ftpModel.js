@@ -1,27 +1,20 @@
-const { Client } = require("basic-ftp");
 const path = require("path");
-const stream = require("stream");
 const { Writable } = require("stream");
-const FTP_CONFIG = require("../config/ftpcofig");
+const ftpPool = require("./pool/ftpPool");
+const FTP_CONFIG = require("../config/ftpConfig");
 
 // Declarar ruta
 const createPath = (nombreArchivo, id_usuario, id_empresa, tipo) => {
   const dbname = process.env.DB_NAME;
   const basePath = FTP_CONFIG.BASE_PATH;
 
-  let filePath;
-
   if (!nombreArchivo) {
-    // Construcción del path final(Personal sujeto a cambios)
-    filePath = `${basePath}/${dbname}/${id_empresa}/Personal/${id_usuario}/${tipo}`;
-  } else {
-    filePath = `${basePath}/${dbname}/${id_empresa}/Personal/${id_usuario}/${tipo}/${nombreArchivo}`;
+    return `${basePath}/${dbname}/${id_empresa}/Personal/${id_usuario}/${tipo}`;
   }
-
-  return filePath;
+  return `${basePath}/${dbname}/${id_empresa}/Personal/${id_usuario}/${tipo}/${nombreArchivo}`;
 };
 
-// Subir archivo al FTP
+// Subir archivo al FTP usando el pool de conexiones
 async function uploadToFtp(
   nombreArchivo,
   archivo,
@@ -32,83 +25,72 @@ async function uploadToFtp(
   const rutaComprobar = createPath("", id_usuario, id_empresa, tipo);
   const rutaDestino = createPath(nombreArchivo, id_usuario, id_empresa, tipo);
 
+  const client = await ftpPool.getClient();
+
   try {
-    // Verifica si archivoBuffer es un Buffer
     if (!(archivo.buffer instanceof Buffer)) {
-      console.log(archivo.buffer);
-      console.error("El archivo no es un Buffer válido");
-      return;
+      throw new Error("El archivo no es un Buffer válido");
     }
 
-    // Convertimos el buffer a un stream para subirlo al FTP
     const archivoStream = new stream.PassThrough();
-    archivoStream.end(archivo.buffer); // Aquí el buffer viene directamente de busboy
+    archivoStream.end(archivo.buffer);
 
-    const client = new Client();
-    await client.access(FTP_CONFIG);
-
-    // Aseguramos que el directorio existe
     await client.ensureDir(rutaComprobar);
-
-    // Subimos el archivo usando el stream
     await client.uploadFrom(archivoStream, rutaDestino);
-
-    client.close();
   } catch (error) {
-    console.error("Error al subir el archivo al servidor FTP:", error);
+    console.error("Error al subir archivo al servidor FTP:", error);
     throw error;
+  } finally {
+    ftpPool.releaseClient(client);
   }
 }
 
-// Eliminar archivo del FTP
+// Eliminar archivo del FTP usando el pool de conexiones
 async function eliminarArchivo(nombreArchivo, id_usuario, id_empresa, tipo) {
   const rutaArchivo = createPath(nombreArchivo, id_usuario, id_empresa, tipo);
-  const client = new Client();
-  client.ftp.verbose = false;
+  const client = await ftpPool.getClient(); // Obtener cliente del pool
 
   try {
-    await client.access(FTP_CONFIG);
     await client.remove(rutaArchivo);
     console.log(`Archivo ${rutaArchivo} eliminado.`);
   } catch (err) {
     console.error("Error al eliminar archivo en el FTP:", err);
     throw err;
   } finally {
-    client.close();
+    ftpPool.releaseClient(client); // Liberar el cliente para reutilizar
   }
 }
 
-// Listar archivos en el FTP
+// Listar archivos en el FTP con el pool de conexiones
 const listadoArchivos = async (id_usuario, id_empresa, tipo) => {
   const ruta = createPath("", id_usuario, id_empresa, tipo);
-  const client = new Client();
-  client.ftp.verbose = false;
+
+  const client = await ftpPool.getClient(); // Obtener cliente del pool
 
   try {
-    await client.access(FTP_CONFIG);
-
-    return await client.list(ruta);
+    const listado = await client.list(ruta);
+    console.log("Listando archivos desde FTP...");
+    return listado;
   } catch (err) {
     console.log("Error de conexión FTP:", err);
-    throw error;
+    throw err;
   } finally {
-    await client.close();
+    ftpPool.releaseClient(client); // Liberar el cliente para reutilizar
   }
 };
 
+// Descargar archivo desde FTP usando el pool de conexiones
 const descargarArchivo = async (nombreArchivo, id_usuario, id_empresa, tipo) => {
   const ruta = createPath(nombreArchivo, id_usuario, id_empresa, tipo);
-  const client = new Client();
+  const client = await ftpPool.getClient(); // Obtener cliente del pool
 
   try {
-    await client.access(FTP_CONFIG);
-
     const writableBuffer = [];
     const writable = new Writable({
       write(chunk, encoding, callback) {
         writableBuffer.push(chunk);
         callback();
-      }
+      },
     });
 
     await client.downloadTo(writable, ruta);
@@ -121,7 +103,7 @@ const descargarArchivo = async (nombreArchivo, id_usuario, id_empresa, tipo) => 
     console.error("Error al descargar archivo:", error);
     throw new Error("Error al descargar archivo: " + error.message);
   } finally {
-    client.close();
+    ftpPool.releaseClient(client);
   }
 };
 
