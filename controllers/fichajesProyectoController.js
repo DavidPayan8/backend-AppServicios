@@ -47,8 +47,21 @@ const patchFichaje = async (req, res) => {
   }
 }
 
+const postFichaje = async (req, res) => {
+  try {
+    const { idUsuario, entrada, salida, localizacionEntrada, localizacionSalida } = req.query;
+    const entradaDate = new Date(entrada);
+    const salidaDate = salida ? new Date(salida) : null;
+    const result = await fichajesProyectoModel.postFichaje(idUsuario, entradaDate, salidaDate, localizacionEntrada, localizacionSalida);
+    res.status(201).json({ message: "Fichaje creado correctamente", id: result.insertId });
+  } catch (error) {
+    res.status(500).json({ error: "Controller: Error al crear el fichaje: " + error.message });
+  }
+};
+
 module.exports = {
   obtenerFichajesProyecto,
   eliminarFichajes,
-  patchFichaje
+  patchFichaje,
+  postFichaje
 };
