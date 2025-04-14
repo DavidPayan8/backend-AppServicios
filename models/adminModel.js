@@ -171,11 +171,12 @@ const editarEmpleado = async (id_empleado, username, password, nombreApellidos, 
 		const duplicados = await pool
 			.request()
 			.input("user_name", sql.VarChar, username)
+			.input("dni", sql.VarChar, dni.toUpperCase())
 			.input("id", sql.Int, id_empleado)
 			.query(`
 				SELECT count(*) "count"
 				FROM usuarios
-				WHERE lower(user_name) = lower(@user_name)
+				WHERE (lower(user_name) = lower(@user_name) OR upper(dni) = @dni)
 				AND id <> @id;`);
 
 		if (duplicados.recordset[0].count === 0) {
