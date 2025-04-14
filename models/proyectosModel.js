@@ -13,9 +13,10 @@ const connectToDb = async () => {
 const getObras = async (empresa) => {
   try {
     const pool = await connectToDb();
-    const result = await pool.request()
-    .input("id_empresa", sql.Int, empresa)
-    .query(`SELECT * From Proyectos where id_empresa = @id_empresa`);
+    const result = await pool
+      .request()
+      .input("id_empresa", sql.Int, empresa)
+      .query(`SELECT * From Proyectos where id_empresa = @id_empresa`);
     return result.recordset;
   } catch (error) {
     console.error("Error al obtener obras:", error.message);
@@ -46,8 +47,7 @@ const createOtObra = async (
       .input("id_cliente", sql.Int, id_cliente)
       .input("id_obra", sql.Int, id_obra)
       .input("es_ote", sql.Bit, es_ote)
-      .input("id_empresa", sql.Int, empresa)
-      .query(`
+      .input("id_empresa", sql.Int, empresa).query(`
         INSERT INTO ORDEN_TRABAJO (
           id_usuario,
           nombre,
@@ -66,13 +66,13 @@ const createOtObra = async (
           @id_empresa
         );`);
 
-       // Insertar la entrada en el calendario
+    // Insertar la entrada en el calendario
     await request
-    .input("fecha", sql.Date, fechaCalendario)
-    .input("id_proyecto", sql.Int, result.recordset[0].id)
-    .query(`INSERT INTO CALENDARIO ( fecha, id_usuario, id_proyecto)
+      .input("fecha", sql.Date, fechaCalendario)
+      .input("id_proyecto", sql.Int, result.recordset[0].id)
+      .query(`INSERT INTO CALENDARIO ( fecha, id_usuario, id_proyecto)
                   VALUES ( @fecha, @id_usuario, @id_proyecto)`);
-                  
+
     return { id: result.recordset[0].id };
   } catch (error) {
     console.error("Error al crear Ote Obra:", error.message);
@@ -83,6 +83,7 @@ const createOtObra = async (
 // Obtiene los ids de los proyectos, por usuario
 const getIdProyectos = async (userId, date) => {
   try {
+    console.log(userId, date);
     const pool = await connectToDb();
     const result = await pool
       .request()
@@ -105,8 +106,7 @@ const getIdContrato = async (orden_trabajo_id) => {
                     LEFT JOIN orden_trabajo ot 
                         ON c.id = ot.id_contrato
                     WHERE ot.id = ${orden_trabajo_id}`;
-    const result = await pool.request()
-    .query(query);
+    const result = await pool.request().query(query);
     return result.recordset[0]?.id;
   } catch (error) {
     console.error("Error al obtener id contrato:", error.message);
@@ -143,8 +143,7 @@ const getDetallesContrato = async (id_contrato) => {
 // Obtiene los proyectos por ids
 const getProyectos = async (ids) => {
   try {
-
-    console.log("Id",ids)
+    console.log("Id", ids);
     let idsString = "";
     const pool = await connectToDb();
 
@@ -163,7 +162,7 @@ const getProyectos = async (ids) => {
 `;
 
     const result = await pool.request().query(query);
-  
+
     return result.recordset;
   } catch (error) {
     console.error("Error al obtener los proyectos por IDs:", error.message);
@@ -260,6 +259,35 @@ const addProyecto = async (
   }
 };
 
+const autoAsignarOt = async (id_usuario, id_ot) => {
+  try {
+    const pool = await connectToDb();
+
+    const resultOT = await pool.request().query(`
+      UPDATE Orden_Trabajo
+      SET id_usuario = ${id_usuario}
+      WHERE id = ${id_ot}
+    `);
+
+    const resultCal = await pool.request().query(`
+      UPDATE CALENDARIO
+      SET id_usuario = ${id_usuario}
+      WHERE id_proyecto = ${id_ot}
+    `);
+
+    // Verificamos que ambas actualizaciones hayan afectado al menos una fila
+    const rowsAffected = resultOT.rowsAffected[0] + resultCal.rowsAffected[0];
+    if (rowsAffected > 1) {
+      return { success: true, message: "OT autoasignada correctamente" };
+    } else {
+      return { success: false, message: "No se actualizó ninguna fila" };
+    }
+  } catch (error) {
+    console.error("Error al autoasignar OT:", error.message);
+    return { success: false, error: error.message };
+  }
+};
+
 module.exports = {
   getObras,
   createOtObra,
@@ -270,4 +298,5 @@ module.exports = {
   getContrato,
   getIdContrato,
   getDetallesContrato,
+  autoAsignarOt,
 };

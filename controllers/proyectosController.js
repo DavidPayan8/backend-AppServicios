@@ -8,12 +8,12 @@ const {
   getIdContrato,
   getDetallesContrato,
   createOtObra,
+  autoAsignarOt,
 } = require("../models/proyectosModel");
 
 const obtenerObras = async (req, res) => {
   try {
-
-    const { empresa } = req.user
+    const { empresa } = req.user;
     const obras = await getObras(empresa);
 
     res.status(200).json(obras);
@@ -29,7 +29,7 @@ const crearOtObra = async (req, res) => {
   try {
     const { nombre, id_cliente, id_obra, fechaCalendario, es_ote } = req.body;
     const id_usuario = req.user.id;
-    const {empresa} = req.user
+    const { empresa } = req.user;
 
     // Crear el proyecto y calendario
     const nuevoProyecto = await createOtObra(
@@ -99,7 +99,7 @@ const crearProyecto = async (req, res) => {
     const { nombre, observaciones, id_cliente, fechaCalendario, es_ote } =
       req.body;
     const id_usuario = req.user.id;
-    const {empresa} = req.user;
+    const { empresa } = req.user;
 
     // Crear el proyecto y calendario
     const nuevoProyecto = await addProyecto(
@@ -157,6 +157,31 @@ const obtenerProyecto = async (req, res) => {
   }
 };
 
+const autoAsignarOrdenTrabajo = async (req, res) => {
+  try {
+    const { id_ot } = req.body;
+    const id_usuario = req.user.id;
+
+    const proyecto = await getProyectos(id_ot);
+    // Verificar si la OT existe
+    if (!id_ot) {
+      return res
+        .status(404)
+        .json({ message: "Orden de trabajo no encontrada" });
+    } else if (proyecto[0].id_usuario) {
+      return res.status(400).json({ message: "Orden de trabajo ya asignada" });
+    }
+
+    // Asignar OT al usuario
+    const result = await autoAsignarOt(id_usuario, id_ot);
+
+    res.status(200).json({ success: result.success });
+  } catch (error) {
+    console.error("Error al autoasignar OT:", error.message);
+    res.status(500).send("Error del servidor al autoasignar OT");
+  }
+};
+
 module.exports = {
   obtenerIdProyectos,
   obtenerProyectosPorIds,
@@ -167,4 +192,5 @@ module.exports = {
   getDetallesContrato,
   obtenerObras,
   crearOtObra,
+  autoAsignarOrdenTrabajo,
 };
