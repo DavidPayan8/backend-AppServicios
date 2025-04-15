@@ -36,7 +36,6 @@ const crearParteTrabajo = async (req, res) => {
   } = req.body;
   const id_usuario = req.user.id;
 
-  console.log(fecha);
   try {
     const newParteId = await parteService.crearParteTrabajo({
       id_usuario,
