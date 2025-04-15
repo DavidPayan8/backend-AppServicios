@@ -9,7 +9,8 @@ const {
   cambiarEstado,
   obtenerContrato,
   obtenerObras,
-  crearOtObra
+  crearOtObra,
+  autoAsignarOrdenTrabajo
 } = require("../controllers/proyectosController");
 
 router.use(authenticateToken);
@@ -21,6 +22,7 @@ router.post("/obtener-proyectos", obtenerProyecto);
 router.post("/cambiar-estado", cambiarEstado);
 router.post("/obtener-contrato", obtenerContrato);
 router.get("/obtener-obras", obtenerObras);
-router.post("/crear-ot-obra", crearOtObra)
+router.post("/crear-ot-obra", crearOtObra);
+router.post("/auto-asignar-ot", autoAsignarOrdenTrabajo);
 
 module.exports = router;

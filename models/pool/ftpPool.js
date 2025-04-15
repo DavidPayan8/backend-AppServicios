@@ -3,66 +3,84 @@ const FTP_CONFIG = require("../../config/ftpConfig");
 
 class FtpPool {
   constructor(SIZE = 5) {
-    this.size = SIZE; // Tamanio maximo
-    this.pool = []; // Conexiones disponibles
-    this.queue = []; // Cola de solicitudes
+    this.size = SIZE;
+    this.pool = [];
+    this.queue = [];
+    this.activeClients = new Set();
   }
 
-  // Crea una nueva conexión FTP
   async createClient() {
     const client = new Client();
-    try {
-      await client.access(FTP_CONFIG);
-      return client;
-    } catch (error) {
-      console.error("Error al crear la conexión FTP:", error);
-      throw error;
-    }
+    await client.access(FTP_CONFIG);
+    return client;
   }
 
-  // Devuelve una conexión del pool o crea una nueva si no hay disponibles
   async getClient() {
     console.log("<<<<<< Pool getClient");
 
-    if (this.pool.length > 0) {
-      return this.pool.pop();
+    // Limpiar conexiones cerradas del pool
+    this.pool = this.pool.filter(client => !client.closed);
+
+    while (this.pool.length > 0) {
+      const client = this.pool.pop();
+      if (!client.closed) {
+        this.activeClients.add(client);
+        return client;
+      }
     }
 
-    if (this.queue.length < this.size) {
-      // Si no hay conexiones disponibles y la cola no ha alcanzado el tamaño máximo,
-      // creamos una nueva conexión y la agregamos a la cola
+    const totalConnections = this.pool.length + this.activeClients.size + this.queue.length;
+    if (totalConnections < this.size) {
       const client = await this.createClient();
+      this.activeClients.add(client);
       return client;
     }
 
-    // Si no hay conexiones disponibles y la cola está llena, esperamos hasta que una conexión se libere
+    // Esperar a que haya una conexión disponible
     return new Promise((resolve, reject) => {
-      this.queue.push({ resolve, reject });
+      this.queue.push({
+        resolve: (client) => {
+          this.activeClients.add(client);
+          resolve(client);
+        },
+        reject,
+      });
     });
   }
 
-  // Devuelve una conexión al pool
   releaseClient(client) {
     console.log("<<<<<< Pool releaseClient");
 
-    // Si el cliente sigue siendo válido, se agrega al pool
-    if (client && this.pool.length < this.size) {
+    this.activeClients.delete(client);
+
+    if (!client || client.closed) {
+      try {
+        client?.close();
+      } catch (_) {}
+      return;
+    }
+
+    if (this.queue.length > 0) {
+      const { resolve } = this.queue.shift();
+      resolve(client);
+    } else if (this.pool.length < this.size) {
       this.pool.push(client);
-      
-      // Si hay solicitudes esperando en la cola, atendemos la primera
-      if (this.queue.length > 0) {
-        const { resolve } = this.queue.shift();
-        resolve(client); // Resolvemos la promesa con la conexión disponible
-      }
     } else {
-      client.close();
+      try {
+        client.close();
+      } catch (_) {}
     }
   }
 
-  // Cierra todas las conexiones activas en el pool
   closeAll() {
-    this.pool.forEach((client) => client.close());
+    this.pool.forEach(client => {
+      try { client.close(); } catch (_) {}
+    });
     this.pool = [];
+    this.activeClients.forEach(client => {
+      try { client.close(); } catch (_) {}
+    });
+    this.activeClients.clear();
   }
 }
 
