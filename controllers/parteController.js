@@ -30,11 +30,13 @@ const crearParteTrabajo = async (req, res) => {
     id_proyecto,
     hora_entrada,
     fecha,
-    localizacion_entrada,
+    localizacion,
     horas_extra,
     horas_festivo,
   } = req.body;
   const id_usuario = req.user.id;
+
+  console.log(fecha);
   try {
     const newParteId = await parteService.crearParteTrabajo({
       id_usuario,
@@ -43,7 +45,7 @@ const crearParteTrabajo = async (req, res) => {
       id_proyecto,
       hora_entrada,
       fecha,
-      localizacion_entrada,
+      localizacion,
       horas_extra,
       horas_festivo,
     });
@@ -66,10 +68,7 @@ const getPartes = async (req, res) => {
     if (partes.length > 0) {
       res.status(200).json(partes);
     } else {
-      res.status(404).json({
-        message:
-          "No se encontraron partes de trabajo para los criterios especificados.",
-      });
+      res.status(200).json(partes);
     }
   } catch (error) {
     console.error("Error al obtener partes de trabajo:", error.message);
@@ -113,7 +112,7 @@ const actualizarParteTrabajo = async (req, res) => {
     hora_salida,
     horas_festivo,
     horas_extra,
-    localizacion_salida
+    localizacion,
   } = req.body;
   try {
     await parteService.actualizarParteTrabajo(
@@ -124,7 +123,7 @@ const actualizarParteTrabajo = async (req, res) => {
       hora_salida,
       horas_festivo,
       horas_extra,
-      localizacion_salida
+      localizacion
     );
     res
       .status(200)

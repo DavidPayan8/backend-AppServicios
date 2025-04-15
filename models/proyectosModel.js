@@ -145,21 +145,56 @@ const getProyectos = async (ids) => {
   try {
     console.log("Id", ids);
     let idsString = "";
+
     const pool = await connectToDb();
 
-    // Convertir array de IDs en formato adecuado para SQL
-    ids.length > 1 ? (idsString = ids.join(",")) : (idsString = ids);
+    // Convertir array de IDs a string para la cláusula IN
+    idsString = Array.isArray(ids) ? ids.join(",") : ids;
 
-    const query = `SELECT 
-    Orden_Trabajo.*, 
-    CLIENTES.nombre AS nombre_cliente
+    const query = `
+    SELECT 
+      Orden_Trabajo.id,
+      Orden_Trabajo.id_origen,
+      Orden_Trabajo.nombre,
+      Orden_Trabajo.observaciones,
+      Orden_Trabajo.id_cliente,
+      Orden_Trabajo.es_ote,
+      Orden_Trabajo.detalles,
+      Orden_Trabajo.estado,
+      Orden_Trabajo.id_usuario,
+      Orden_Trabajo.id_servicio_origen,
+      Orden_Trabajo.articulo_id,
+      Orden_Trabajo.id_contrato,
+      Orden_Trabajo.direccion,
+      Orden_Trabajo.id_empresa,
+      CLIENTES.nombre AS nombre_cliente,
+      MIN(pt.hora_entrada) AS hora_inicio,
+      MAX(pt.hora_salida) AS hora_fin
     FROM 
-        Orden_Trabajo
+      Orden_Trabajo
     LEFT JOIN 
-        CLIENTES ON Orden_Trabajo.id_cliente = CLIENTES.id
+      CLIENTES ON Orden_Trabajo.id_cliente = CLIENTES.id
+    LEFT JOIN 
+      partes_trabajo pt ON pt.id_proyecto = Orden_Trabajo.id
     WHERE 
-        Orden_Trabajo.id IN (${idsString});
-`;
+      Orden_Trabajo.id IN (${idsString})
+    GROUP BY 
+      Orden_Trabajo.id,
+      Orden_Trabajo.id_origen,
+      Orden_Trabajo.nombre,
+      Orden_Trabajo.observaciones,
+      Orden_Trabajo.id_cliente,
+      Orden_Trabajo.es_ote,
+      Orden_Trabajo.detalles,
+      Orden_Trabajo.estado,
+      Orden_Trabajo.id_usuario,
+      Orden_Trabajo.id_servicio_origen,
+      Orden_Trabajo.articulo_id,
+      Orden_Trabajo.id_contrato,
+      Orden_Trabajo.direccion,
+      Orden_Trabajo.id_empresa,
+      CLIENTES.nombre;
+  `;
 
     const result = await pool.request().query(query);
 
