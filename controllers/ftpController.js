@@ -11,10 +11,11 @@ const obtenerListadoFtp = async (req, res) => {
   const { tipo } = req.query;
 
   try {
+    console.log("[BACK] llamada a listadoArchivos");
     const listado = await listadoArchivos(id, empresa, tipo);
     return res.status(200).json(listado);
   } catch (error) {
-    if(error.code === 550) console.log("Si entra aqui")
+    if (error.code === 550) console.log("Si entra aqui");
     console.error("Error al obtener listado FTP:", error);
     res.status(500).json({ error: "Error al obtener listado de archivos." });
   }
@@ -69,12 +70,12 @@ const visualizarArchivoFTP = async (req, res) => {
 };
 
 const subirArchivoFtp = async (req, res) => {
-  const { nombre, tipo } = req.body;
+  const { nombre, tipo, id_usuario } = req.body;
   const { archivo } = req.files;
-  const { id, empresa } = req.user;
+  const { empresa } = req.user;
 
   try {
-    await uploadToFtp(nombre, archivo, id, empresa, tipo);
+    await uploadToFtp(nombre, archivo, id_usuario, empresa, tipo);
     res.json({ message: "Archivo subido correctamente." });
   } catch (error) {
     res.status(500).json({ error: error.message });
