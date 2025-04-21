@@ -17,6 +17,6 @@ router.post('/obtener-capitulos', getCapitulos);
 
 router.post('/obtener-partidas', getPartidas);
 
-router.put('/actualizar-parte/:id', actualizarParteTrabajo);
+router.patch('/actualizar-parte/:id', actualizarParteTrabajo);
 
 module.exports = router;

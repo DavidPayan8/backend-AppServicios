@@ -1,4 +1,5 @@
 const { darAltaEmpleado, getEmpleados, ordenesValidos, getDetalles, editarEmpleado } = require("../models/adminModel");
+const identidad = require("../shared/identidad");
 
 const darAltaEmpleadoHandler = async (req, res) => {
 	try {
@@ -81,10 +82,15 @@ const editarEmpleadoHandler = async (req, res) => {
 			return;
 		}
 
+		if (dni !== undefined && !identidad.esDniValido(dni) && !identidad.esNieValido(dni)) {
+			res.status(400).send({ message: "DNI inválido" });
+			return;
+		}
+
 		const codigoError = await editarEmpleado(id, username, password, nombreApellidos, dni, seguridadSocial, rol);
 		switch (codigoError) {
 			case 400: {
-				res.status(400).send({ message: "Nombre de usuario en uso" });
+				res.status(400).send({ message: "Nombre de usuario y/o DNI en uso" });
 				break;
 			}
 			case undefined: {
