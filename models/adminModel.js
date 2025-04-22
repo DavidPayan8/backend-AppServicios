@@ -2,11 +2,9 @@ const sql = require("mssql");
 const config = require("../config/dbConfig");
 
 const darAltaEmpleado = async (id_admin, username, password, nombreApellidos, dni, segSocial, rol) => {
-	let codigoError;
-
 	try {
 		const pool = await sql.connect(config);
-		const duplicados = await pool
+		const usuariosNombre = await pool
 			.request()
 			.input("user_name", sql.VarChar, username)
 			.query(`
@@ -15,32 +13,43 @@ const darAltaEmpleado = async (id_admin, username, password, nombreApellidos, dn
 				WHERE lower(user_name) = lower(@user_name);
 				`);
 
-		if (duplicados.recordset[0].count == 0) {
-			const result = await pool
-				.request()
-				.input("id_admin", sql.Int, id_admin)
-				.input("user_name", sql.VarChar, username)
-				.input("contrasena", sql.VarChar, password)
-				.input("nomapes", sql.VarChar, nombreApellidos)
-				.input("dni", sql.VarChar, dni)
-				.input("num_seguridad_social", sql.VarChar, segSocial)
-				.input("rol", sql.VarChar, rol)
-				.query(`
-					INSERT INTO usuarios (user_name, contrasena, nomapes, dni, num_seguridad_social, rol, id_empresa)
-					VALUES (@user_name, @contrasena, @nomapes, @dni, @num_seguridad_social, @rol, (SELECT id_empresa FROM usuarios WHERE id = @id_admin));
+		if (usuariosNombre.recordset[0].count !== 0) {
+			return "Nombre de usuario en uso";
+		}
+
+		const usuariosDNI = await pool
+			.request()
+			.input("dni", sql.VarChar, dni)
+			.query(`
+				SELECT count(*) "count"
+				FROM usuarios
+				WHERE upper(dni) = upper(@dni);
 				`);
 
-			if (result.rowsAffected != 1)
-				codigoError = 500;
-		} else {
-			codigoError = 400;
+		if (usuariosDNI.recordset[0].count !== 0) {
+			return "DNI en uso";
 		}
+
+		const result = await pool
+			.request()
+			.input("id_admin", sql.Int, id_admin)
+			.input("user_name", sql.VarChar, username)
+			.input("contrasena", sql.VarChar, password)
+			.input("nomapes", sql.VarChar, nombreApellidos)
+			.input("dni", sql.VarChar, dni)
+			.input("num_seguridad_social", sql.VarChar, segSocial)
+			.input("rol", sql.VarChar, rol)
+			.query(`
+				INSERT INTO usuarios (user_name, contrasena, nomapes, dni, num_seguridad_social, rol, id_empresa)
+				VALUES (@user_name, @contrasena, @nomapes, @dni, @num_seguridad_social, @rol, (SELECT id_empresa FROM usuarios WHERE id = @id_admin));
+				`);
+
+		if (result.rowsAffected != 1)
+			return "Error desconocido";
 	} catch (error) {
 		console.error("Error al dar de alta a un nuevo empleado: ", id_admin, username, password, nombreApellidos);
 		throw error;
 	}
-
-	return codigoError;
 }
 
 /**
