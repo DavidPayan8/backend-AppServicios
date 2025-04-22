@@ -4,21 +4,12 @@ const identidad = require("../shared/identidad");
 const darAltaEmpleadoHandler = async (req, res) => {
 	try {
 		const { username, password, nombreApellidos, dni, segSocial, rol } = req.body;
-		const codigoError = await darAltaEmpleado(req.user.id, username, password, nombreApellidos, dni, segSocial, rol);
+		const mensajeError = await darAltaEmpleado(req.user.id, username, password, nombreApellidos, dni, segSocial, rol);
 
-		switch (codigoError) {
-			case 400: {
-				res.status(400).json({ message: "Usuario duplicado" });
-				break;
-			}
-			case undefined: {
-				// Exito
-				res.status(201).send();
-				break;
-			}
-			default: {
-				res.status(500).send("Error del servidor");
-			}
+		if (!mensajeError) {
+			res.status(201).send();
+		} else {
+			res.status(400).json({ message: mensajeError });
 		}
 	} catch (error) {
 		console.error("Error al dar de alta empleado: ", error);
