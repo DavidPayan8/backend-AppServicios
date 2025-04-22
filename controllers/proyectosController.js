@@ -82,7 +82,7 @@ const cambiarEstado = async (req, res) => {
 };
 
 const obtenerProyectosPorIds = async (req, res) => {
-  const { ids } = req.body;
+  const { ids } = req.query;
   try {
     const proyectos = await getProyectos(ids);
     res.status(200).json(proyectos);
@@ -124,7 +124,7 @@ const crearProyecto = async (req, res) => {
 
 const obtenerContrato = async (req, res) => {
   try {
-    const { orden_trabajo_id } = req.body;
+    const { orden_trabajo_id } = req.query;
 
     const id_contrato = await getIdContrato(orden_trabajo_id);
     if (id_contrato) {
@@ -145,7 +145,7 @@ const obtenerContrato = async (req, res) => {
 
 const obtenerProyecto = async (req, res) => {
   try {
-    const { id } = req.body;
+    const { id } = req.query;
 
     // Obtener proyecto por Id
     const proyecto = await getProyectos(id);

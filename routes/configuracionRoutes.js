@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.use(authenticateToken);
 
-router.post('/obtener-dias-editables', getDiasEditables);
+router.get('/obtener-dias-editables', getDiasEditables);
 router.get('/obtener-config-empresa' , obtenerConfigEmpresa)
 
 module.exports = router;

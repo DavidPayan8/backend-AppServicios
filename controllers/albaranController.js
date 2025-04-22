@@ -22,47 +22,51 @@ const crearCabeceraAlbaran = async (req, res) => {
   }
 };
 
-const setEstadoCabecera = async (req,res) =>{
+const setEstadoCabecera = async (req, res) => {
   try {
     const { cabecera_id } = req.body;
 
-    // Obtener listado articulos por Id de la Orden Trabajo
     await setEstadoCabeceraDB(cabecera_id);
 
-    res.status(201)
+    res.status(200).send();
   } catch (error) {
     console.error("Error al cambiar estado cabecera:", error.message);
     res.status(500).send("Error del servidor");
   }
-}
+};
 
 const obtenerCabeceraOt = async (req, res) => {
   try {
-    const { id_ot } = req.body;
+    const { id_ot } = req.query;
 
-    // Obtener listado articulos por Id de la Orden Trabajo
     const result = await obtenerCabeceraDoc(id_ot);
 
-    res.status(201).json(result[0]);
+    res.status(200).json(result[0]);
   } catch (error) {
     console.error("Error al obtener cabecera doc:", error.message);
     res.status(500).send("Error del servidor");
   }
 };
 
+
 const obtenerDetallesDoc = async (req, res) => {
   try {
-    const { id_cabecera } = req.body;
+    const { id_cabecera } = req.query;  // Cambiado de req.body a req.query
+
+    if (!id_cabecera) {
+      return res.status(400).send("El parámetro 'id_cabecera' es obligatorio");
+    }
 
     // Obtener listado articulos por Id de la Orden Trabajo
     const result = await obtenerDetallesDocDb(id_cabecera);
 
-    res.status(201).json(result);
+    res.status(200).json(result);
   } catch (error) {
     console.error("Error al obtener detalles doc:", error.message);
     res.status(500).send("Error del servidor");
   }
 };
+
 
 const cambiarDetalleAlbaran = async (req, res) => {
   try {
