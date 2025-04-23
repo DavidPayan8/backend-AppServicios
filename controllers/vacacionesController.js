@@ -1,4 +1,4 @@
-const { obtenerTotalVacaciones, obtenerTiposVacacion, obtenerVacaciones, solicitarVacaciones } = require('../models/vacacionesModel');
+const { obtenerTotalVacaciones, obtenerTiposVacacion, obtenerVacacionesSolicitadas, solicitarVacaciones, obtenerVacacionesAceptadas, obtenerVacacionesDenegadas } = require('../models/vacacionesModel');
 
 const obtenerTotalVacacionesHandler = async (req, res) => {
 	try {
@@ -20,10 +20,21 @@ const obtenerTiposVacacionHandler = async (req, res) => {
 	}
 }
 
-const obtenerVacacionesAceptadas = async (req, res) => {
+const obtenerVacacionesSolicitadasHandler = async (req, res) => {
 	try {
 		const { tipo } = req.body;
-		let vacaciones = await obtenerVacaciones(req.user.id, tipo, true);
+		const vacaciones = await obtenerVacacionesSolicitadas(req.user.id, tipo);
+		res.status(200).json(vacaciones);
+	} catch (error) {
+		console.error('Error al obtener vacaciones solicitadas: ', error.message);
+		res.status(500).send('Error del servidor');
+	}
+}
+
+const obtenerVacacionesAceptadasHandler = async (req, res) => {
+	try {
+		const { tipo } = req.body;
+		const vacaciones = await obtenerVacacionesAceptadas(req.user.id, tipo);
 		res.status(200).json(vacaciones);
 	} catch (error) {
 		console.error('Error al obtener vacaciones aceptadas: ', error.message);
@@ -31,13 +42,13 @@ const obtenerVacacionesAceptadas = async (req, res) => {
 	}
 }
 
-const obtenerVacacionesSolicitadas = async (req, res) => {
+const obtenerVacacionesDenegadasHandler = async (req, res) => {
 	try {
 		const { tipo } = req.body;
-		let vacaciones = await obtenerVacaciones(req.user.id, tipo, false);
+		const vacaciones = await obtenerVacacionesDenegadas(req.user.id, tipo);
 		res.status(200).json(vacaciones);
 	} catch (error) {
-		console.error('Error al obtener vacaciones aceptadas: ', error.message);
+		console.error('Error al obtener vacaciones denegadas: ', error.message);
 		res.status(500).send('Error del servidor');
 	}
 }
@@ -61,7 +72,8 @@ const solicitarVacacionesHandler = async (req, res) => {
 module.exports = {
 	obtenerTotalVacaciones: obtenerTotalVacacionesHandler,
 	obtenerTiposVacacion: obtenerTiposVacacionHandler,
-	obtenerVacacionesAceptadas,
-	obtenerVacacionesSolicitadas,
+	obtenerVacacionesAceptadas: obtenerVacacionesAceptadasHandler,
+	obtenerVacacionesDenegadas: obtenerVacacionesDenegadasHandler,
+	obtenerVacacionesSolicitadas: obtenerVacacionesSolicitadasHandler,
 	solicitarVacaciones: solicitarVacacionesHandler,
 }
