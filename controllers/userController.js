@@ -1,4 +1,9 @@
-const { getUsers, getUserById, actualizarPerfil } = require('../models/userModel');
+const {
+  getUsers,
+  getUserById,
+  actualizarPerfil,
+  actualizarPrimerInicio,
+} = require("../models/userModel");
 const identidad = require("../shared/identidad");
 
 const getUsersHandler = async (req, res) => {
@@ -6,8 +11,8 @@ const getUsersHandler = async (req, res) => {
     let users = await getUsers();
     res.json(users);
   } catch (error) {
-    console.error('Error al obtener usuarios:', error.message);
-    res.status(500).send('Error del servidor');
+    console.error("Error al obtener usuarios:", error.message);
+    res.status(500).send("Error del servidor");
   }
 };
 
@@ -24,14 +29,22 @@ const getPerfilHandler = async (req, res) => {
 
     res.json(user);
   } catch (error) {
-    console.error('Error al obtener usuario:', error.message);
-    res.status(500).send('Error del servidor');
+    console.error("Error al obtener usuario:", error.message);
+    res.status(500).send("Error del servidor");
   }
-}
+};
 
 const actualizarPerfilHandler = async (req, res) => {
   try {
-    const { nombreApellidos, password, dni, seguridadSocial } = req.body;
+    const {
+      nombreApellidos,
+      password,
+      dni,
+      seguridadSocial,
+      email,
+      telefono,
+      sexo,
+    } = req.body;
 
     // Validación
     if (!identidad.esDniValido(dni) && !identidad.esNieValido(dni)) {
@@ -39,16 +52,36 @@ const actualizarPerfilHandler = async (req, res) => {
       return;
     }
 
-    await actualizarPerfil(req.user.id, nombreApellidos, password, dni, seguridadSocial);
+    await actualizarPerfil(
+      req.user.id,
+      nombreApellidos,
+      password,
+      dni,
+      seguridadSocial,
+      email,
+      telefono,
+      sexo
+    );
     res.status(200).send();
   } catch (error) {
-    console.error('Error al actualizar perfil:', error.message);
-    res.status(500).send('Error del servidor');
+    console.error("Error al actualizar perfil:", error.message);
+    res.status(500).send("Error del servidor");
   }
-}
+};
+
+const cambiarPrimerInicio = async (req, res) => {
+  try {
+    await actualizarPrimerInicio(req.user.id);
+    res.status(200).send();
+  } catch (error) {
+    console.error("Error al actualizar perfil:", error.message);
+    res.status(500).send("Error del servidor");
+  }
+};
 
 module.exports = {
   getUsers: getUsersHandler,
   getPerfil: getPerfilHandler,
   actualizarPerfil: actualizarPerfilHandler,
+  cambiarPrimerInicio,
 };
