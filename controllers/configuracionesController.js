@@ -1,8 +1,8 @@
-const { obtenerDiasEditables,getConfigEmpresa } = require("../models/configuracionesModel");
+const { obtenerDiasEditables, getConfigEmpresa } = require("../models/configuracionesModel");
 
 const getDiasEditables = async (req, res) => {
-  const { empresa } = req.user
-  const { rol } = req.body;
+  const { empresa } = req.user;
+  const { rol } = req.query;
 
   try {
     const config = await obtenerDiasEditables(rol, empresa);
@@ -17,7 +17,8 @@ const getDiasEditables = async (req, res) => {
   }
 };
 
-const obtenerConfigEmpresa = async (req,res) => {
+
+const obtenerConfigEmpresa = async (req, res) => {
   try {
     const { empresa } = req.user
     const config = await getConfigEmpresa(empresa);

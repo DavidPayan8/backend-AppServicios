@@ -198,10 +198,11 @@ const setEstadoCabeceraDB = async (cabecera_id) => {
         WHERE id = @cabecera_id
     `);
   } catch (error) {
-    console.error("Error al actualizar el cabecera:", details);
+    console.error("Error al actualizar el cabecera:", error.message);
     throw error;
   }
 };
+
 const obtenerCabeceraDoc = async (id, empresa) => {
   try {
     const pool = await sql.connect(config);

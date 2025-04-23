@@ -1,7 +1,7 @@
 const parteService = require("../models/parteModel");
 
 const checkParteAbierto = async (req, res) => {
-  const { id_proyecto } = req.body;
+  const { id_proyecto } = req.query;
   const id_usuario = req.user.id;
 
   try {
@@ -10,11 +10,7 @@ const checkParteAbierto = async (req, res) => {
       id_proyecto
     );
 
-    if (hayParteAbierto) {
-      res.status(200).json(hayParteAbierto);
-    } else {
-      res.status(200).json(hayParteAbierto);
-    }
+    res.status(200).json(hayParteAbierto);
   } catch (error) {
     res.status(500).json({
       message: "Error al comprobar partes abiertos.",
@@ -22,6 +18,7 @@ const checkParteAbierto = async (req, res) => {
     });
   }
 };
+
 
 const crearParteTrabajo = async (req, res) => {
   const {
@@ -58,7 +55,7 @@ const crearParteTrabajo = async (req, res) => {
 };
 
 const getPartes = async (req, res) => {
-  const { id_proyecto, fecha } = req.body;
+  const { id_proyecto, fecha } = req.query;
   const id_usuario = req.user.id;
 
   try {
@@ -79,11 +76,11 @@ const getPartes = async (req, res) => {
 };
 
 const getParte = async (req, res) => {
-  const { id_parte } = req.body;
+  const { id } = req.params;
   const id_usuario = req.user.id;
 
   try {
-    const parte = await parteService.getParte(id_parte, id_usuario);
+    const parte = await parteService.getParte(id, id_usuario);
 
     if (parte.length == 1) {
       res.status(200).json(parte);
@@ -136,7 +133,7 @@ const actualizarParteTrabajo = async (req, res) => {
 };
 
 const getCapitulos = async (req, res) => {
-  const { id_proyecto } = req.body;
+  const { id_proyecto } = req.query;
 
   try {
     const capitulos = await parteService.getCapitulos(id_proyecto);
@@ -150,7 +147,7 @@ const getCapitulos = async (req, res) => {
 };
 
 const getPartidas = async (req, res) => {
-  const { id_capitulo, id_proyecto } = req.body;
+  const { id_capitulo, id_proyecto } = req.query;
 
   try {
     const partidas = await parteService.getPartidas(id_capitulo, id_proyecto);
