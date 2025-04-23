@@ -7,8 +7,8 @@ const router = express.Router();
 router.use(authenticateToken);
 
 router.put("/alta", darAltaEmpleado);
-router.post("/empleados", getEmpleados);
-router.post("/detalles", getDetalles);
+router.get("/empleados", getEmpleados);
+router.get("/detalles", getDetalles);
 router.put("/editar", editarEmpleado);
 router.post("/vacaciones", getVacaciones);
 router.post("/vacacion", getVacacion);

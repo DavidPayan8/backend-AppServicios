@@ -83,24 +83,25 @@ const getPartes = async (id_usuario, id_proyecto, fecha) => {
 };
 
 const getParte = async (id_parte, id_usuario) => {
-  const id = id_parte;
   try {
     const pool = await sql.connect(config);
     const result = await pool
       .request()
       .input("id", sql.Int, id_parte)
-      .input("id_usuario", sql.Int, id_usuario).query(`
-                SELECT * 
-                FROM PARTES_TRABAJO 
-                WHERE id_usuario = @id_usuario 
-                  AND id = @id
-            `);
+      .input("id_usuario", sql.Int, id_usuario)
+      .query(`
+        SELECT * 
+        FROM PARTES_TRABAJO 
+        WHERE id_usuario = @id_usuario 
+          AND id = @id
+      `);
     return result.recordset;
   } catch (error) {
     console.error("Error al obtener partes de trabajo:", error.message);
     throw error;
   }
 };
+
 
 const actualizarParteTrabajo = async (
   id,

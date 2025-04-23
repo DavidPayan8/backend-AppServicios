@@ -14,15 +14,15 @@ const {
 router.use(authenticateToken);
 
 //Rutas para detalles doc
-router.post("/obtener-detallesDoc", obtenerDetallesDoc);
-router.post("/cambiar-detallesDoc", cambiarDetalleAlbaran);
+router.get("/obtener-detallesDoc", obtenerDetallesDoc);
+router.put("/cambiar-detallesDoc", cambiarDetalleAlbaran);
 router.post("/add-detallesDoc", crearDetalleAlbaran);
 router.delete("/borrar-detallesDoc", borrarDetalleAlbaran);
 
 //Rutas para cabecera doc
-router.post("/obtener-cabecera", obtenerCabeceraOt);
+router.get("/obtener-cabecera", obtenerCabeceraOt);
 router.post('/crear-cabecera', crearCabeceraAlbaran);
-router.post('/cambiar-estado-albaran', setEstadoCabecera);
+router.patch('/cambiar-estado-albaran', setEstadoCabecera);
  
 
 module.exports = router;

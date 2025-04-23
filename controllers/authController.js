@@ -28,7 +28,7 @@ const login = async (req, res) => {
       JWT_SECRET,
       { expiresIn: "1h" }
     );
-    return res.json({ token });
+    return res.json({ token, user });
   } catch (err) {
     console.error("Error during login:", err);
     return res.status(500).json({ message: "Internal server error" });
