@@ -1,4 +1,4 @@
-const { darAltaEmpleado, getEmpleados, ordenesValidos, getDetalles, editarEmpleado } = require("../models/adminModel");
+const { darAltaEmpleado, getEmpleados, ordenesEmpleadoValidos, ordenesVacacionValidos, getDetalles, editarEmpleado, getVacaciones, getVacacion, actualizarVacacion, getCambiosEstado } = require("../models/adminModel");
 const identidad = require("../shared/identidad");
 
 const darAltaEmpleadoHandler = async (req, res) => {
@@ -31,30 +31,18 @@ const getEmpleadosHandler = async (req, res) => {
 		} catch (e) {
 		  filtros = {};
 		}
-	  }
-  
-	  if (!Number.isInteger(pagina) || pagina < 1) {
-		res.statusMessage = "Campo 'página' es obligatorio y debe ser un número natural";
-		res.status(400).send();
-		return;
-	  }
-  
-	  if (!Number.isInteger(empleadosPorPagina) || empleadosPorPagina < 1) {
-		res.statusMessage = "Campo 'empleadosPorPagina' es obligatorio y debe ser un número natural";
-		res.status(400).send();
-		return;
-	  }
-  
-	  if (ordenarPor === undefined) {
-		ordenarPor = "id";
-	  } else if (!ordenesValidos.includes(ordenarPor)) {
-		res.statusMessage = "Campo 'ordenarPor' es inválido";
-		res.status(400).send();
-		return;
-	  }
-  
-	  const empleados = await getEmpleados(req.user.id, pagina, empleadosPorPagina, ordenarPor, esAscendiente, filtros);
-	  res.json(empleados);
+
+		if (ordenarPor === undefined) {
+			ordenarPor = "id";
+		} else if (!ordenesEmpleadoValidos.includes(ordenarPor)) {
+			res.statusMessage = "Campo 'ordenarPor' es inválido";
+			res.status(400).send();
+			return;
+		}
+
+		const empleados = await getEmpleados(req.user.id, pagina, empleadosPorPagina, ordenarPor, esAscendiente, filtros);
+		res.json(empleados);
+
 	} catch (error) {
 	  console.error("Error al obtener empleados: ", error);
 	  res.status(500).send("Error del servidor");
@@ -113,9 +101,90 @@ const editarEmpleadoHandler = async (req, res) => {
 	}
 }
 
+const getVacacionesHandler = async (req, res) => {
+	try {
+		let { pagina, itemsPorPagina, filtros, ordenarPor, esAscendiente } = req.body;
+
+		// Controles
+		if (!Number.isInteger(pagina) || pagina < 1) {
+			res.statusMessage = "Campo 'página' es obligatorio y debe ser un número natural"
+			res.status(400).send();
+			return;
+		}
+
+		if (!Number.isInteger(itemsPorPagina) || itemsPorPagina < 1) {
+			res.statusMessage = "Campo 'itemsPorPagina' es obligatorio y debe ser un número natural"
+			res.status(400).send();
+			return;
+		}
+
+		if (esAscendiente === undefined) {
+			esAscendiente = true;
+		}
+
+		if (ordenarPor === undefined) {
+			ordenarPor = "id";
+		} else if (!ordenesVacacionValidos.includes(ordenarPor)) {
+			res.statusMessage = "Campo 'ordenarPor' es inválido";
+			res.status(400).send();
+			return;
+		}
+
+		const vacaciones = await getVacaciones(req.user.id, pagina, itemsPorPagina, ordenarPor, esAscendiente, filtros);
+		res.json(vacaciones);
+	} catch (error) {
+		console.error("Error al obtener vacaciones: ", error)
+		res.status(500).send("Error del servidor");
+	}
+}
+
+const getVacacionHandler = async (req, res) => {
+	try {
+		const { id } = req.body;
+
+		if (id === undefined || !Number.isInteger(id)) {
+			res.statusMessage = "ID indefinido o inválido";
+			res.status(400).send();
+			return;
+		}
+
+		const detalles = await getVacacion(id);
+		res.json(detalles);
+	} catch (error) {
+		console.error("Error al obtener los detalles de una vacación: ", error);
+		res.status(500).send("Error del servidor");
+	}
+}
+
+const actualizarVacacionHandler = async (req, res) => {
+	try {
+		const { id, estado, razon } = req.body;
+		await actualizarVacacion(id, req.user.id, estado, razon);
+		res.status(201).send();
+	} catch (error) {
+		console.error("Error al actualizar el estado de una vacación", error);
+		res.status(500).send("Error del servidor");
+	}
+}
+
+const getCambiosEstadoHandler = async (req, res) => {
+	try {
+		const { id } = req.body;
+		const cambios = await getCambiosEstado(id);
+		res.json(cambios);
+	} catch (error) {
+		console.error("Error al obtener los cambios de una vacación", error);
+		res.status(500).send("Error del servidor");
+	} 
+}
+
 module.exports = {
 	darAltaEmpleado: darAltaEmpleadoHandler,
 	getEmpleados: getEmpleadosHandler,
 	getDetalles: getDetallesHandler,
 	editarEmpleado: editarEmpleadoHandler,
+	getVacaciones: getVacacionesHandler,
+	getVacacion: getVacacionHandler,
+	actualizarVacacion: actualizarVacacionHandler,
+	getCambiosEstado: getCambiosEstadoHandler,
 }
