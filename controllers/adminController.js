@@ -1,121 +1,190 @@
-const { darAltaEmpleado, getEmpleados, ordenesValidos, getDetalles, editarEmpleado } = require("../models/adminModel");
+const {
+  darAltaEmpleado,
+  getEmpleados,
+  ordenesValidos,
+  getDetalles,
+  editarEmpleado,
+} = require("../models/adminModel");
 const identidad = require("../shared/identidad");
 
 const darAltaEmpleadoHandler = async (req, res) => {
-	try {
-		const { username, password, nombreApellidos, dni, segSocial, rol } = req.body;
-		const mensajeError = await darAltaEmpleado(req.user.id, username, password, nombreApellidos, dni, segSocial, rol);
+  try {
+    const {
+      username,
+      password,
+      nombreApellidos,
+      dni,
+      segSocial,
+      email,
+      telefono,
+      rol,
+    } = req.body;
+    const mensajeError = await darAltaEmpleado(
+      req.user.id,
+      username,
+      password,
+      nombreApellidos,
+      dni,
+      segSocial,
+      email,
+      telefono,
+      rol
+    );
 
-		if (!mensajeError) {
-			res.status(201).send();
-		} else {
-			res.status(400).json({ message: mensajeError });
-		}
-	} catch (error) {
-		console.error("Error al dar de alta empleado: ", error);
-		res.status(500).send("Error del servidor");
-	}
-}
+    if (!mensajeError) {
+      res.status(201).send();
+    } else {
+      res.status(400).json({ message: mensajeError });
+    }
+  } catch (error) {
+    console.error("Error al dar de alta empleado: ", error);
+    res.status(500).send("Error del servidor");
+  }
+};
 
 const getEmpleadosHandler = async (req, res) => {
-	try {
-	  let { pagina, empleadosPorPagina, ordenarPor, esAscendiente, filtros } = req.query;
-  
-	  pagina = parseInt(pagina, 10);
-	  empleadosPorPagina = parseInt(empleadosPorPagina, 10);
-	  esAscendiente = esAscendiente === 'true';
-  
-	  if (typeof filtros === 'string') {
-		try {
-		  filtros = JSON.parse(filtros);
-		} catch (e) {
-		  filtros = {};
-		}
-	  }
-  
-	  if (!Number.isInteger(pagina) || pagina < 1) {
-		res.statusMessage = "Campo 'página' es obligatorio y debe ser un número natural";
-		res.status(400).send();
-		return;
-	  }
-  
-	  if (!Number.isInteger(empleadosPorPagina) || empleadosPorPagina < 1) {
-		res.statusMessage = "Campo 'empleadosPorPagina' es obligatorio y debe ser un número natural";
-		res.status(400).send();
-		return;
-	  }
-  
-	  if (ordenarPor === undefined) {
-		ordenarPor = "id";
-	  } else if (!ordenesValidos.includes(ordenarPor)) {
-		res.statusMessage = "Campo 'ordenarPor' es inválido";
-		res.status(400).send();
-		return;
-	  }
-  
-	  const empleados = await getEmpleados(req.user.id, pagina, empleadosPorPagina, ordenarPor, esAscendiente, filtros);
-	  res.json(empleados);
-	} catch (error) {
-	  console.error("Error al obtener empleados: ", error);
-	  res.status(500).send("Error del servidor");
-	}
-  }
-  
+  try {
+    let { pagina, empleadosPorPagina, ordenarPor, esAscendiente, filtros } =
+      req.query;
 
-  const getDetallesHandler = async (req, res) => {
-	try {
-	  const { id } = req.query; 
-  
-	  if (!id) {
-		return res.status(400).send("El parámetro 'id' es obligatorio");
-	  }
-  
-	  res.json(await getDetalles(id));
-	} catch (error) {
-	  console.error("Error al obtener detalles del empleado: ", error);
-	  res.status(500).send("Error del servidor");
-	}
+    pagina = parseInt(pagina, 10);
+    empleadosPorPagina = parseInt(empleadosPorPagina, 10);
+    esAscendiente = esAscendiente === "true";
+
+    if (typeof filtros === "string") {
+      try {
+        filtros = JSON.parse(filtros);
+      } catch (e) {
+        filtros = {};
+      }
+    }
+
+    if (!Number.isInteger(pagina) || pagina < 1) {
+      res.statusMessage =
+        "Campo 'página' es obligatorio y debe ser un número natural";
+      res.status(400).send();
+      return;
+    }
+
+    if (!Number.isInteger(empleadosPorPagina) || empleadosPorPagina < 1) {
+      res.statusMessage =
+        "Campo 'empleadosPorPagina' es obligatorio y debe ser un número natural";
+      res.status(400).send();
+      return;
+    }
+
+    if (ordenarPor === undefined) {
+      ordenarPor = "id";
+    } else if (!ordenesValidos.includes(ordenarPor)) {
+      res.statusMessage = "Campo 'ordenarPor' es inválido";
+      res.status(400).send();
+      return;
+    }
+
+    const empleados = await getEmpleados(
+      req.user.id,
+      pagina,
+      empleadosPorPagina,
+      ordenarPor,
+      esAscendiente,
+      filtros
+    );
+    res.json(empleados);
+  } catch (error) {
+    console.error("Error al obtener empleados: ", error);
+    res.status(500).send("Error del servidor");
   }
-  
+};
+
+const getDetallesHandler = async (req, res) => {
+  try {
+    const { id } = req.query;
+
+    if (!id) {
+      return res.status(400).send("El parámetro 'id' es obligatorio");
+    }
+
+    res.json(await getDetalles(id));
+  } catch (error) {
+    console.error("Error al obtener detalles del empleado: ", error);
+    res.status(500).send("Error del servidor");
+  }
+};
 
 const editarEmpleadoHandler = async (req, res) => {
-	try {
-		const { id, username, password, nombreApellidos, dni, seguridadSocial, rol } = req.body;
+  try {
+    const {
+      id,
+      username,
+      password,
+      nombreApellidos,
+      dni,
+      seguridadSocial,
+      email,
+      telefono,
+      rol,
+      sexo,
+    } = req.body;
 
-		if (!username && !password && !nombreApellidos && !dni && !seguridadSocial && !rol) {
-			res.status(400).send({ message: "No se está editando ningúna columna" });
-			return;
-		}
+    if (
+      !username &&
+      !password &&
+      !nombreApellidos &&
+      !dni &&
+      !seguridadSocial &&
+      !rol &&
+      !email &&
+      !telefono &&
+      !sexo
+    ) {
+      res.status(400).send({ message: "No se está editando ningúna columna" });
+      return;
+    }
 
-		if (dni !== undefined && !identidad.esDniValido(dni) && !identidad.esNieValido(dni)) {
-			res.status(400).send({ message: "DNI inválido" });
-			return;
-		}
+    if (
+      dni &&
+      !identidad.esDniValido(dni) &&
+      !identidad.esNieValido(dni)
+    ) {
+      res.status(400).send({ message: "DNI inválido" });
+      return;
+    }
 
-		const codigoError = await editarEmpleado(id, username, password, nombreApellidos, dni, seguridadSocial, rol);
-		switch (codigoError) {
-			case 400: {
-				res.status(400).send({ message: "Nombre de usuario y/o DNI en uso" });
-				break;
-			}
-			case undefined: {
-				// Exito
-				res.status(201).send();
-				break;
-			}
-			default: {
-				res.status(500).send("Error del servidor");
-			}
-		}
-	} catch (error) {
-		console.error("Error al editar empleado: ", error);
-		res.status(500).send("Error del servidor");
-	}
-}
+    const codigoError = await editarEmpleado(
+      id,
+      username,
+      password,
+      nombreApellidos,
+      dni,
+      seguridadSocial,
+      email,
+      telefono,
+      rol,
+      sexo
+    );
+    switch (codigoError) {
+      case 400: {
+        res.status(400).send({ message: "Nombre de usuario y/o DNI en uso" });
+        break;
+      }
+      case undefined: {
+        // Exito
+        res.status(201).send();
+        break;
+      }
+      default: {
+        res.status(500).send("Error del servidor");
+      }
+    }
+  } catch (error) {
+    console.error("Error al editar empleado: ", error);
+    res.status(500).send("Error del servidor");
+  }
+};
 
 module.exports = {
-	darAltaEmpleado: darAltaEmpleadoHandler,
-	getEmpleados: getEmpleadosHandler,
-	getDetalles: getDetallesHandler,
-	editarEmpleado: editarEmpleadoHandler,
-}
+  darAltaEmpleado: darAltaEmpleadoHandler,
+  getEmpleados: getEmpleadosHandler,
+  getDetalles: getDetallesHandler,
+  editarEmpleado: editarEmpleadoHandler,
+};
