@@ -99,7 +99,7 @@ const darAltaEmpleado = async (
  * @prop {string | undefined} rol El rol del empleado.
  */
 
-const ordenesValidos = [
+const ordenesEmpleadoValidos = [
   "id",
   "user_name",
   "nomapes",
@@ -107,7 +107,6 @@ const ordenesValidos = [
   "num_seguridad_social",
   "rol",
 ];
-
 /**
  * Consulta los empleados de la empresa de un administrador.
  * @param {number} id_admin La ID del administrador
@@ -127,7 +126,8 @@ const getEmpleados = async (
 ) => {
   try {
     // ordenesValidos es exportado para validar antes de llamar a getEmpleados
-    if (!ordenesValidos.includes(ordenarPor)) {
+    if (!ordenesEmpleadoValidos.includes(ordenarPor)) {
+      console.log("2")
       throw new Error("Orden inválido");
     }
 
@@ -344,19 +344,19 @@ const construirEdicion = (
     inputs.num_seguridad_social = seguridadSocial;
   }
 
-	if (rol && rol.trim().length > 0) {
+  if (rol && rol.trim().length > 0) {
     query.push("rol = @rol");
     inputs.rol = rol;
   }
 
   if (telefono !== undefined) {
     query.push("telefono = @telefono");
-    inputs.telefono = telefono.trim() === '' ? null : telefono;
+    inputs.telefono = telefono.trim() === "" ? null : telefono;
   }
-  
+
   if (email !== undefined) {
     query.push("email = @email");
-    inputs.email = email.trim() === '' ? null : email;
+    inputs.email = email.trim() === "" ? null : email;
   }
 
   if (sexo && sexo.trim().length > 0) {
@@ -371,25 +371,30 @@ const construirEdicion = (
 };
 
 const actualizarVacacion = async (idVacacion, idAdmin, estado, razon) => {
-	try {
-		const pool = await sql.connect(config);
-		await pool
-			.request()
-			.input("id_vacacion", sql.Int, idVacacion)
-			.input("administrador", sql.Int, idAdmin)
-			.input("estado", sql.VarChar, estado)
-			.input("razon", sql.VarChar, razon)
-			.query(`
+  try {
+    const pool = await sql.connect(config);
+    await pool
+      .request()
+      .input("id_vacacion", sql.Int, idVacacion)
+      .input("administrador", sql.Int, idAdmin)
+      .input("estado", sql.VarChar, estado)
+      .input("razon", sql.VarChar, razon).query(`
 				INSERT INTO VACACIONES_ESTADOS
 				(id_vacacion, tiempo, administrador, estado, razon)
 				VALUES
 				(@id_vacacion, CURRENT_TIMESTAMP, @administrador, @estado, @razon);
 			`);
-	} catch (error) {
-		console.error("Error al actualizar el estado de vacación: ", idVacacion, idAdmin, estado, razon);
-		throw error;
-	}
-}
+  } catch (error) {
+    console.error(
+      "Error al actualizar el estado de vacación: ",
+      idVacacion,
+      idAdmin,
+      estado,
+      razon
+    );
+    throw error;
+  }
+};
 
 /**
  * @typedef FiltrosGetVacaciones
@@ -400,26 +405,26 @@ const actualizarVacacion = async (idVacacion, idAdmin, estado, razon) => {
  */
 
 const ordenesVacacionValidos = [
-	'id',
-	'empleado',
-	'comienzo',
-	'fin',
-	'dias',
-	'tipo',
-	'estado'
+  "id",
+  "empleado",
+  "comienzo",
+  "fin",
+  "dias",
+  "tipo",
+  "estado",
 ];
 
 /**
  * Mapea los campos de ordenamiento del frontend a los nombres de columnas/alias en la consulta SQL.
  */
 const mapeoOrdenVacaciones = {
-	'id': 'vacation_id', // Usamos el alias de la CTE
-	'empleado': 'nomapes',
-	'comienzo': 'FechaComienzo',
-	'fin': 'FechaFin',
-	'dias': 'TotalDias',
-	'tipo': 'TipoNombre',
-	'estado': 'EstadoFinal'
+  id: "vacation_id", // Usamos el alias de la CTE
+  empleado: "nomapes",
+  comienzo: "FechaComienzo",
+  fin: "FechaFin",
+  dias: "TotalDias",
+  tipo: "TipoNombre",
+  estado: "EstadoFinal",
 };
 
 /**
@@ -432,34 +437,50 @@ const mapeoOrdenVacaciones = {
  * @param {FiltrosGetVacaciones | undefined} filtros Los filtros de la consulta.
  * @returns {Promise<{vacaciones: VacationSummary[], total: number}>} Objeto con el array de vacaciones paginadas y el total de items.
  */
-const getVacaciones = async (idAdmin, pagina, itemsPorPagina, ordenarPor, esAscendiente, filtros) => {
-	try {
-		// Determinar la columna SQL y la dirección de ordenamiento
-		const columnaOrdenPrincipal = mapeoOrdenVacaciones[ordenarPor] || 'vacation_id';
-		const direccionOrden = (esAscendiente === true) ? 'ASC' : 'DESC';
+const getVacaciones = async (
+  idAdmin,
+  pagina,
+  itemsPorPagina,
+  ordenarPor,
+  esAscendiente,
+  filtros
+) => {
+  try {
+    // Determinar la columna SQL y la dirección de ordenamiento
+    const columnaOrdenPrincipal =
+      mapeoOrdenVacaciones[ordenarPor] || "vacation_id";
+    const direccionOrden = esAscendiente === true ? "ASC" : "DESC";
 
-		// Construir la cláusula ORDER BY dinámicamente
-		let ordenamientoSQL = `ORDER BY ${columnaOrdenPrincipal} ${direccionOrden}`;
+    // Construir la cláusula ORDER BY dinámicamente
+    let ordenamientoSQL = `ORDER BY ${columnaOrdenPrincipal} ${direccionOrden}`;
 
-		// Añadir el ordenamiento secundario por vacation_id SOLO si el orden primario no es ya vacation_id
-		if (columnaOrdenPrincipal !== 'vacation_id') {
-			// Usar la misma dirección para el ordenamiento secundio para consistencia, o usar 'ASC' fijo si se prefiere
-			ordenamientoSQL += `, vacation_id ${direccionOrden}`;
-		}
+    // Añadir el ordenamiento secundario por vacation_id SOLO si el orden primario no es ya vacation_id
+    if (columnaOrdenPrincipal !== "vacation_id") {
+      // Usar la misma dirección para el ordenamiento secundio para consistencia, o usar 'ASC' fijo si se prefiere
+      ordenamientoSQL += `, vacation_id ${direccionOrden}`;
+    }
 
-		const pool = await sql.connect(config);
-		const request = pool.request();
-		request.input("id_admin", sql.Int, idAdmin);
-		request.input("nomapes", sql.VarChar, filtros?.empleado?.trim()?.toLowerCase());
-		request.input("estado", sql.VarChar, filtros?.estado);
-		request.input("tipoNombre", sql.VarChar, filtros?.tipo?.trim()?.toLowerCase());
-		request.input("fecha", sql.Date, filtros?.fecha);
+    const pool = await sql.connect(config);
+    const request = pool.request();
+    request.input("id_admin", sql.Int, idAdmin);
+    request.input(
+      "nomapes",
+      sql.VarChar,
+      filtros?.empleado?.trim()?.toLowerCase()
+    );
+    request.input("estado", sql.VarChar, filtros?.estado);
+    request.input(
+      "tipoNombre",
+      sql.VarChar,
+      filtros?.tipo?.trim()?.toLowerCase()
+    );
+    request.input("fecha", sql.Date, filtros?.fecha);
 
-		// Parámetros para la paginación OFFSET/FETCH NEXT
-		request.input("filas", sql.Int, itemsPorPagina);
-		request.input("offset", sql.Int, (pagina - 1) * itemsPorPagina);
+    // Parámetros para la paginación OFFSET/FETCH NEXT
+    request.input("filas", sql.Int, itemsPorPagina);
+    request.input("offset", sql.Int, (pagina - 1) * itemsPorPagina);
 
-		const result = await request.query(`
+    const result = await request.query(`
             -- Declarar la variable de tabla ANTES de las CTEs
             DECLARE @FilteredVacations TABLE (
                 vacation_id INT,
@@ -557,32 +578,39 @@ const getVacaciones = async (idAdmin, pagina, itemsPorPagina, ordenarPor, esAsce
 
         `);
 
-		const vacacionesPaginadas = result.recordsets[0]; // Resultado de la primera SELECT (los datos paginados)
-		const totalItemsResult = result.recordsets[1]; // Resultado de la segunda SELECT (el conteo total)
+    const vacacionesPaginadas = result.recordsets[0]; // Resultado de la primera SELECT (los datos paginados)
+    const totalItemsResult = result.recordsets[1]; // Resultado de la segunda SELECT (el conteo total)
 
-		const totalItems = totalItemsResult.length > 0 ? totalItemsResult[0].total : 0;
+    const totalItems =
+      totalItemsResult.length > 0 ? totalItemsResult[0].total : 0;
 
-		return {
-			vacaciones: vacacionesPaginadas,
-			total: totalItems
-		};
-	} catch (error) {
-		console.error("Error al obtener vacaciones: ", idAdmin, pagina, itemsPorPagina, ordenarPor, esAscendiente, filtros);
-		throw error;
-	}
-}
+    return {
+      vacaciones: vacacionesPaginadas,
+      total: totalItems,
+    };
+  } catch (error) {
+    console.error(
+      "Error al obtener vacaciones: ",
+      idAdmin,
+      pagina,
+      itemsPorPagina,
+      ordenarPor,
+      esAscendiente,
+      filtros
+    );
+    throw error;
+  }
+};
 
 /**
  * Obtiene los detalles de una vacación.
  * @param {number} idVacacion ID de la vacación.
  */
 const getVacacion = async (idVacacion) => {
-	try {
-		const pool = await sql.connect(config);
-		const result = await pool
-			.request()
-			.input('VacationId', sql.Int, idVacacion)
-			.query(`
+  try {
+    const pool = await sql.connect(config);
+    const result = await pool.request().input("VacationId", sql.Int, idVacacion)
+      .query(`
 				-- Primera Consulta: Detalles principales (empleado, tipo, estado)
 				SELECT TOP 1 -- Debería haber solo una vacación con este ID
 					u.nomapes AS empleado,
@@ -609,38 +637,40 @@ const getVacacion = async (idVacacion) => {
 				ORDER BY dia ASC; -- Ordenar los días cronológicamente
         `);
 
-		// Verificar si se encontró la vacación principal (el primer recordset no está vacío)
-		if (!result.recordsets || result.recordsets.length === 0 || result.recordsets[0].length === 0) {
-			return null;
-		}
+    // Verificar si se encontró la vacación principal (el primer recordset no está vacío)
+    if (
+      !result.recordsets ||
+      result.recordsets.length === 0 ||
+      result.recordsets[0].length === 0
+    ) {
+      return null;
+    }
 
-		const detalles = result.recordsets[0][0];
+    const detalles = result.recordsets[0][0];
 
-		const dias = (result.recordsets.length > 1 && result.recordsets[1].length > 0)
-			? result.recordsets[1].map(row => row.dia_formato)
-			: [];
+    const dias =
+      result.recordsets.length > 1 && result.recordsets[1].length > 0
+        ? result.recordsets[1].map((row) => row.dia_formato)
+        : [];
 
-		return {
-			empleado: detalles.empleado,
-			tipo: detalles.tipo,
-			estado: detalles.estado,
-			dias: dias,
-		}
-
-
-	} catch (error) {
-		console.error("Error al obtener detalles de vacación: ", idVacacion);
-		throw error;
-	}
-}
+    return {
+      empleado: detalles.empleado,
+      tipo: detalles.tipo,
+      estado: detalles.estado,
+      dias: dias,
+    };
+  } catch (error) {
+    console.error("Error al obtener detalles de vacación: ", idVacacion);
+    throw error;
+  }
+};
 
 const getCambiosEstado = async (idVacacion) => {
-	try {
-		const pool = await sql.connect(config);
-		const result = await pool
-			.request()
-			.input("id_vacacion", sql.Int, idVacacion)
-			.query(`
+  try {
+    const pool = await sql.connect(config);
+    const result = await pool
+      .request()
+      .input("id_vacacion", sql.Int, idVacacion).query(`
 				SELECT CONVERT(VARCHAR, tiempo, 120) "tiempo", (
 					SELECT nomapes FROM USUARIOS WHERE id = administrador
 				) "administrador", estado, razon
@@ -648,21 +678,25 @@ const getCambiosEstado = async (idVacacion) => {
 				WHERE id_vacacion = @id_vacacion;
 			`);
 
-
-		return result.recordset;
-	} catch (error) {
-		console.error("Error al obtener cambios de estado de vacación: ", idVacacion);
-		throw error;
-	}
-}
+    return result.recordset;
+  } catch (error) {
+    console.error(
+      "Error al obtener cambios de estado de vacación: ",
+      idVacacion
+    );
+    throw error;
+  }
+};
 
 module.exports = {
-	darAltaEmpleado,
-	getEmpleados,
-	getDetalles,
-	editarEmpleado,
-	actualizarVacacion,
-	getVacaciones,
-	getVacacion,
-	getCambiosEstado,
-}
+  darAltaEmpleado,
+  getEmpleados,
+  getDetalles,
+  editarEmpleado,
+  actualizarVacacion,
+  ordenesEmpleadoValidos,
+  ordenesVacacionValidos,
+  getVacaciones,
+  getVacacion,
+  getCambiosEstado,
+};
