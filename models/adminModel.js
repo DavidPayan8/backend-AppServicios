@@ -661,8 +661,6 @@ module.exports = {
 	getEmpleados,
 	getDetalles,
 	editarEmpleado,
-	ordenesEmpleadoValidos,
-	ordenesVacacionValidos,
 	actualizarVacacion,
 	getVacaciones,
 	getVacacion,

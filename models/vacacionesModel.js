@@ -82,7 +82,7 @@ const obtenerTotalVacaciones = async (idUsuario) => {
 
 		return vacaciones;
 	} catch (error) {
-		console.error("Error al obtener vacaciones: ", id_usuario);
+		console.error("Error al obtener vacaciones: ", idUsuario);
 		throw error;
 	}
 }

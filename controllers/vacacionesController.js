@@ -2,7 +2,7 @@ const { obtenerTotalVacaciones, obtenerTiposVacacion, obtenerVacacionesSolicitad
 
 const obtenerTotalVacacionesHandler = async (req, res) => {
 	try {
-		let total = await obtenerTotalVacaciones(req.user.id, req.user.id_empresa);
+		let total = await obtenerTotalVacaciones(req.user.id);
 		res.status(200).json(total);
 	} catch (error) {
 		console.error('Error al obtener total de vacaciones:', error.message);
