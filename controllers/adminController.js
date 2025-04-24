@@ -2,7 +2,12 @@ const {
   darAltaEmpleado,
   getEmpleados,
   getVacaciones,
+  ordenesEmpleadoValidos, 
+  ordenesVacacionValidos,
   getDetalles,
+  getCambiosEstado,
+  getVacacion,
+  actualizarVacacion,
   editarEmpleado,
 } = require("../models/adminModel");
 const identidad = require("../shared/identidad");
@@ -58,12 +63,8 @@ const getEmpleadosHandler = async (req, res) => {
         filtros = {};
       }
     }
-    if (ordenarPor === undefined) {
+    if (!ordenarPor || !ordenesEmpleadoValidos.includes(ordenarPor)) {
       ordenarPor = "id";
-    } else if (!ordenesEmpleadoValidos.includes(ordenarPor)) {
-      res.statusMessage = "Campo 'ordenarPor' es inválido";
-      res.status(400).send();
-      return;
     }
 
     const empleados = await getEmpleados(
@@ -74,7 +75,7 @@ const getEmpleadosHandler = async (req, res) => {
       esAscendiente,
       filtros
     );
-    res.json(empleados);
+    res.status(200).json(empleados);
   } catch (error) {
     console.error("Error al obtener empleados: ", error);
     res.status(500).send("Error del servidor");
