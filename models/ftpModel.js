@@ -63,7 +63,6 @@ async function eliminarArchivo(nombreArchivo, id_usuario, id_empresa, tipo) {
   try {
     client = await ftpPool.getClient();
     await client.remove(rutaArchivo);
-    console.log(`Archivo eliminado: ${rutaArchivo}`);
   } catch (err) {
     console.error(`Error al eliminar archivo en el FTP (${rutaArchivo}):`, err);
     throw err;
