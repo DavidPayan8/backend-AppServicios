@@ -83,13 +83,12 @@ const subirArchivoFtp = async (req, res) => {
 };
 
 const eliminarArchivoFTP = async (req, res) => {
-  const { ruta } = req.body;
-  const { id, empresa } = req.user;
-  const { tipo } = req.query;
+  const { empresa } = req.user;
+  const { nombre, tipo, id_usuario } = req.body;
 
   try {
-    await eliminarArchivo(ruta, id, empresa, tipo);
-    res.json({ message: "Archivo eliminado correctamente." });
+    await eliminarArchivo(nombre, id_usuario, empresa, tipo);
+    res.status(200).json({ message: "Archivo eliminado correctamente." });
   } catch (error) {
     console.error("Fallo al eliminar archivo:", error.message);
     res.status(500).json({ error: error.message });
