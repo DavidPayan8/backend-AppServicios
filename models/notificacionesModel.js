@@ -6,7 +6,7 @@ const obtenerNotificacionesModel = async (id_usuario) => {
     const pool = await sql.connect(config);
     const result = await pool.request().input("id_usuario", sql.Int, id_usuario)
       .query(`
-        SELECT n.*, nu.leido, nu.fecha_leido, u.nomapes
+        SELECT n.*, nu.leido, nu.fecha_leido, u.nomapes as emisor
         FROM notificaciones n
         INNER JOIN notificaciones_usuarios nu ON n.id = nu.id_notificacion
         LEFT JOIN Usuarios u ON u.id = n.id_emisor
@@ -25,11 +25,13 @@ const obtenerArchivadasModel = async (id_usuario) => {
     const pool = await sql.connect(config);
     const result = await pool.request().input("id_usuario", sql.Int, id_usuario)
       .query(`
-        SELECT n.*, nu.leido, nu.fecha_leido
+        SELECT n.*, nu.leido, nu.fecha_leido, u.nomapes as emisor
         FROM notificaciones n
         INNER JOIN notificaciones_usuarios nu ON n.id = nu.id_notificacion
+        LEFT JOIN Usuarios u ON u.id = n.id_emisor
         WHERE nu.id_usuario = @id_usuario
-          AND nu.leido = 1;
+          AND nu.leido = 1
+          AND nu.fecha_leido IS NOT NULL;
       `);
     return result.recordset;
   } catch (error) {
@@ -47,7 +49,7 @@ const marcarLeidaModel = async (id_notificaciones, id_usuario) => {
       .input("id_usuario", sql.Int, id_usuario).query(`
               UPDATE Notificaciones_Usuarios
               SET leido = 1,
-              fecha_leido = GETDATE()
+              fecha_leido = SYSDATETIMEOFFSET()
               WHERE id_notificacion = @id AND id_usuario = @id_usuario;
               `);
     return result.rowsAffected[0];
@@ -106,7 +108,6 @@ const crearNotificacion = async ({
 
     // Agregar filas de destinatarios
     destino.forEach((id_usuario) => {
-      console.log(id_usuario);
       destinatariosTable.rows.add(id_notificacion, id_usuario, 0, null);
     });
 
