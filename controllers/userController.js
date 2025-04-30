@@ -7,9 +7,10 @@ const {
 const identidad = require("../shared/identidad");
 
 const getUsersHandler = async (req, res) => {
+  const { empresa } = req.user;
   try {
-    let users = await getUsers();
-    res.json(users);
+    let users = await getUsers(empresa);
+    res.status(200).json(users);
   } catch (error) {
     console.error("Error al obtener usuarios:", error.message);
     res.status(500).send("Error del servidor");
@@ -27,7 +28,7 @@ const getPerfilHandler = async (req, res) => {
     user.id_origen = undefined;
     user.id_config = undefined;
 
-    res.json(user);
+    res.status(200).json(user);
   } catch (error) {
     console.error("Error al obtener usuario:", error.message);
     res.status(500).send("Error del servidor");

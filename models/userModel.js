@@ -119,10 +119,13 @@ const actualizarPrimerInicio = async (id) => {
   }
 };
 
-const getUsers = async () => {
+const getUsers = async (empresa) => {
   try {
     let pool = await sql.connect(config);
-    let result = await pool.request().query("SELECT * FROM Usuarios");
+    let result = await pool
+      .request()
+      .input("id_empresa", sql.Int, empresa)
+      .query("SELECT * FROM Usuarios Where id_empresa = @id_empresa");
     return result.recordset;
   } catch (error) {
     console.error("Error al obtener usuarios:", error.message);
