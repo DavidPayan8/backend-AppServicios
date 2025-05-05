@@ -276,9 +276,10 @@ const solicitarVacaciones = async (id_usuario, tipo, dias) => {
     const result = await pool
       .request()
       .input("id_usuario", sql.Int, id_usuario)
-      .input("tipo", sql.Int, tipo).query(`INSERT INTO vacaciones
+      .input("tipo", sql.Int, tipo)
+      .query(`INSERT INTO vacaciones (tipo, id_usuario, aceptado)
 					OUTPUT INSERTED.id
-					VALUES (@tipo, @id_usuario)`);
+					VALUES (@tipo, @id_usuario, 0)`);
 
     const id = result.recordset[0].id;
 
