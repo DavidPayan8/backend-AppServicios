@@ -19,6 +19,21 @@ const getColorPrincipal = async (empresaId) => {
   }
 };
 
+const getEmpresas = async () => {
+  try {
+    let pool = await sql.connect(config);
+    let result = await pool.request().query(`
+          SELECT id, nombre, cif
+          FROM empresa;
+        `);
+
+    return result.recordset;
+  } catch (error) {
+    console.error("Error al obtener el color principal:", error.message);
+    throw error;
+  }
+};
+
 const getEmpresa = async (empresaId) => {
   try {
     let pool = await sql.connect(config);
@@ -110,89 +125,6 @@ const updateEmpresa = async (empresa) => {
             WHERE id_empresa = @id_empresa
           `);
     }
-    /* 
-    // Ahora actualizamos la tabla de configuración si hay datos
-    if (!empresa.configuracion) {
-        return
-    }
-      const configUpdates = [];
-      const configRequest = pool.request();
-
-      // Configuración email
-      if (empresa.configuracion.email?.email) {
-        configUpdates.push("email_entrante = @email");
-        configRequest.input(
-          "email",
-          sql.NVarChar,
-          empresa.configuracion.email.email
-        );
-      }
-      if (empresa.configuracion.email?.smtp_host) {
-        configUpdates.push("smtp_host = @smtp_host");
-        configRequest.input(
-          "smtp_host",
-          sql.NVarChar,
-          empresa.configuracion.email.smtp_host
-        );
-      }
-      if (empresa.configuracion.email?.smtp_port) {
-        configUpdates.push("smtp_port = @smtp_port");
-        configRequest.input(
-          "smtp_port",
-          sql.NVarChar,
-          empresa.configuracion.email.smtp_port
-        );
-      }
-      if (empresa.configuracion.email?.smtp_user) {
-        configUpdates.push("smtp_user = @smtp_user");
-        configRequest.input(
-          "smtp_user",
-          sql.NVarChar,
-          empresa.configuracion.email.smtp_user
-        );
-      }
-      if (empresa.configuracion.email?.smtp_pass) {
-        configUpdates.push("smtp_pass = @smtp_pass");
-        configRequest.input(
-          "smtp_pass",
-          sql.NVarChar,
-          empresa.configuracion.email.smtp_pass
-        );
-      }
-
-      // Configuración app
-      if (empresa.configuracion.app?.colorPrimario) {
-        configUpdates.push("color_primario = @colorPrimario");
-        configRequest.input(
-          "colorPrimario",
-          sql.NVarChar,
-          empresa.configuracion.app.colorPrimario
-        );
-      }
-      if (empresa.configuracion.app?.hayPrimerInicio !== undefined) {
-        configUpdates.push("hay_primer_inicio = @hayPrimerInicio");
-        configRequest.input(
-          "hayPrimerInicio",
-          sql.Bit,
-          empresa.configuracion.app.hayPrimerInicio ? 1 : 0
-        );
-      }
-      if (empresa.configuracion.app?.esTipoObra !== undefined) {
-        configUpdates.push("es_tipo_obra = @esTipoObra");
-        configRequest.input(
-          "esTipoObra",
-          sql.Bit,
-          empresa.configuracion.app.esTipoObra ? 1 : 0
-        );
-      }
-
-      if (configUpdates.length > 0) {
-        await configRequest.input("id_empresa", sql.Int, empresa.id).query(`
-              UPDATE config_empresa
-              SET ${configUpdates.join(", ")}
-              WHERE id_empresa = @id_empresa
-            `);
-      } */
   } catch (error) {
     console.error("Error actualizando la empresa:", error);
     throw error;
@@ -287,6 +219,7 @@ const updateConfigEmpresa = async (configuracion, id_empresa) => {
 
 module.exports = {
   getEmpresa,
+  getEmpresas,
   getColorPrincipal,
   updateEmpresa,
   updateConfigEmpresa,

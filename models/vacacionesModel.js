@@ -1,25 +1,28 @@
 const sql = require("mssql");
 const config = require("../config/dbConfig");
-const { LocalDate, DateTimeFormatter, ZoneId, DayOfWeek } = require("@js-joda/core");
+const {
+  LocalDate,
+  DateTimeFormatter,
+  ZoneId,
+  DayOfWeek,
+} = require("@js-joda/core");
 const { Locale } = require("@js-joda/locale_es");
 require("@js-joda/timezone");
 
-
 const obtenerTotalVacaciones = async (idUsuario) => {
-	try {
-		const pool = await sql.connect(config);
+  try {
+    const pool = await sql.connect(config);
 
-		const vacaciones = {
-			aceptadas: 0,
-			solicitadas: 0,
-			pendientes: 0,
-		};
+    const vacaciones = {
+      aceptadas: 0,
+      solicitadas: 0,
+      pendientes: 0,
+    };
 
-		// Consulta la cantidad de días de vacación
-		const resultVacaciones = await pool
-			.request()
-			.input("userId", sql.Int, idUsuario)
-			.query(`
+    // Consulta la cantidad de días de vacación
+    const resultVacaciones = await pool
+      .request()
+      .input("userId", sql.Int, idUsuario).query(`
 				-- CTE para obtener el estado más reciente de cada vacación que tiene estados registrados
 				WITH LatestVacationState AS (
 					SELECT
@@ -65,60 +68,57 @@ const obtenerTotalVacaciones = async (idUsuario) => {
 				WHERE uvwcs.CurrentEstado = 'solicitado';
 			`);
 
-		vacaciones.solicitadas = resultVacaciones.recordsets[1][0]?.TotalDiasSolicitados || 0;
-		vacaciones.aceptadas = resultVacaciones.recordsets[0][0]?.TotalDiasAceptados || 0;
-		const total = vacaciones.aceptadas + vacaciones.solicitadas;
+    vacaciones.solicitadas =
+      resultVacaciones.recordsets[1][0]?.TotalDiasSolicitados || 0;
+    vacaciones.aceptadas =
+      resultVacaciones.recordsets[0][0]?.TotalDiasAceptados || 0;
+    const total = vacaciones.aceptadas + vacaciones.solicitadas;
 
-		// Consulta la cantidad de días disponibles en los tipos de vacación
-		const resultTipos = await pool
-			.request()
-			.input("id_usuario", sql.Int, idUsuario)
-			.query(`
+    // Consulta la cantidad de días disponibles en los tipos de vacación
+    const resultTipos = await pool
+      .request()
+      .input("id_usuario", sql.Int, idUsuario).query(`
 			SELECT SUM(COALESCE(cantidad_dias, 0)) "dias"
 			FROM tipos_vacacion
 			WHERE id_empresa IS NULL OR id_empresa = (SELECT id_empresa FROM usuarios WHERE id = @id_usuario);`);
 
-		vacaciones.pendientes = resultTipos.recordset[0].dias - total;
+    vacaciones.pendientes = resultTipos.recordset[0].dias - total;
 
-		return vacaciones;
-	} catch (error) {
-		console.error("Error al obtener vacaciones: ", idUsuario);
-		throw error;
-	}
-}
+    return vacaciones;
+  } catch (error) {
+    console.error("Error al obtener vacaciones: ", idUsuario);
+    throw error;
+  }
+};
 
-const obtenerTiposVacacion = async (id_usuario) => {
-	try {
-		const pool = await sql.connect(config);
-		const result = await pool
-			.request()
-			.input("id_usuario", sql.Int, id_usuario)
-			.query(`
+const obtenerTiposVacacion = async (empresa) => {
+  try {
+    const pool = await sql.connect(config);
+    const result = await pool.request().input("id_empresa", sql.Int, empresa)
+      .query(`
 				SELECT id, nombre, cantidad_dias "dias", es_dias_naturales
 				FROM tipos_vacacion
-				WHERE id_empresa IS NULL OR id_empresa = (SELECT id_empresa FROM usuarios WHERE id = @id_usuario);`);
-		return result.recordset;
-	} catch (error) {
-		console.error("Error al obtener tipos de vacacion.");
-		throw error;
-	}
-} 
-
+				WHERE id_empresa = @id_empresa;`);
+    return result.recordset;
+  } catch (error) {
+    console.error("Error al obtener tipos de vacacion.");
+    throw error;
+  }
+};
 
 /**
- * 
+ *
  * @param {number} idUsuario ID del usuario consultando las vacaciones.
  * @param {number} tipo Tipo de vacaciones a consultar.
  * @returns Las vacaciones solicitadas del usuario.
  */
 const obtenerVacacionesSolicitadas = async (idUsuario, tipo) => {
-	try {
-		const pool = await sql.connect(config);
-		const result = await pool
-			.request()
-			.input("UserId", sql.Int, idUsuario)
-			.input("TipoId", sql.Int, tipo)
-			.query(`
+  try {
+    const pool = await sql.connect(config);
+    const result = await pool
+      .request()
+      .input("UserId", sql.Int, idUsuario)
+      .input("TipoId", sql.Int, tipo).query(`
 				WITH LatestStates AS (
 					-- CTE para encontrar el estado más reciente para cada vacación que tiene estados
 					SELECT
@@ -146,24 +146,23 @@ const obtenerVacacionesSolicitadas = async (idUsuario, tipo) => {
 				);
 			`);
 
-		// Selecciono dia como una cadena para evitar que mssql
-		// convierta al dia a un Date de JavaScript
+    // Selecciono dia como una cadena para evitar que mssql
+    // convierta al dia a un Date de JavaScript
 
-		return result.recordset;
-	} catch (error) {
-		console.error("Error al obtener vacaciones.");
-		throw error;
-	}
-}
+    return result.recordset;
+  } catch (error) {
+    console.error("Error al obtener vacaciones.");
+    throw error;
+  }
+};
 
 const obtenerVacacionesAceptadas = async (idUsuario, tipo) => {
-	try {
-		const pool = await sql.connect(config);
-		const result = await pool
-			.request()
-			.input("UserId", sql.Int, idUsuario)
-			.input("TipoId", sql.Int, tipo)
-			.query(`
+  try {
+    const pool = await sql.connect(config);
+    const result = await pool
+      .request()
+      .input("UserId", sql.Int, idUsuario)
+      .input("TipoId", sql.Int, tipo).query(`
 				WITH LatestStates AS (
 					-- CTE para encontrar el estado más reciente para cada vacación que tiene estados
 					SELECT
@@ -188,21 +187,20 @@ const obtenerVacacionesAceptadas = async (idUsuario, tipo) => {
 				AND ls.estado = 'aceptado'; -- Filtra solo las que tienen estado 'aceptado' como el más reciente
 			`);
 
-		return result.recordset;
-	} catch (error) {
-		console.error("Error al obtener vacaciones.");
-		throw error;
-	}
-}
+    return result.recordset;
+  } catch (error) {
+    console.error("Error al obtener vacaciones.");
+    throw error;
+  }
+};
 
 const obtenerVacacionesDenegadas = async (idUsuario, tipo) => {
-	try {
-		const pool = await sql.connect(config);
-		const result = await pool
-			.request()
-			.input("UserId", sql.Int, idUsuario)
-			.input("TipoId", sql.Int, tipo)
-			.query(`
+  try {
+    const pool = await sql.connect(config);
+    const result = await pool
+      .request()
+      .input("UserId", sql.Int, idUsuario)
+      .input("TipoId", sql.Int, tipo).query(`
 				WITH LatestStates AS (
 					-- CTE para encontrar el estado, el tiempo y la razon del estado más reciente
 					-- para cada vacación que tiene estados.
@@ -230,12 +228,12 @@ const obtenerVacacionesDenegadas = async (idUsuario, tipo) => {
 				AND ls.estado = 'denegado'; -- Filtra solo las que tienen estado 'denegado' como el más reciente
 			`);
 
-		return result.recordset;
-	} catch (error) {
-		console.error("Error al obtener vacaciones.");
-		throw error;
-	}
-}
+    return result.recordset;
+  } catch (error) {
+    console.error("Error al obtener vacaciones.");
+    throw error;
+  }
+};
 
 /**
  * @async
@@ -245,64 +243,65 @@ const obtenerVacacionesDenegadas = async (idUsuario, tipo) => {
  * @returns {string | null} Mensaje de error, si ocurre uno.
  */
 const solicitarVacaciones = async (id_usuario, tipo, dias) => {
-	try {
-		const pool = await sql.connect(config);
-		const formatter = DateTimeFormatter.ofPattern("YYYY-MM-dd").withLocale(new Locale("es", "ES", "es"));
+  try {
+    const pool = await sql.connect(config);
+    const formatter = DateTimeFormatter.ofPattern("YYYY-MM-dd").withLocale(
+      new Locale("es", "ES", "es")
+    );
 
-		for (const diaStr of dias) {
-			const dia = LocalDate.parse(diaStr);
+    for (const diaStr of dias) {
+      const dia = LocalDate.parse(diaStr);
 
-			// Validar día
-			if (!esDiaValido(dia)) {
-				return "Fecha inválida";
-			}
+      // Validar día
+      if (!esDiaValido(dia)) {
+        return "Fecha inválida";
+      }
 
-			// Verificar que el usuario no tenga un día de vacación para ese día
-			const result = await pool
-				.request()
-				.input("id_usuario", sql.Int, id_usuario)
-				.input("fecha", sql.Date, dia.format(formatter))
-				.query(`
+      // Verificar que el usuario no tenga un día de vacación para ese día
+      const result = await pool
+        .request()
+        .input("id_usuario", sql.Int, id_usuario)
+        .input("fecha", sql.Date, dia.format(formatter)).query(`
 					SELECT COUNT(dia) "count"
 					FROM vacaciones, dias_vacacion
 					WHERE id_usuario = @id_usuario
 					AND vacaciones.id = id_vacacion
 					AND dia = @fecha;`);
 
-			if (result.recordset[0].count > 0) {
-				return "Vacación existente para la fecha";
-			}
-		}
+      if (result.recordset[0].count > 0) {
+        return "Vacación existente para la fecha";
+      }
+    }
 
-		const result = await pool
-			.request()
-			.input("id_usuario", sql.Int, id_usuario)
-			.input("tipo", sql.Int, tipo)
-			.query(`INSERT INTO vacaciones
+    const result = await pool
+      .request()
+      .input("id_usuario", sql.Int, id_usuario)
+      .input("tipo", sql.Int, tipo)
+      .query(`INSERT INTO vacaciones (tipo, id_usuario, aceptado)
 					OUTPUT INSERTED.id
-					VALUES (@tipo, @id_usuario)`);
+					VALUES (@tipo, @id_usuario, 0)`);
 
-		const id = result.recordset[0].id;
+    const id = result.recordset[0].id;
 
-		// Insertar todos los días
-		const table = new sql.Table("dias_vacacion");
-		table.create = false;
-		table.columns.add("id_vacacion", sql.Int, { nullable: false });
-		table.columns.add("dia", sql.Date, { nullable: false });
+    // Insertar todos los días
+    const table = new sql.Table("dias_vacacion");
+    table.create = false;
+    table.columns.add("id_vacacion", sql.Int, { nullable: false });
+    table.columns.add("dia", sql.Date, { nullable: false });
 
-		for (const diaStr of dias) {
-			const dia = LocalDate.parse(diaStr);
-			table.rows.add(id, dia.format(formatter));
-		}
+    for (const diaStr of dias) {
+      const dia = LocalDate.parse(diaStr);
+      table.rows.add(id, dia.format(formatter));
+    }
 
-		await pool.request().bulk(table);
-	} catch (error) {
-		console.error("Error al solicitar vacaciones.");
-		throw error;
-	}
+    await pool.request().bulk(table);
+  } catch (error) {
+    console.error("Error al solicitar vacaciones.");
+    throw error;
+  }
 
-	return null;
-}
+  return null;
+};
 
 /**
  * Verifica que el día sea después del día actual y que sea un día de semana.
@@ -310,16 +309,20 @@ const solicitarVacaciones = async (id_usuario, tipo, dias) => {
  * @returns {boolean}
  */
 const esDiaValido = (dia) => {
-	const dayOfWeek = dia.dayOfWeek();
-	const hoy = LocalDate.now(ZoneId.of("Europe/Madrid"));
-	return dia.isAfter(hoy) && dayOfWeek !== DayOfWeek.SATURDAY && dayOfWeek !== DayOfWeek.SUNDAY;
-}
+  const dayOfWeek = dia.dayOfWeek();
+  const hoy = LocalDate.now(ZoneId.of("Europe/Madrid"));
+  return (
+    dia.isAfter(hoy) &&
+    dayOfWeek !== DayOfWeek.SATURDAY &&
+    dayOfWeek !== DayOfWeek.SUNDAY
+  );
+};
 
 module.exports = {
-	obtenerTotalVacaciones,
-	obtenerTiposVacacion,
-	obtenerVacacionesSolicitadas,
-	obtenerVacacionesAceptadas,
-	obtenerVacacionesDenegadas,
-	solicitarVacaciones,
+  obtenerTotalVacaciones,
+  obtenerTiposVacacion,
+  obtenerVacacionesSolicitadas,
+  obtenerVacacionesAceptadas,
+  obtenerVacacionesDenegadas,
+  solicitarVacaciones,
 };
