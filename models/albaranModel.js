@@ -29,7 +29,7 @@ const cambiarDetallesDoc = async (details) => {
               importe_neto = @importe_neto,
               iva_porcentaje = @iva_porcentaje,
               cuota_iva = @cuota_iva,
-              total_linea = @total_linea,
+              total_linea = @total_linea
           WHERE id = @id 
         `);
         await updateCabecera(details.id);
@@ -120,6 +120,7 @@ const obtenerDetallesDocDb = async (id) => {
 const updateCabecera = async (id) => {
   try {
     // Obtener el cabecera_id a partir del id de detalles_doc
+    const pool = await sql.connect(config);
     const result = await pool
       .request()
       .input("id", sql.Int, id)

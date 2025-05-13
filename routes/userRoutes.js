@@ -6,4 +6,3 @@ const router = express.Router();
 router.get('/', authenticateToken, getUsers);
 
 module.exports = router;
-

@@ -17,7 +17,7 @@ router.use(authenticateToken);
 router.post("/obtener-detallesDoc", obtenerDetallesDoc);
 router.post("/cambiar-detallesDoc", cambiarDetalleAlbaran);
 router.post("/add-detallesDoc", crearDetalleAlbaran);
-router.post("/borrar-detallesDoc", borrarDetalleAlbaran);
+router.delete("/borrar-detallesDoc", borrarDetalleAlbaran);
 
 //Rutas para cabecera doc
 router.post("/obtener-cabecera", obtenerCabeceraOt);

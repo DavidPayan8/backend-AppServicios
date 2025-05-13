@@ -94,10 +94,10 @@ const crearDetalleAlbaran = async (req, res) => {
 
 const borrarDetalleAlbaran = async (req, res) => {
   try {
-    const { id } = req.body;
+    const { id_detalle } = req.body;
 
     // Borrar linea de detalle
-    const result = await borrarDetalleDoc(id);
+    const result = await borrarDetalleDoc(id_detalle);
 
     res.status(201).json(result);
   } catch (error) {
