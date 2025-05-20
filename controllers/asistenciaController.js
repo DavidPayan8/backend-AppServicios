@@ -1,70 +1,116 @@
-const { getParteAbierto, getPartesUsuarioFecha, ficharEntrada, ficharSalida } = require('../models/asistenciaModel');
+const db = require("../Model");
 
-
+// Fichar entrada
 const ficharEntradaHandler = async (req, res) => {
-    const userId = req.user.id;
-    const { date, horaEntrada, localizacion_entrada } = req.body; // Recibe date (dd/mm/yyyy) y horaSalida (HH:mm:ss) desde el frontend
+  const userId = req.user.id;
+  const { date, localizacion_entrada } = req.body;
 
-    try {
-        const fecha = formatFecha(date);
+  const fecha = formatFecha(date);
 
-        const parteAbierto = await getParteAbierto(userId, fecha, localizacion_entrada);
-        if (parteAbierto) {
-            res.status(400).json({ message: 'Ya tienes un parte abierto para hoy. Debes fichar salida.' });
-        } else {
-            await ficharEntrada(userId, fecha, horaEntrada, localizacion_entrada);
-            res.status(201).json({ message: 'Fichado de entrada registrado correctamente.' });
-        }
-    } catch (error) {
-        console.error('Error al fichar entrada:', error);
-        res.status(500).json({ message: 'Error del servidor.' });
+  try {
+    // Verificar si ya hay un parte abierto para el usuario en esa fecha
+    const parteAbierto = await db.CONTROL_ASISTENCIAS.findOne({
+      where: {
+        id_usuario: userId,
+        fecha,
+        hora_salida: null,
+      },
+    });
+
+    if (parteAbierto) {
+      return res.status(400).json({
+        message: "Ya tienes un parte abierto para hoy. Debes fichar salida.",
+      });
     }
+
+    // Crear nuevo parte de entrada
+    await db.CONTROL_ASISTENCIAS.create({
+      id_usuario: userId,
+      fecha,
+      hora_entrada: db.Sequelize.literal('GETDATE()'),
+      localizacion_entrada,
+    });
+
+    res
+      .status(201)
+      .json({ message: "Fichado de entrada registrado correctamente." });
+  } catch (error) {
+    console.error("Error al fichar entrada:", error);
+    res.status(500).json({ message: "Error del servidor." });
+  }
 };
 
+// Fichar salida
 const ficharSalidaHandler = async (req, res) => {
-    const userId = req.user.id;
-    const { date, horaSalida , localizacion_salida} = req.body;
+  const userId = req.user.id;
+  const { date, localizacion_salida } = req.body;
 
-    try {
-        const fecha = formatFecha(date);
+  try {
+    const fecha = formatFecha(date);
 
-        const parteAbierto = await getParteAbierto(userId, fecha, localizacion_salida);
-        if (!parteAbierto) {
-            res.status(400).json({ message: 'No tienes un parte abierto para hoy. Debes fichar entrada primero.' });
-        } else {
-            await ficharSalida(parteAbierto.id, horaSalida, localizacion_salida);
-            res.status(200).json({ message: 'Fichado de salida registrado correctamente.' });
-        }
-    } catch (error) {
-        console.error('Error al fichar salida:', error);
-        res.status(500).json({ message: 'Error del servidor.' });
+    // Verificar si hay un parte abierto para el usuario en esa fecha
+    const parteAbierto = await db.CONTROL_ASISTENCIAS.findOne({
+      where: {
+        id_usuario: userId,
+        fecha: fecha,
+        hora_salida: null,
+      },
+    });
+
+    if (!parteAbierto) {
+      return res.status(400).json({
+        message:
+          "No tienes un parte abierto para hoy. Debes fichar entrada primero.",
+      });
     }
+
+    // Actualizar parte con hora de salida
+    parteAbierto.hora_salida = db.Sequelize.literal('GETDATE()');
+    parteAbierto.localizacion_salida = localizacion_salida;
+    await parteAbierto.save();
+
+    res
+      .status(200)
+      .json({ message: "Fichado de salida registrado correctamente." });
+  } catch (error) {
+    console.error("Error al fichar salida:", error);
+    res.status(500).json({ message: "Error del servidor." });
+  }
 };
 
+// Obtener partes de asistencia del usuario para una fecha
 const obtenerPartesUsuarioFecha = async (req, res) => {
-    const userId = req.user.id;
-    const { date } = req.query; 
-    
-    try {
-        const fecha = formatFecha(date);
+  const userId = req.user.id;
+  const { date } = req.query;
 
-        const partesUsuario = await getPartesUsuarioFecha(userId, fecha);
+  const fecha = new Date(formatFecha(date));
 
-        res.status(200).json(partesUsuario); 
-    } catch (error) {
-        console.error('Error al obtener los partes del usuario:', error.message);
-        res.status(500).json({ message: 'Error del servidor al obtener los partes del usuario.' });
-    }
+  try {
+    // Buscar partes de asistencia para el usuario y la fecha
+    const partesUsuario = await db.CONTROL_ASISTENCIAS.findAll({
+      where: {
+        id_usuario: userId,
+        fecha,
+      },
+    });
+
+    res.status(200).json(partesUsuario);
+  } catch (error) {
+    console.error("Error al obtener los partes del usuario:", error.message);
+    res.status(500).json({
+      message: "Error del servidor al obtener los partes del usuario.",
+    });
+  }
 };
 
 // Función para formatear la fecha en 'YYYY-MM-DD', recibiendo dd/mm/yyyy
 const formatFecha = (fecha) => {
-    const [dia, mes, anio] = fecha.split('/');
-    return `${anio}-${mes}-${dia}`;
+  const [dia, mes, anio] = fecha.split("/");
+  return `${anio}-${mes}-${dia}`;
 };
 
 module.exports = {
-    ficharEntradaHandler,
-    ficharSalidaHandler,
-    obtenerPartesUsuarioFecha,
+  ficharEntradaHandler,
+  ficharSalidaHandler,
+  obtenerPartesUsuarioFecha,
 };

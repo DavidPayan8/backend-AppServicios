@@ -1,10 +1,10 @@
 const sql = require("mssql");
-const config = require("../config/dbConfig");
+const { config } = require("../config/dbConfig");
 
 const getUserByUsername = async (username) => {
   try {
-    let pool = await sql.connect(config);
-    let result = await pool
+    const pool = await sql.connect(config);
+    const result = await pool
       .request()
       .input("username", sql.VarChar, username)
       .query("SELECT * FROM Usuarios WHERE user_name = @username");

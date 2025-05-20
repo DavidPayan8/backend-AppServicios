@@ -22,6 +22,4 @@ router.put(
 );
 router.get("/color-principal", getColorPrincipal);
 
-/* router.get("/modulos-habilitados") */
-
 module.exports = router;

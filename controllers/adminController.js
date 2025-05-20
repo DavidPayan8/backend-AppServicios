@@ -1,16 +1,7 @@
-const {
-  darAltaEmpleado,
-  getEmpleados,
-  getVacaciones,
-  ordenesEmpleadoValidos, 
-  ordenesVacacionValidos,
-  getDetalles,
-  getCambiosEstado,
-  getVacacion,
-  actualizarVacacion,
-  editarEmpleado,
-} = require("../models/adminModel");
 const identidad = require("../shared/identidad");
+const { getVacaciones } = require("../Model/others/admiModel");
+const db = require("../Model");
+const { Op, fn } = require("sequelize");
 
 const darAltaEmpleadoHandler = async (req, res) => {
   try {
@@ -22,25 +13,39 @@ const darAltaEmpleadoHandler = async (req, res) => {
       segSocial,
       email,
       telefono,
+      sexo,
       rol,
     } = req.body;
-    const mensajeError = await darAltaEmpleado(
-      req.user.id,
-      username,
-      password,
-      nombreApellidos,
+
+    if (!identidad.esDniValido(dni) && !identidad.esNieValido(dni)) {
+      return res.status(400).json({ message: "DNI no válido" });
+    }
+
+    const existe = await db.USUARIOS.findOne({
+      where: {
+        [Op.or]: [{ user_name: username }, { dni }],
+      },
+    });
+
+    if (existe) {
+      return res
+        .status(400)
+        .json({ message: "Nombre de usuario y/o DNI en uso" });
+    }
+
+    await db.USUARIOS.create({
+      user_name: username,
+      contrasena: password,
+      nomapes: nombreApellidos,
       dni,
-      segSocial,
+      num_seguridad_social: segSocial,
       email,
       telefono,
-      rol
-    );
+      sexo,
+      rol,
+    });
 
-    if (!mensajeError) {
-      res.status(201).send();
-    } else {
-      res.status(400).json({ message: mensajeError });
-    }
+    res.status(201).json({ message: "Alta completada" });
   } catch (error) {
     console.error("Error al dar de alta empleado: ", error);
     res.status(500).send("Error del servidor");
@@ -48,34 +53,100 @@ const darAltaEmpleadoHandler = async (req, res) => {
 };
 
 const getEmpleadosHandler = async (req, res) => {
+  let {
+    pagina = 1,
+    empleadosPorPagina = 10,
+    ordenarPor = "id",
+    esAscendiente = true,
+    filtros = {},
+  } = req.query;
   try {
-    let { pagina, empleadosPorPagina, ordenarPor, esAscendiente, filtros } =
-      req.query;
+    pagina = parseInt(pagina);
+    empleadosPorPagina = parseInt(empleadosPorPagina);
+    esAscendiente = esAscendiente === "true" || esAscendiente === true;
+    const columnasValidas = [
+      "id",
+      "id_origen",
+      "user_name",
+      "contrasena",
+      "nomapes",
+      "id_config",
+      "id_empresa",
+      "DNI",
+      "num_seguridad_social",
+      "rol",
+      "primer_inicio",
+      "email",
+      "telefono",
+      "sexo",
+    ];
 
-    pagina = parseInt(pagina, 10);
-    empleadosPorPagina = parseInt(empleadosPorPagina, 10);
-    esAscendiente = esAscendiente === "true";
+    // Asegúrate de que ordenarPor sea una columna válida
+    if (!columnasValidas.includes(ordenarPor)) {
+      ordenarPor = "id"; // valor por defecto
+    }
 
     if (typeof filtros === "string") {
       try {
         filtros = JSON.parse(filtros);
-      } catch (e) {
+      } catch {
         filtros = {};
       }
     }
-    if (!ordenarPor || !ordenesEmpleadoValidos.includes(ordenarPor)) {
-      ordenarPor = "id";
+
+    const where = {};
+
+    if (filtros.nombreApellidos) {
+      where.nomapes = { [Op.like]: `%${filtros.nombreApellidos}%` };
     }
 
-    const empleados = await getEmpleados(
-      req.user.id,
-      pagina,
-      empleadosPorPagina,
-      ordenarPor,
-      esAscendiente,
-      filtros
-    );
-    res.status(200).json(empleados);
+    if (filtros.username) {
+      where.user_name = { [Op.like]: `%${filtros.username}%` };
+    }
+
+    if (filtros.dni) {
+      where.dni = { [Op.like]: `%${filtros.dni}%` };
+    }
+
+    if (filtros.seguridadSocial) {
+      where.num_seguridad_social = {
+        [Op.like]: `%${filtros.seguridadSocial}%`,
+      };
+    }
+
+    if (filtros.rol) {
+      where.rol = {
+        [Op.like]: `%${filtros.rol}%`,
+        [Op.not]: "superadmin",
+      };
+    } else {
+      where.rol = { [Op.not]: "superadmin" };
+    }
+
+    const { count: total, rows } = await db.USUARIOS.findAndCountAll({
+      where: {
+        ...where,
+        id_empresa: req.user.empresa,
+      },
+      offset: (pagina - 1) * empleadosPorPagina,
+      limit: empleadosPorPagina,
+      order: [[ordenarPor, esAscendiente ? "ASC" : "DESC"]],
+    });
+
+    const empleados = rows.map((usuario) => ({
+      id: usuario.id,
+      username: usuario.user_name,
+      password: usuario.contrasena,
+      nombreApellidos: usuario.nomapes,
+      dni: usuario.DNI,
+      seguridadSocial: usuario.num_seguridad_social,
+      email: usuario.email ?? null,
+      telefono: usuario.telefono ?? null,
+      rol: usuario.rol,
+      sexo: usuario.sexo ?? null,
+    }));
+
+    res.status(200).json({ total, empleados });
   } catch (error) {
     console.error("Error al obtener empleados: ", error);
     res.status(500).send("Error del servidor");
@@ -90,7 +161,10 @@ const getDetallesHandler = async (req, res) => {
       return res.status(400).send("El parámetro 'id' es obligatorio");
     }
 
-    res.json(await getDetalles(id));
+    const empleado = await db.USUARIOS.findByPk(id);
+    if (!empleado) return res.status(404).send("Empleado no encontrado");
+
+    res.status(200).json(empleado);
   } catch (error) {
     console.error("Error al obtener detalles del empleado: ", error);
     res.status(500).send("Error del servidor");
@@ -112,52 +186,48 @@ const editarEmpleadoHandler = async (req, res) => {
       sexo,
     } = req.body;
 
-    if (
-      !username &&
-      !password &&
-      !nombreApellidos &&
-      !dni &&
-      !seguridadSocial &&
-      !rol &&
-      !email &&
-      !telefono &&
-      !sexo
-    ) {
-      res.status(400).send({ message: "No se está editando ningúna columna" });
-      return;
-    }
-
-    if (dni && !identidad.esDniValido(dni) && !identidad.esNieValido(dni)) {
-      res.status(400).send({ message: "DNI inválido" });
-      return;
-    }
-
-    const codigoError = await editarEmpleado(
-      id,
-      username,
-      password,
-      nombreApellidos,
+    const camposActualizables = {
+      user_name: username,
+      contrasena: password,
+      nomapes: nombreApellidos,
       dni,
-      seguridadSocial,
+      num_seguridad_social: seguridadSocial,
       email,
       telefono,
       rol,
-      sexo
+      sexo,
+    };
+    const campos = Object.fromEntries(
+      Object.entries(camposActualizables).filter(
+        ([, fields]) => fields !== undefined
+      )
     );
-    switch (codigoError) {
-      case 400: {
-        res.status(400).send({ message: "Nombre de usuario y/o DNI en uso" });
-        break;
-      }
-      case undefined: {
-        // Exito
-        res.status(201).send();
-        break;
-      }
-      default: {
-        res.status(500).send("Error del servidor");
-      }
+
+    if (Object.keys(campos).length === 0) {
+      return res
+        .status(400)
+        .json({ message: "No se está editando ningúna columna" });
     }
+
+    if (dni && !identidad.esDniValido(dni) && !identidad.esNieValido(dni)) {
+      return res.status(400).json({ message: "DNI inválido" });
+    }
+
+    const empleadoExistente = await db.USUARIOS.findOne({
+      where: {
+        id: { [Op.ne]: id },
+        [Op.or]: [{ user_name: username }, { dni }],
+      },
+    });
+
+    if (empleadoExistente) {
+      return res
+        .status(400)
+        .json({ message: "Nombre de usuario y/o DNI en uso" });
+    }
+
+    await db.USUARIOS.update(campos, { where: { id } });
+    res.status(201).json({ message: "Actualizado con exito" });
   } catch (error) {
     console.error("Error al editar empleado: ", error);
     res.status(500).send("Error del servidor");
@@ -166,34 +236,21 @@ const editarEmpleadoHandler = async (req, res) => {
 
 const getVacacionesHandler = async (req, res) => {
   try {
-    let { pagina, itemsPorPagina, filtros, ordenarPor, esAscendiente } =
-      req.body;
+    let {
+      pagina = 1,
+      itemsPorPagina = 10,
+      filtros = {},
+      ordenarPor = "id",
+      esAscendiente = true,
+    } = req.body;
 
-    // Controles
-    if (!Number.isInteger(pagina) || pagina < 1) {
-      res.statusMessage =
-        "Campo 'página' es obligatorio y debe ser un número natural";
-      res.status(400).send();
-      return;
-    }
-
-    if (!Number.isInteger(itemsPorPagina) || itemsPorPagina < 1) {
-      res.statusMessage =
-        "Campo 'itemsPorPagina' es obligatorio y debe ser un número natural";
-      res.status(400).send();
-      return;
-    }
-
-    if (esAscendiente === undefined) {
-      esAscendiente = true;
-    }
-
-    if (ordenarPor === undefined) {
-      ordenarPor = "id";
-    } else if (!ordenesVacacionValidos.includes(ordenarPor)) {
-      res.statusMessage = "Campo 'ordenarPor' es inválido";
-      res.status(400).send();
-      return;
+    if (
+      !Number.isInteger(pagina) ||
+      pagina < 1 ||
+      !Number.isInteger(itemsPorPagina) ||
+      itemsPorPagina < 1
+    ) {
+      return res.status(400).send("Parámetros inválidos");
     }
 
     const vacaciones = await getVacaciones(
@@ -204,7 +261,8 @@ const getVacacionesHandler = async (req, res) => {
       esAscendiente,
       filtros
     );
-    res.json(vacaciones);
+
+    res.status(200).json(vacaciones);
   } catch (error) {
     console.error("Error al obtener vacaciones: ", error);
     res.status(500).send("Error del servidor");
@@ -212,28 +270,82 @@ const getVacacionesHandler = async (req, res) => {
 };
 
 const getVacacionHandler = async (req, res) => {
+  const idVacacion = req.body.id;
   try {
-    const { id } = req.body;
+    const vacacion = await db.VACACIONES.findOne({
+      where: { id: idVacacion },
+      include: [
+        {
+          model: db.USUARIOS,
+          as: "usuario",
+          attributes: ["nomapes"],
+        },
+        {
+          model: db.TIPOS_VACACION,
+          as: "tipo_vacaciones",
+          attributes: ["nombre"],
+        },
+        {
+          model: db.VACACIONES_ESTADOS,
+          as: "vacaciones_estado",
+          attributes: ["estado", "tiempo"],
+          order: [["tiempo", "DESC"]],
+          limit: 1,
+        },
+        {
+          model: db.DIAS_VACACION,
+          as: "dias_vacacion",
+          attributes: ["dia"],
+        },
+      ],
+    });
 
-    if (id === undefined || !Number.isInteger(id)) {
-      res.statusMessage = "ID indefinido o inválido";
-      res.status(400).send();
-      return;
+    if (!vacacion) {
+      res.status(400).json({ message: "Id no encontrado" });
     }
 
-    const detalles = await getVacacion(id);
-    res.json(detalles);
+    const empleado = vacacion.usuario?.nomapes;
+    const tipo = vacacion.tipo_vacaciones.nombre;
+
+    const estado =
+      vacacion.vacaciones_estado?.length > 0
+        ? vacacion.vacaciones_estado[0].estado
+        : "pendiente";
+
+    console.log(vacacion.dias_vacacion);
+
+    const dias = vacacion.dias_vacacion?.map((d) => d.dia) || [];
+
+    res.status(200).json({
+      empleado,
+      tipo,
+      estado,
+      dias,
+    });
   } catch (error) {
-    console.error("Error al obtener los detalles de una vacación: ", error);
-    res.status(500).send("Error del servidor");
+    console.error("Error al obtener detalles de vacación: ", idVacacion, error);
+    res.status(500).json(error);
   }
 };
 
 const actualizarVacacionHandler = async (req, res) => {
   try {
     const { id, estado, razon } = req.body;
-    await actualizarVacacion(id, req.user.id, estado, razon);
-    res.status(201).send();
+
+    await db.VACACIONES.update(
+      { estado, razon, actualizadoPor: req.user.id },
+      { where: { id } }
+    );
+
+    await db.VACACIONES_ESTADOS.create({
+      id_vacacion: id,
+      estado,
+      razon,
+      tiempo: fn("GETDATE"),
+      cambiadoPor: req.user.id,
+    });
+
+    res.status(201).json({ message: "Actualizado con exito" });
   } catch (error) {
     console.error("Error al actualizar el estado de una vacación", error);
     res.status(500).send("Error del servidor");
@@ -243,11 +355,33 @@ const actualizarVacacionHandler = async (req, res) => {
 const getCambiosEstadoHandler = async (req, res) => {
   try {
     const { id } = req.body;
-    const cambios = await getCambiosEstado(id);
-    res.json(cambios);
+    const cambios = await db.VACACIONES_ESTADOS.findAll({
+      where: { id_vacacion: id },
+      include: [
+        {
+          model: db.USUARIOS,
+          as: "admin",
+          attributes: ["nomapes"],
+        },
+      ],
+      attributes: [
+        [
+          db.Sequelize.fn(
+            "CONVERT",
+            db.Sequelize.literal("VARCHAR"),
+            db.Sequelize.col("tiempo")
+          ),
+          "tiempo",
+        ],
+        "estado",
+        "razon",
+      ],
+      order: [["tiempo", "DESC"]],
+    });
+    res.status(200).json(cambios);
   } catch (error) {
     console.error("Error al obtener los cambios de una vacación", error);
-    res.status(500).send("Error del servidor");
+    res.status(500).json({ message: "Error del servidor" });
   }
 };
 
