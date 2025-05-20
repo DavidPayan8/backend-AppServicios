@@ -20,6 +20,7 @@ const adminRoutes = require("./routes/adminRoutes");
 const fichajesProyectoRoutes = require("./routes/fichajesProyectoRoutes");
 const geolocationRoutes = require("./routes/geolocationRoutes");
 const empresaRoutes = require("./routes/empresaRoutes");
+const modulosRoutes = require("./routes/modulosRoutes");
 const authenticateToken = require("./middleware/authMiddleware");
 
 const app = express();
@@ -58,10 +59,10 @@ app.use("/api/vacaciones", vacacionesRoutes);
 app.use("/api/fichajes-proyecto", fichajesProyectoRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/empresa", empresaRoutes);
+app.use("/api/modulos", modulosRoutes);
 app.use("/api/ftp", ftpRoutes);
 app.use("/api/geolocation", geolocationRoutes);
 
-// Rutas protegidas
 app.get("/protected", authenticateToken, (req, res) => {
   res.json({ message: "Acceso autorizado", user: req.user });
 });

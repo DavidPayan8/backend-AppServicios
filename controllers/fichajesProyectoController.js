@@ -1,17 +1,66 @@
-const fichajesProyectoModel = require("../models/fichajesProyectoModel");
+const { Op, literal } = require("sequelize");
+const db = require("../Model");
 
 const obtenerFichajesProyecto = async (req, res) => {
   try {
     const { desde, hasta, trabajador, rol } = req.query;
-    const fichajes = await fichajesProyectoModel.obtenerFichajesProyecto(
-      desde ? new Date(desde) : null,
-      hasta ? new Date(hasta) : null,
-      trabajador || null,
-      rol || null
-    );
-    res.status(200).json(fichajes);
+
+    const whereAsistencia = {};
+    const whereUsuario = {};
+
+    if (desde) {
+      whereAsistencia.fecha = { [Op.gte]: new Date(desde) };
+    }
+    if (hasta) {
+      whereAsistencia.fecha = {
+        ...whereAsistencia.fecha,
+        [Op.lte]: new Date(hasta),
+      };
+    }
+    if (trabajador) {
+      whereUsuario.USER_NAME = { [Op.like]: `%${trabajador}%` };
+    }
+    if (rol) {
+      whereUsuario.rol = { [Op.eq]: rol };
+    }
+
+    const fichajes = await db.CONTROL_ASISTENCIAS.findAll({
+      where: whereAsistencia,
+      include: [
+        {
+          model: db.USUARIOS,
+          as: "usuario",
+          where: whereUsuario,
+          attributes: ["user_name", "rol"],
+        },
+      ],
+      attributes: [
+        ["id", "Id"],
+        ["fecha", "Fecha"],
+        ["hora_entrada", "Entrada"],
+        ["hora_salida", "Salida"],
+        [
+          literal("ROUND(DATEDIFF(MINUTE, hora_entrada, hora_salida), 2)"),
+          "Total",
+        ],
+        ["localizacion_entrada", "Ubicacion_entrada"],
+        ["localizacion_salida", "Ubicacion_salida"],
+      ],
+      order: [["hora_entrada", "DESC"]],
+      raw: true,
+    });
+
+    // Añadir trabajador y rol manualmente al objeto plano
+    const resultado = fichajes.map((f) => ({
+      ...f,
+      Trabajador: f["usuario.user_name"],
+      Rol: f["usuario.rol"],
+    }));
+
+    res.status(200).json(resultado);
   } catch (error) {
-    res.status(500).json({ error: "Error al obtener los fichajes" });
+    console.error("Error al obtener fichajes por proyecto:", error.message);
+    res.status(500).json({ error: "Error del servidor" });
   }
 };
 
@@ -21,11 +70,21 @@ const eliminarFichajes = async (req, res) => {
     const idsArray = Array.isArray(ids)
       ? ids.map((id) => parseInt(id))
       : [parseInt(ids)];
+
+    // Verificar si los IDs son válidos
     if (idsArray.some(isNaN)) {
       return res.status(400).json({ error: "IDs deben ser números" });
     }
-    const result = await fichajesProyectoModel.eliminarFichajes(idsArray);
-    if (result.rowsAffected[0] > 0) {
+
+    const result = await db.CONTROL_ASISTENCIAS.destroy({
+      where: {
+        id: {
+          [Op.in]: idsArray,
+        },
+      },
+    });
+
+    if (result > 0) {
       res.status(200).json({ message: "Fichajes eliminados correctamente" });
     } else {
       res.status(404).json({ message: "Fichajes no encontrados" });
@@ -47,15 +106,22 @@ const patchFichaje = async (req, res) => {
       localizacionEntrada,
       localizacionSalida,
     } = req.query;
-    const result = await fichajesProyectoModel.patchFichaje(
-      id,
-      fecha,
-      horaEntrada,
-      horaSalida,
-      localizacionEntrada,
-      localizacionSalida
+
+    // Actualizar el fichaje
+    const result = await db.CONTROL_ASISTENCIAS.update(
+      {
+        fecha,
+        horaEntrada,
+        horaSalida,
+        localizacionEntrada,
+        localizacionSalida,
+      },
+      {
+        where: { id },
+      }
     );
-    if (result.rowsAffected[0] > 0) {
+
+    if (result[0] > 0) {
       res.status(200).json({ message: "Fichaje actualizado correctamente" });
     } else {
       res.status(404).json({ message: "Fichaje no encontrado" });
@@ -76,24 +142,27 @@ const postFichaje = async (req, res) => {
       localizacionEntrada,
       localizacionSalida,
     } = req.query;
+
     const entradaDate = new Date(entrada);
     const salidaDate = salida ? new Date(salida) : null;
-    const result = await fichajesProyectoModel.postFichaje(
-      idUsuario,
-      entradaDate,
-      salidaDate,
-      localizacionEntrada,
-      localizacionSalida
-    );
+
+    // Crear un nuevo fichaje
+    const result = await db.CONTROL_ASISTENCIAS.create({
+      id_usuario: idUsuario,
+      fecha: entradaDate,
+      hora_entrada: entradaDate,
+      hora_salida: salidaDate,
+      localizacion_entrada: localizacionEntrada,
+      localizacion_salida: localizacionSalida,
+    });
+
     res
       .status(201)
-      .json({ message: "Fichaje creado correctamente", id: result.insertId });
+      .json({ message: "Fichaje creado correctamente", id: result.id });
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        error: "Controller: Error al crear el fichaje: " + error.message,
-      });
+    res.status(500).json({
+      error: "Controller: Error al crear el fichaje: " + error.message,
+    });
   }
 };
 

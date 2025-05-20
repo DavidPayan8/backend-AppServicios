@@ -3,7 +3,7 @@ const {
   uploadToFtp,
   eliminarArchivo,
   descargarArchivo,
-} = require("../models/ftpModel");
+} = require("../Model/others/ftpModel");
 const mime = require("mime-types");
 
 const obtenerListadoFtp = async (req, res) => {

@@ -1,8 +1,5 @@
 const nodemailer = require("nodemailer");
-const { obtenerDatosTransportador } = require("../models/emailModel");
-
-
-const ADMIN_EMAIL = "pruebasinternas@kongconsulting.es";
+const db = require("../Model");
 
 // secure = true para 465, false para otros puertos
 // TLS reemplaza a SSL (deprecated)
@@ -64,7 +61,6 @@ const enviarEmail = async (transporter, from, to, subject, text, pdfBuffer) => {
 
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log("Correo enviado:", info); // Para depuración
     return info;
   } catch (error) {
     console.error("Error enviando correo:", error);
@@ -77,22 +73,25 @@ const enviarEmail = async (transporter, from, to, subject, text, pdfBuffer) => {
  */
 const enviarEmails = async (req, res) => {
   const { cliente, email, pdf } = req.body;
+  const { empresa } = req.user;
 
   try {
     // Obtener datos de transporte para la empresa
-    const data = await obtenerDatosTransportador(req.user.id);
+    const config = await db.CONFIG_EMPRESA.findOne({
+      where: { id_empresa: empresa },
+      attributes: ["smtp_host", "smtp_port", "smtp_user", "smtp_pass"],
+    });
 
-    // Empresa no tiene email
-    if (data == null) {
-      res.status(400).send({ message: "Su empresa no tiene configurada la salida de correos" });
-      return;
+    if (!config) {
+      return res.status(400).json({
+        message: "Su empresa no tiene configurada la salida de correos",
+      });
     }
 
-    const transporter = getTransporter(data);
+    const transporter = getTransporter(config);
 
-    const from = data.smtp_user;
-    const administracion = data.smtp_user;
-
+    const from = config.smtp_user;
+    const administracion = config.smtp_user;
 
     // Convertir el PDF de base64 a Buffer
     const pdfBuffer = Buffer.from(pdf, "base64");
@@ -117,9 +116,13 @@ const enviarEmails = async (req, res) => {
       pdfBuffer
     );
 
-    res.status(200).send({ message: "Mail enviado correctamente a cliente y admin" });
+    res
+      .status(200)
+      .send({ message: "Mail enviado correctamente a cliente y admin" });
   } catch (error) {
-    res.status(500).send({ message: "Error enviando mail", error: error.message });
+    res
+      .status(500)
+      .send({ message: "Error enviando mail", error: error.message });
   }
 };
 
@@ -148,7 +151,7 @@ const getTransporter = (data) => {
   }
 
   return nodemailer.createTransport(options);
-}
+};
 
 module.exports = {
   enviarEmails,
