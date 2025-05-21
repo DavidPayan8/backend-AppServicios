@@ -19,7 +19,7 @@ const obtenerDatosTabla = async (req, res) => {
     fechaFin = new Date(fin);
   }
   try {
-    // Obtener registros entre fechas
+   // Obtener registros entre fechas
     const registros = await db.CONTROL_ASISTENCIAS.findAll({
       where: {
         id_usuario,
@@ -37,7 +37,7 @@ const obtenerDatosTabla = async (req, res) => {
           SUM(DATEDIFF(MINUTE, hora_entrada, hora_salida)) / 60.0 AS total_rango
         FROM control_asistencias
         WHERE id_usuario = :id_usuario
-          AND hora_entrada BETWEEN :fechaInicio AND :fechaFin;
+          AND CONVERT(DATE, hora_entrada) BETWEEN :fechaInicio AND :fechaFin;
     `,
       {
         replacements: { id_usuario, fechaInicio, fechaFin },
