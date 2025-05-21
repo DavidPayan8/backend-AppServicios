@@ -24,16 +24,14 @@ const ficharEntradaHandler = async (req, res) => {
     }
 
     // Crear nuevo parte de entrada
-    await db.CONTROL_ASISTENCIAS.create({
+    const fichaje = await db.CONTROL_ASISTENCIAS.create({
       id_usuario: userId,
       fecha,
-      hora_entrada: db.Sequelize.literal('GETDATE()'),
+      hora_entrada: db.Sequelize.literal("GETDATE()"),
       localizacion_entrada,
     });
 
-    res
-      .status(201)
-      .json({ message: "Fichado de entrada registrado correctamente." });
+    res.status(201).json(fichaje);
   } catch (error) {
     console.error("Error al fichar entrada:", error);
     res.status(500).json({ message: "Error del servidor." });
@@ -65,13 +63,11 @@ const ficharSalidaHandler = async (req, res) => {
     }
 
     // Actualizar parte con hora de salida
-    parteAbierto.hora_salida = db.Sequelize.literal('GETDATE()');
+    parteAbierto.hora_salida = db.Sequelize.literal("GETDATE()");
     parteAbierto.localizacion_salida = localizacion_salida;
     await parteAbierto.save();
 
-    res
-      .status(200)
-      .json({ message: "Fichado de salida registrado correctamente." });
+    res.status(200).json(parteAbierto[0]);
   } catch (error) {
     console.error("Error al fichar salida:", error);
     res.status(500).json({ message: "Error del servidor." });
@@ -92,6 +88,7 @@ const obtenerPartesUsuarioFecha = async (req, res) => {
         id_usuario: userId,
         fecha,
       },
+      order: [["fecha", "ASC"]],
     });
 
     res.status(200).json(partesUsuario);
