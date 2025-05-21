@@ -19,7 +19,7 @@ const ficharEntradaHandler = async (req, res) => {
 
     if (parteAbierto) {
       return res.status(400).json({
-        message: "Ya tienes un parte abierto para hoy. Debes fichar salida.",
+        message: "Ya tienes un parte abierto para fecha. Debes fichar salida.",
       });
     }
 
@@ -58,7 +58,7 @@ const ficharSalidaHandler = async (req, res) => {
     if (!parteAbierto) {
       return res.status(400).json({
         message:
-          "No tienes un parte abierto para hoy. Debes fichar entrada primero.",
+          "No tienes un parte abierto para fecha. Debes fichar entrada primero.",
       });
     }
 
@@ -80,23 +80,73 @@ const obtenerPartesUsuarioFecha = async (req, res) => {
   const { date } = req.query;
 
   const fecha = new Date(formatFecha(date));
+  const ayer = new Date(fecha);
+  ayer.setDate(fecha.getDate() - 1);
 
   try {
-    // Buscar partes de asistencia para el usuario y la fecha
-    const partesUsuario = await db.CONTROL_ASISTENCIAS.findAll({
+    // Formatear fecha en YYYY-MM-DD (ajustar si tu modelo usa otro formato)
+    const fechaHoy = fecha.toISOString().split("T")[0];
+    const fechaAyer = ayer.toISOString().split("T")[0];
+
+    // Buscar partes del usuario para fecha
+    const partesfecha = await db.CONTROL_ASISTENCIAS.findAll({
       where: {
         id_usuario: userId,
-        fecha,
+        fecha: fechaHoy,
       },
-      order: [["fecha", "ASC"]],
+      order: [["hora_entrada", "ASC"]],
     });
 
-    res.status(200).json(partesUsuario);
+    // Buscar partes del usuario para ayer sin salida
+    const partesAyerSinSalida = await db.CONTROL_ASISTENCIAS.findAll({
+      where: {
+        id_usuario: userId,
+        fecha: fechaAyer,
+        hora_salida: null,
+      },
+      order: [["hora_entrada", "ASC"]],
+    });
+
+    res.status(200).json({
+      hoy: partesfecha,
+      ayer: partesAyerSinSalida,
+    });
   } catch (error) {
     console.error("Error al obtener los partes del usuario:", error.message);
     res.status(500).json({
       message: "Error del servidor al obtener los partes del usuario.",
     });
+  }
+};
+
+const cerrarParteAbierto = async (req, res) => {
+  const userId = req.user.id;
+  const { id_parte, localizacion_salida } = req.body;
+  try {
+    // Verificar si hay un parte abierto para el usuario en esa fecha
+    const parteAbierto = await db.CONTROL_ASISTENCIAS.findOne({
+      where: {
+        id: id_parte,
+        id_usuario: userId,
+        hora_salida: null,
+      },
+    });
+
+    if (!parteAbierto) {
+      return res.status(400).json({
+        message: "No tienes un parte abierto. Debes fichar entrada primero.",
+      });
+    }
+
+    // Actualizar parte con hora de salida
+    parteAbierto.hora_salida = db.Sequelize.literal("GETDATE()");
+    parteAbierto.localizacion_salida = localizacion_salida;
+    await parteAbierto.save();
+
+    res.status(200).json(parteAbierto[0]);
+  } catch (error) {
+    console.error("Error al fichar salida:", error);
+    res.status(500).json({ message: "Error del servidor." });
   }
 };
 
@@ -110,4 +160,5 @@ module.exports = {
   ficharEntradaHandler,
   ficharSalidaHandler,
   obtenerPartesUsuarioFecha,
+  cerrarParteAbierto,
 };
