@@ -1,4 +1,5 @@
 const db = require("../Model");
+const { obtenerDireccionReversa } = require("../models/geolocationModel");
 
 const checkParteAbierto = async (req, res) => {
   const { id_proyecto } = req.query;
@@ -34,8 +35,20 @@ const crearParteTrabajo = async (req, res) => {
     horas_festivo,
   } = req.body;
   const id_usuario = req.user.id;
+  let direccionFinal = null;
 
   try {
+    if (localizacion?.error) {
+      // Si viene error, guardamos el mensaje como ubicación
+      direccionFinal = localizacion.mensaje || "Ubicación no disponible";
+    } else {
+      // Si hay coordenadas, hacemos geolocalización inversa
+      direccionFinal = await obtenerDireccionReversa(
+        localizacion.lat,
+        localizacion.lng
+      );
+    }
+
     const nuevoParte = await db.PARTES_TRABAJO.create({
       id_usuario,
       id_capitulo,
@@ -43,7 +56,7 @@ const crearParteTrabajo = async (req, res) => {
       id_proyecto,
       hora_entrada,
       fecha,
-      localizacion,
+      localizacion_entrada: direccionFinal,
       horas_extra,
       horas_festivo,
     });
@@ -107,8 +120,20 @@ const actualizarParteTrabajo = async (req, res) => {
     horas_extra,
     localizacion,
   } = req.body;
+  let direccionFinal = null;
 
   try {
+    if (localizacion?.error) {
+      // Si viene error, guardamos el mensaje como ubicación
+      direccionFinal = localizacion.mensaje || "Ubicación no disponible";
+    } else {
+      // Si hay coordenadas, hacemos geolocalización inversa
+      direccionFinal = await obtenerDireccionReversa(
+        localizacion.lat,
+        localizacion.lng
+      );
+    }
+
     const [updatedRows] = await db.PARTES_TRABAJO.update(
       {
         id_capitulo,
@@ -117,7 +142,7 @@ const actualizarParteTrabajo = async (req, res) => {
         hora_salida,
         horas_festivo,
         horas_extra,
-        localizacion,
+        localizacion_salida: direccionFinal,
       },
       {
         where: { id },

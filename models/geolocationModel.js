@@ -1,5 +1,4 @@
 async function obtenerDireccionReversa(lat, lng) {
-  console.log(lat, lng);
   const API_KEY = process.env.API_KEY_MAPS;
   const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${API_KEY}`;
 
@@ -17,7 +16,7 @@ async function obtenerDireccionReversa(lat, lng) {
     }
 
     const direccion = data.results?.[0] || null;
-    return direccion;
+    return direccion.formatted_address || "Ubicación no disponible";
   } catch (err) {
     console.error("Error al llamar a Google Maps:", err.message);
     throw new Error("Error al obtener la dirección desde Google Maps");

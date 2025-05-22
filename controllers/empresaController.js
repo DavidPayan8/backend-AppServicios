@@ -64,18 +64,44 @@ const getEmpresa = async (req, res) => {
   }
 };
 
-const getColorPrincipal = async (req, res) => {
+const getConfigEmpresa = async (req, res) => {
   try {
     const { empresa } = req.user;
 
     const config = await db.CONFIG_EMPRESA.findOne({
       where: { id_empresa: empresa },
-      attributes: ["color_principal"],
+      attributes: [
+        "es_tipo_obra",
+        "email_entrante",
+        "smtp_user",
+        "color_principal",
+      ],
+      include: [
+        {
+          model: db.EMPRESA,
+          as: "empresa",
+          attributes: ["telefono"],
+          required: true,
+          where: { id_empresa: empresa },
+        },
+      ],
     });
 
-    res.json(config?.color_primario || "#0d5c91");
+    if (!config) {
+      return res.status(404).send("Configuración no encontrada");
+    }
+
+    const response = {
+      es_tipo_obra: config.es_tipo_obra,
+      email_entrante: config.email_entrante || "",
+      smtp_user: config.smtp_user,
+      color_principal: config.color_principal || "#0d5c91",
+      telefono: config.EMPRESA?.telefono || null,
+    };
+
+    res.status(200).json(response);
   } catch (error) {
-    console.error("Error al obtener color:", error);
+    console.error("Error al obtener configuración y teléfono:", error);
     res.status(500).send("Error del servidor");
   }
 };
@@ -121,7 +147,6 @@ const updateEmpresa = async (req, res) => {
   }
 };
 
-
 const updateConfigEmpresa = async (req, res) => {
   try {
     const empresa = req.body;
@@ -163,7 +188,7 @@ const updateConfigEmpresa = async (req, res) => {
 module.exports = {
   getEmpresas,
   getEmpresa,
-  getColorPrincipal,
   updateEmpresa,
   updateConfigEmpresa,
+  getConfigEmpresa,
 };
