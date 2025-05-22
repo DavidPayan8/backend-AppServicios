@@ -27,10 +27,15 @@ const ficharEntradaHandler = async (req, res) => {
         localizacion_entrada.mensaje || "Ubicación no disponible";
     } else {
       // Si hay coordenadas, hacemos geolocalización inversa
-      direccionFinal = await obtenerDireccionReversa(
-        localizacion_entrada.lat,
-        localizacion_entrada.lng
-      );
+      try {
+        direccionFinal = await obtenerDireccionReversa(
+          localizacion_entrada.lat,
+          localizacion_entrada.lng
+        );
+      } catch (error) {
+        direccionFinal = "Ubicación no disponible";
+        console.error("Error al obtener dirección:", error);
+      }
     }
 
     // Crear parte con dirección
@@ -76,11 +81,15 @@ const ficharSalidaHandler = async (req, res) => {
       // Si viene error, guardamos el mensaje como ubicación
       direccionFinal = localizacion_salida.mensaje || "Ubicación no disponible";
     } else {
-      // Si hay coordenadas, hacemos geolocalización inversa
-      direccionFinal = await obtenerDireccionReversa(
-        localizacion_salida.lat,
-        localizacion_salida.lng
-      );
+      try {
+        direccionFinal = await obtenerDireccionReversa(
+          localizacion_salida.lat,
+          localizacion_salida.lng
+        );
+      } catch (error) {
+        direccionFinal = "Ubicación no disponible";
+        console.error("Error al obtener dirección:", error);
+      }
     }
 
     // Actualizar parte con hora de salida
