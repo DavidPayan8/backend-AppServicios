@@ -1,7 +1,7 @@
 require("dotenv").config(); //dotenv
 const express = require("express");
 const cors = require("cors");
-const morgan= require ('morgan');
+const morgan = require("morgan");
 const userRoutes = require("./routes/userRoutes");
 const clientesRoutes = require("./routes/clientesRoutes");
 const authRoutes = require("./routes/authRoutes");
@@ -18,7 +18,9 @@ const vacacionesRoutes = require("./routes/vacacionesRoutes");
 const ftpRoutes = require("./routes/ftpRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const fichajesProyectoRoutes = require("./routes/fichajesProyectoRoutes");
-const geolocationRoutes = require("./routes/geolocationRoutes")
+const geolocationRoutes = require("./routes/geolocationRoutes");
+const empresaRoutes = require("./routes/empresaRoutes");
+const modulosRoutes = require("./routes/modulosRoutes");
 const authenticateToken = require("./middleware/authMiddleware");
 
 const app = express();
@@ -27,14 +29,14 @@ const port = process.env.PORT || 0;
 
 // Middleware para cors
 app.use(cors());
-app.use(morgan('dev'));
+app.use(morgan("dev"));
 
 // Middleware para JSON y URL-encoded de forma condicional
 app.use((req, res, next) => {
-  if (req.is('application/json')) {
-    express.json({ limit: '10mb' })(req, res, next);
-  } else if (req.is('application/x-www-form-urlencoded')) {
-    express.urlencoded({ limit: '10mb', extended: true })(req, res, next);
+  if (req.is("application/json")) {
+    express.json({ limit: "10mb" })(req, res, next);
+  } else if (req.is("application/x-www-form-urlencoded")) {
+    express.urlencoded({ limit: "10mb", extended: true })(req, res, next);
   } else {
     next();
   }
@@ -56,10 +58,11 @@ app.use("/api/estadisticas", estadisticasRoutes);
 app.use("/api/vacaciones", vacacionesRoutes);
 app.use("/api/fichajes-proyecto", fichajesProyectoRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/empresa", empresaRoutes);
+app.use("/api/modulos", modulosRoutes);
 app.use("/api/ftp", ftpRoutes);
-app.use("/api/geolocation",geolocationRoutes)
+app.use("/api/geolocation", geolocationRoutes);
 
-// Rutas protegidas
 app.get("/protected", authenticateToken, (req, res) => {
   res.json({ message: "Acceso autorizado", user: req.user });
 });

@@ -4,10 +4,19 @@ async function obtenerDireccionReversa(lat, lng) {
 
   try {
     const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status} - ${res.statusText}`);
+    }
+
     const data = await res.json();
 
+    if (data.status !== "OK") {
+      console.error("Google Maps API Error:", data.status, data.error_message);
+      throw new Error(`Google Maps API Error: ${data.status}`);
+    }
+
     const direccion = data.results?.[0] || null;
-    return direccion;
+    return direccion.formatted_address || "Ubicación no disponible";
   } catch (err) {
     console.error("Error al llamar a Google Maps:", err.message);
     throw new Error("Error al obtener la dirección desde Google Maps");

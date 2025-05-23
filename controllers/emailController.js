@@ -1,19 +1,17 @@
 const nodemailer = require("nodemailer");
-
-
-const ADMIN_EMAIL = "pruebasinternas@kongconsulting.es";
+const db = require("../Model");
 
 // secure = true para 465, false para otros puertos
 // TLS reemplaza a SSL (deprecated)
-const transporter = nodemailer.createTransport({
-  host: "cp7073.webempresa.eu", // Servidor SMTP
-  port: 465, // Puerto para  SSL
-  secure: true, // Utilizar SSL
-  auth: {
-    user: ADMIN_EMAIL, // Correo
-    pass: "Pruebas2025.", // Contraseña del correo
-  },
-});
+// const transporter = nodemailer.createTransport({
+//   host: "cp7073.webempresa.eu", // Servidor SMTP
+//   port: 465, // Puerto para  SSL
+//   secure: true, // Utilizar SSL
+//   auth: {
+//     user: ADMIN_EMAIL, // Correo
+//     pass: "Pruebas2025.", // Contraseña del correo
+//   },
+// });
 
 // Configurar Nodemailer
 /* const transporter = nodemailer.createTransport({
@@ -40,14 +38,16 @@ const transporter = nodemailer.createTransport({
 
 /**
  * Función común para enviar correos electrónicos
+ * @param {import("nodemailer").Transporter} transporter - Transportador con el cual enviar el correo
+ * @param {string} from - Dirección de correo del remitente
  * @param {string} to - Dirección de correo del destinatario
  * @param {string} subject - Asunto del correo
  * @param {string} text - Cuerpo del correo
  * @param {Buffer} pdfBuffer - El archivo PDF en formato Buffer
  */
-const enviarEmail = async (to, subject, text, pdfBuffer) => {
+const enviarEmail = async (transporter, from, to, subject, text, pdfBuffer) => {
   const mailOptions = {
-    from: ADMIN_EMAIL,
+    from: from,
     to: to,
     subject: subject,
     text: text,
@@ -61,7 +61,6 @@ const enviarEmail = async (to, subject, text, pdfBuffer) => {
 
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log("Correo enviado:", info); // Para depuración
     return info;
   } catch (error) {
     console.error("Error enviando correo:", error);
@@ -73,31 +72,85 @@ const enviarEmail = async (to, subject, text, pdfBuffer) => {
  * Función para enviar el correo al cliente y luego al admin
  */
 const enviarEmails = async (req, res) => {
-  const { email, pdf } = req.body;
+  const { cliente, email, pdf } = req.body;
+  const { empresa } = req.user;
+
   try {
+    // Obtener datos de transporte para la empresa
+    const config = await db.CONFIG_EMPRESA.findOne({
+      where: { id_empresa: empresa },
+      attributes: ["smtp_host", "smtp_port", "smtp_user", "smtp_pass"],
+    });
+
+    if (!config) {
+      return res.status(400).json({
+        message: "Su empresa no tiene configurada la salida de correos",
+      });
+    }
+
+    const transporter = getTransporter(config);
+
+    const from = config.smtp_user;
+    const administracion = config.smtp_user;
+
     // Convertir el PDF de base64 a Buffer
     const pdfBuffer = Buffer.from(pdf, "base64");
 
     // Enviar email al cliente
     await enviarEmail(
+      transporter,
+      from,
       email,
-      "Albarán Firmado PDF",
+      "Albarán Firmado PDF - " + cliente,
       "Adjunto una copia del albarán firmado.",
       pdfBuffer
     );
 
     // Enviar email a la administración
     await enviarEmail(
-      ADMIN_EMAIL,
-      "Albarán Firmado PDF - Admin",
+      transporter,
+      from,
+      administracion,
+      "Albarán Firmado PDF - " + cliente,
       "Adjunto una copia del albarán firmado.",
       pdfBuffer
     );
 
-    res.status(200).send({ message: "Mail enviado correctamente a cliente y admin" });
+    res
+      .status(200)
+      .send({ message: "Mail enviado correctamente a cliente y admin" });
   } catch (error) {
-    res.status(500).send({ message: "Error enviando mail", error: error.message });
+    res
+      .status(500)
+      .send({ message: "Error enviando mail", error: error.message });
   }
+};
+
+const getTransporter = (data) => {
+  const options = {
+    host: data.smtp_host,
+    port: data.smtp_port,
+    auth: {
+      user: data.smtp_user,
+      pass: data.smtp_pass,
+    },
+  };
+
+  if (options.port == 465) {
+    // Utilizar SSL (deprecated)
+    options.secure = true;
+    options.requireTLS = false;
+  } else {
+    // Utilizar TLS
+    options.secure = false;
+    options.requireTLS = true;
+    options.tls = {
+      requireTLS: false,
+      rejectUnauthorized: false,
+    };
+  }
+
+  return nodemailer.createTransport(options);
 };
 
 module.exports = {
