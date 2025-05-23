@@ -4,9 +4,7 @@ const { obtenerDireccionReversa } = require("../models/geolocationModel");
 // Fichar entrada
 const ficharEntradaHandler = async (req, res) => {
   const userId = req.user.id;
-  const { date, localizacion_entrada } = req.body;
-  let direccionFinal = null;
-
+  const { date } = req.body;
   const fecha = formatFecha(date);
 
   try {
@@ -17,36 +15,20 @@ const ficharEntradaHandler = async (req, res) => {
 
     if (parteAbierto) {
       return res.status(400).json({
-        message: "Ya tienes un parte abierto para fecha. Debes fichar salida.",
+        message:
+          "Ya tienes un parte abierto para esta fecha. Debes fichar salida.",
       });
     }
 
-    if (localizacion_entrada?.error) {
-      // Si viene error, guardamos el mensaje como ubicación
-      direccionFinal =
-        localizacion_entrada.mensaje || "Ubicación no disponible";
-    } else {
-      // Si hay coordenadas, hacemos geolocalización inversa
-      try {
-        direccionFinal = await obtenerDireccionReversa(
-          localizacion_entrada.lat,
-          localizacion_entrada.lng
-        );
-      } catch (error) {
-        direccionFinal = "Ubicación no disponible";
-        console.error("Error al obtener dirección:", error);
-      }
-    }
-
-    // Crear parte con dirección
+    // Crear parte sin localización (se actualiza luego)
     const fichaje = await db.CONTROL_ASISTENCIAS.create({
       id_usuario: userId,
       fecha,
       hora_entrada: db.Sequelize.literal("GETDATE()"),
-      localizacion_entrada: direccionFinal,
     });
 
-    res.status(201).json(fichaje);
+    // Responder inmediatamente con el ID del fichaje
+    res.status(201).json({ id: fichaje.id });
   } catch (error) {
     console.error("Error al fichar entrada:", error);
     res.status(500).json({ message: "Error del servidor." });
@@ -56,8 +38,7 @@ const ficharEntradaHandler = async (req, res) => {
 // Fichar salida
 const ficharSalidaHandler = async (req, res) => {
   const userId = req.user.id;
-  const { date, localizacion_salida } = req.body;
-  let direccionFinal = null;
+  const { date } = req.body;
 
   try {
     const fecha = formatFecha(date);
@@ -77,8 +58,63 @@ const ficharSalidaHandler = async (req, res) => {
       });
     }
 
+    // Actualizar parte con hora de salida
+    parteAbierto.hora_salida = db.Sequelize.literal("GETDATE()");
+    await parteAbierto.save();
+
+    res.status(200).json({ id: parteAbierto.id });
+  } catch (error) {
+    console.error("Error al fichar salida:", error);
+    res.status(500).json({ message: "Error del servidor." });
+  }
+};
+
+const actualizarLocalizacionEntrada = async (req, res) => {
+  const { id_parte, localizacion_entrada } = req.body;
+
+  let direccionFinal = "Ubicación no disponible";
+
+  try {
+    if (!id_parte) return res.status(400).json({ message: "Id requerido." });
+
+    if (localizacion_entrada?.error) {
+      direccionFinal =
+        localizacion_entrada.mensaje || "Ubicación no disponible";
+    } else {
+      try {
+        direccionFinal = await obtenerDireccionReversa(
+          localizacion_entrada.lat,
+          localizacion_entrada.lng
+        );
+      } catch (err) {
+        console.error("Error al obtener dirección:", err);
+      }
+    }
+
+    // Actualizar localización
+    await db.CONTROL_ASISTENCIAS.update(
+      { localizacion_entrada: direccionFinal },
+      { where: { id: id_parte.id } }
+    );
+
+    res
+      .status(200)
+      .json({ message: "Localización actualizada correctamente." });
+  } catch (error) {
+    console.error("Error al actualizar localización:", error);
+    res.status(500).json({ message: "Error del servidor." });
+  }
+};
+
+const actualizarLocalizacionSalida = async (req, res) => {
+  const { id_parte, localizacion_salida } = req.body;
+
+  let direccionFinal = "Ubicación no disponible";
+
+  try {
+    if (!id_parte) return res.status(400).json({ message: "Id requerido." });
+
     if (localizacion_salida?.error) {
-      // Si viene error, guardamos el mensaje como ubicación
       direccionFinal = localizacion_salida.mensaje || "Ubicación no disponible";
     } else {
       try {
@@ -86,20 +122,22 @@ const ficharSalidaHandler = async (req, res) => {
           localizacion_salida.lat,
           localizacion_salida.lng
         );
-      } catch (error) {
-        direccionFinal = "Ubicación no disponible";
-        console.error("Error al obtener dirección:", error);
+      } catch (err) {
+        console.error("Error al obtener dirección:", err);
       }
     }
 
-    // Actualizar parte con hora de salida
-    parteAbierto.hora_salida = db.Sequelize.literal("GETDATE()");
-    parteAbierto.localizacion_salida = direccionFinal;
-    await parteAbierto.save();
+    // Actualizar localización
+    await db.CONTROL_ASISTENCIAS.update(
+      { localizacion_salida: direccionFinal },
+      { where: { id: id_parte.id } }
+    );
 
-    res.status(200).json(parteAbierto[0]);
+    res
+      .status(200)
+      .json({ message: "Localización actualizada correctamente." });
   } catch (error) {
-    console.error("Error al fichar salida:", error);
+    console.error("Error al actualizar localización:", error);
     res.status(500).json({ message: "Error del servidor." });
   }
 };
@@ -225,4 +263,6 @@ module.exports = {
   ficharSalidaHandler,
   obtenerPartesUsuarioFecha,
   cerrarParteAbierto,
+  actualizarLocalizacionEntrada,
+  actualizarLocalizacionSalida,
 };
