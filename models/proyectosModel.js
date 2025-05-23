@@ -10,11 +10,13 @@ const connectToDb = async () => {
   return poolPromise;
 };
 
-const getObras = async () => {
+const getObras = async (empresa) => {
   try {
     const pool = await connectToDb();
-    const result = await pool.request()
-    .query(`SELECT * From Proyectos`);
+    const result = await pool
+      .request()
+      .input("id_empresa", sql.Int, empresa)
+      .query(`SELECT * From Proyectos where id_empresa = @id_empresa`);
     return result.recordset;
   } catch (error) {
     console.error("Error al obtener obras:", error.message);
@@ -28,7 +30,8 @@ const createOtObra = async (
   id_cliente,
   id_obra,
   fechaCalendario,
-  es_ote
+  es_ote,
+  empresa
 ) => {
   try {
     // Conexión a la base de datos
@@ -44,13 +47,14 @@ const createOtObra = async (
       .input("id_cliente", sql.Int, id_cliente)
       .input("id_obra", sql.Int, id_obra)
       .input("es_ote", sql.Bit, es_ote)
-      .query(`
+      .input("id_empresa", sql.Int, empresa).query(`
         INSERT INTO ORDEN_TRABAJO (
           id_usuario,
           nombre,
           id_cliente,
           id_servicio_origen,
-          es_ote
+          es_ote,
+          id_empresa
         )
           OUTPUT inserted.id
         VALUES (
@@ -58,16 +62,17 @@ const createOtObra = async (
           @nombre,
           @id_cliente,
           @id_obra,
-          @es_ote
+          @es_ote,
+          @id_empresa
         );`);
 
-       // Insertar la entrada en el calendario
+    // Insertar la entrada en el calendario
     await request
-    .input("fecha", sql.Date, fechaCalendario)
-    .input("id_proyecto", sql.Int, result.recordset[0].id)
-    .query(`INSERT INTO CALENDARIO ( fecha, id_usuario, id_proyecto)
+      .input("fecha", sql.Date, fechaCalendario)
+      .input("id_proyecto", sql.Int, result.recordset[0].id)
+      .query(`INSERT INTO CALENDARIO ( fecha, id_usuario, id_proyecto)
                   VALUES ( @fecha, @id_usuario, @id_proyecto)`);
-                  
+
     return { id: result.recordset[0].id };
   } catch (error) {
     console.error("Error al crear Ote Obra:", error.message);
@@ -78,6 +83,7 @@ const createOtObra = async (
 // Obtiene los ids de los proyectos, por usuario
 const getIdProyectos = async (userId, date) => {
   try {
+    console.log(userId, date);
     const pool = await connectToDb();
     const result = await pool
       .request()
@@ -100,8 +106,7 @@ const getIdContrato = async (orden_trabajo_id) => {
                     LEFT JOIN orden_trabajo ot 
                         ON c.id = ot.id_contrato
                     WHERE ot.id = ${orden_trabajo_id}`;
-    const result = await pool.request()
-    .query(query);
+    const result = await pool.request().query(query);
     return result.recordset[0]?.id;
   } catch (error) {
     console.error("Error al obtener id contrato:", error.message);
@@ -138,24 +143,61 @@ const getDetallesContrato = async (id_contrato) => {
 // Obtiene los proyectos por ids
 const getProyectos = async (ids) => {
   try {
+    console.log("Id", ids);
     let idsString = "";
+
     const pool = await connectToDb();
 
-    // Convertir array de IDs en formato adecuado para SQL
-    ids.length > 1 ? (idsString = ids.join(",")) : (idsString = ids);
+    // Convertir array de IDs a string para la cláusula IN
+    idsString = Array.isArray(ids) ? ids.join(",") : ids;
 
-    const query = `SELECT 
-    Orden_Trabajo.*, 
-    CLIENTES.nombre AS nombre_cliente
+    const query = `
+    SELECT 
+      Orden_Trabajo.id,
+      Orden_Trabajo.id_origen,
+      Orden_Trabajo.nombre,
+      Orden_Trabajo.observaciones,
+      Orden_Trabajo.id_cliente,
+      Orden_Trabajo.es_ote,
+      Orden_Trabajo.detalles,
+      Orden_Trabajo.estado,
+      Orden_Trabajo.id_usuario,
+      Orden_Trabajo.id_servicio_origen,
+      Orden_Trabajo.articulo_id,
+      Orden_Trabajo.id_contrato,
+      Orden_Trabajo.direccion,
+      Orden_Trabajo.id_empresa,
+      CLIENTES.nombre AS nombre_cliente,
+      MIN(pt.hora_entrada) AS hora_inicio,
+      MAX(pt.hora_salida) AS hora_fin
     FROM 
-        Orden_Trabajo
+      Orden_Trabajo
     LEFT JOIN 
-        CLIENTES ON Orden_Trabajo.id_cliente = CLIENTES.id
+      CLIENTES ON Orden_Trabajo.id_cliente = CLIENTES.id
+    LEFT JOIN 
+      partes_trabajo pt ON pt.id_proyecto = Orden_Trabajo.id
     WHERE 
-        Orden_Trabajo.id IN (${idsString});
-`;
+      Orden_Trabajo.id IN (${idsString})
+    GROUP BY 
+      Orden_Trabajo.id,
+      Orden_Trabajo.id_origen,
+      Orden_Trabajo.nombre,
+      Orden_Trabajo.observaciones,
+      Orden_Trabajo.id_cliente,
+      Orden_Trabajo.es_ote,
+      Orden_Trabajo.detalles,
+      Orden_Trabajo.estado,
+      Orden_Trabajo.id_usuario,
+      Orden_Trabajo.id_servicio_origen,
+      Orden_Trabajo.articulo_id,
+      Orden_Trabajo.id_contrato,
+      Orden_Trabajo.direccion,
+      Orden_Trabajo.id_empresa,
+      CLIENTES.nombre;
+  `;
 
-    let result = await pool.request().query(query);
+    const result = await pool.request().query(query);
+
     return result.recordset;
   } catch (error) {
     console.error("Error al obtener los proyectos por IDs:", error.message);
@@ -175,7 +217,7 @@ const cambiarEstadoProyecto = async (id, estado) => {
     let result = await pool.request().query(query);
     return result.recordset;
   } catch (error) {
-    console.error("Error al obtener los proyectos por IDs:", error.message);
+    console.error("Error al cambiar estado de proyectos :", error.message);
     throw error;
   }
 };
@@ -187,7 +229,8 @@ const addProyecto = async (
   id_usuario,
   id_cliente,
   fechaCalendario,
-  es_ote
+  es_ote,
+  empresa
 ) => {
   let transaction;
   try {
@@ -209,9 +252,10 @@ const addProyecto = async (
         .input("nombre", sql.VarChar, nombre)
         .input("observaciones", sql.VarChar, observaciones)
         .input("es_ote", sql.Bit, es_ote)
-        .query(`INSERT INTO Orden_Trabajo ( nombre, observaciones, id_cliente, es_ote, id_usuario)
+        .input("id_empresa", sql.Int, empresa)
+        .query(`INSERT INTO Orden_Trabajo ( nombre, observaciones, id_cliente, es_ote, id_usuario, id_empresa)
               OUTPUT inserted.id
-              VALUES (  @nombre, @observaciones, null, @es_ote, @id_usuario)`);
+              VALUES (  @nombre, @observaciones, null, @es_ote, @id_usuario, @id_empresa)`);
     } else {
       result = await request
         .input("id_usuario", sql.Int, id_usuario)
@@ -219,9 +263,10 @@ const addProyecto = async (
         .input("nombre", sql.VarChar, nombre)
         .input("observaciones", sql.VarChar, observaciones)
         .input("es_ote", sql.Bit, es_ote)
-        .query(`INSERT INTO Orden_Trabajo ( nombre, observaciones, id_cliente, es_ote, id_usuario)
+        .input("id_empresa", sql.Int, empresa)
+        .query(`INSERT INTO Orden_Trabajo ( nombre, observaciones, id_cliente, es_ote, id_usuario, id_empesa)
                 OUTPUT inserted.id
-                VALUES ( @nombre, @observaciones, @id_cliente, @es_ote, @id_usuario)`);
+                VALUES ( @nombre, @observaciones, @id_cliente, @es_ote, @id_usuario, @id_empresa)`);
     }
 
     // Insertar la entrada en el calendario
@@ -249,6 +294,35 @@ const addProyecto = async (
   }
 };
 
+const autoAsignarOt = async (id_usuario, id_ot) => {
+  try {
+    const pool = await connectToDb();
+
+    const resultOT = await pool.request().query(`
+      UPDATE Orden_Trabajo
+      SET id_usuario = ${id_usuario}
+      WHERE id = ${id_ot}
+    `);
+
+    const resultCal = await pool.request().query(`
+      UPDATE CALENDARIO
+      SET id_usuario = ${id_usuario}
+      WHERE id_proyecto = ${id_ot}
+    `);
+
+    // Verificamos que ambas actualizaciones hayan afectado al menos una fila
+    const rowsAffected = resultOT.rowsAffected[0] + resultCal.rowsAffected[0];
+    if (rowsAffected > 1) {
+      return { success: true, message: "OT autoasignada correctamente" };
+    } else {
+      return { success: false, message: "No se actualizó ninguna fila" };
+    }
+  } catch (error) {
+    console.error("Error al autoasignar OT:", error.message);
+    return { success: false, error: error.message };
+  }
+};
+
 module.exports = {
   getObras,
   createOtObra,
@@ -259,4 +333,5 @@ module.exports = {
   getContrato,
   getIdContrato,
   getDetallesContrato,
+  autoAsignarOt,
 };

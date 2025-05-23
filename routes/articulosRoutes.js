@@ -5,9 +5,9 @@ const { obtenerArticulos,get_iva_descuento, obtenerVehiculos } = require('../con
 
 router.use(authenticateToken);
 
-router.post('/obtener-articulos', obtenerArticulos);
-router.post('/obtener-vehiculos', obtenerVehiculos);
-router.post('/obtener-ivas-descuentos', get_iva_descuento);
+router.get('/obtener-articulos', obtenerArticulos);
+router.get('/obtener-vehiculos', obtenerVehiculos);
+router.get('/obtener-ivas-descuentos', get_iva_descuento);
 
 
 module.exports = router;

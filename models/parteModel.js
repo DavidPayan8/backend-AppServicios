@@ -36,6 +36,7 @@ const crearParteTrabajo = async ({
 
     // Obtener el próximo ID disponible
 
+    console.log(hora_entrada)
     // Insertar el nuevo parte de trabajo
     const result = await pool
       .request()
@@ -43,7 +44,7 @@ const crearParteTrabajo = async ({
       .input("id_capitulo", sql.Int, id_capitulo)
       .input("id_partida", sql.Int, id_partida)
       .input("id_proyecto", sql.Int, id_proyecto)
-      .input("hora_entrada", sql.Time, hora_entrada)
+      .input("hora_entrada", sql.VarChar, hora_entrada)
       .input("fecha", sql.Date, fecha)
       .input("localizacion_entrada", sql.VarChar, localizacion_entrada)
       .query(`INSERT INTO PARTES_TRABAJO ( id_usuario, id_capitulo , id_partida ,id_proyecto, hora_entrada, fecha, localizacion_entrada)
@@ -82,24 +83,25 @@ const getPartes = async (id_usuario, id_proyecto, fecha) => {
 };
 
 const getParte = async (id_parte, id_usuario) => {
-  const id = id_parte;
   try {
     const pool = await sql.connect(config);
     const result = await pool
       .request()
       .input("id", sql.Int, id_parte)
-      .input("id_usuario", sql.Int, id_usuario).query(`
-                SELECT * 
-                FROM PARTES_TRABAJO 
-                WHERE id_usuario = @id_usuario 
-                  AND id = @id
-            `);
+      .input("id_usuario", sql.Int, id_usuario)
+      .query(`
+        SELECT * 
+        FROM PARTES_TRABAJO 
+        WHERE id_usuario = @id_usuario 
+          AND id = @id
+      `);
     return result.recordset;
   } catch (error) {
     console.error("Error al obtener partes de trabajo:", error.message);
     throw error;
   }
 };
+
 
 const actualizarParteTrabajo = async (
   id,
@@ -119,7 +121,7 @@ const actualizarParteTrabajo = async (
       .input("id_capitulo", sql.Int, id_capitulo)
       .input("id_partida", sql.Int, id_partida)
       .input("id_proyecto", sql.Int, id_proyecto)
-      .input("hora_salida", sql.Time, hora_salida)
+      .input("hora_salida", sql.VarChar, hora_salida)
       .input("horas_festivo", sql.Int, horas_festivo)
       .input("horas_extra", sql.Int, horas_extra)
       .input("localizacion_salida", sql.VarChar, localizacion_salida).query(`
