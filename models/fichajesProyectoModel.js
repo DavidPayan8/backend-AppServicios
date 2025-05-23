@@ -12,7 +12,7 @@ const obtenerFichajesProyecto = async (desde, hasta, trabajador, rol) => {
           ca.hora_salida AS Salida,
           ROUND(DATEDIFF(MINUTE, ca.hora_entrada, ca.hora_salida), 2) AS Total,
           u.USER_NAME AS Trabajador,
-          NULL AS Rol,
+          u.Rol,
           ca.localizacion_entrada AS Ubicacion_entrada,
           ca.localizacion_salida AS Ubicacion_salida
       FROM CONTROL_ASISTENCIAS ca
@@ -31,19 +31,18 @@ const obtenerFichajesProyecto = async (desde, hasta, trabajador, rol) => {
 			request.input("hasta", sql.Date, hasta);
 		}
 		if (trabajador) {
-			conditions.push("u.USER_NAME LIKE '%' + @trabajador + '%'");
+			conditions.push("UPPER(u.USER_NAME) LIKE '%' + UPPER(@trabajador) + '%'");
 			request.input("trabajador", sql.VarChar, trabajador);
 		}
-		// TODO: implementar rol
-		/* if (rol) {
-			conditions.push("u.rol = @rol");
+		if (rol) {
+			conditions.push("UPPER(u.rol) = UPPER(@rol)");
 			request.input("rol", sql.VarChar, rol);
-		} */
+		}
 
 		if (conditions.length > 0) {
 			query += " WHERE " + conditions.join(" AND ");
 		}
-		query += " ORDER BY ca.Fecha DESC";
+		query += " ORDER BY ca.hora_entrada DESC";
 		const result = await request.query(query);
 		return result.recordset;
 	} catch (error) {
@@ -94,7 +93,9 @@ const patchFichaje = async (id, fecha, horaEntrada, horaSalida, localizacionEntr
 			query += `hora_entrada = @horaEntrada, `;
 			request.input("horaEntrada", sql.DateTime, horaEntrada);
 		}
-		if (horaSalida) {
+		if (typeof horaSalida === 'string' && horaSalida.toUpperCase() === "NULL") {
+			query += `hora_salida = NULL, `;
+		} else if (horaSalida) {
 			query += `hora_salida = @horaSalida, `;
 			request.input("horaSalida", sql.DateTime, horaSalida);
 		}
@@ -102,7 +103,9 @@ const patchFichaje = async (id, fecha, horaEntrada, horaSalida, localizacionEntr
 			query += `localizacion_entrada = @localizacionEntrada, `;
 			request.input("localizacionEntrada", sql.VarChar, localizacionEntrada);
 		}
-		if (localizacionSalida) {
+		if (typeof localizacionSalida === 'string' && localizacionSalida.toUpperCase() === "NULL") {
+			query += `localizacion_salida = NULL, `;
+		} else if (localizacionSalida) {
 			query += `localizacion_salida = @localizacionSalida, `;
 			request.input("localizacionSalida", sql.VarChar, localizacionSalida);
 		}
@@ -117,8 +120,38 @@ const patchFichaje = async (id, fecha, horaEntrada, horaSalida, localizacionEntr
 	}
 }
 
+const postFichaje = async (idUsuario, entrada, salida, localizacionEntrada, localizacionSalida) => {
+	if (!idUsuario) {
+		throw new Error("El ID del usuario es obligatorio.");
+	}
+	try {
+		const pool = await sql.connect(config);
+		const request = pool.request();
+		request.input("idUsuario", sql.Int, idUsuario);
+		request.input("entrada", sql.DateTime, entrada);
+		request.input("salida", sql.DateTime, salida);
+		request.input("localizacionEntrada", sql.VarChar, localizacionEntrada);
+		request.input("localizacionSalida", sql.VarChar, localizacionSalida);
+
+		const fecha = entrada ? entrada.toISOString().split('T')[0] : null;
+		request.input("fecha", sql.Date, fecha);
+
+		const result = await request.query(`
+    		INSERT INTO CONTROL_ASISTENCIAS 
+    		(id_usuario, hora_entrada, hora_salida, fecha, id_origen, localizacion_entrada, localizacion_salida, estado_traspaso)
+    		VALUES 
+    		(@idUsuario, @entrada, @salida, @fecha, NULL, @localizacionEntrada, @localizacionSalida, 0)
+		`);
+		return result;
+	} catch (error) {
+		console.error("Model: Error al crear fichaje:", error.message);
+		throw error;
+	}
+}
+
 module.exports = {
 	obtenerFichajesProyecto,
 	eliminarFichajes,
-	patchFichaje
+	patchFichaje,
+	postFichaje
 };

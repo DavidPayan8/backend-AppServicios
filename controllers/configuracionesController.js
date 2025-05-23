@@ -1,32 +1,48 @@
-const { obtenerDiasEditables,getConfigEmpresa } = require("../models/configuracionesModel");
+const db = require("../Model");
 
 const getDiasEditables = async (req, res) => {
-  const { empresa } = req.user
-  const { rol } = req.body;
+  const { empresa, rol } = req.user;
 
   try {
-    const config = await obtenerDiasEditables(rol, empresa);
+    const config = await db.CONFIGURACIONES.findOne({
+      where: {
+        id_empresa: empresa,
+        rol,
+      },
+      attributes: ["n_dias_editables"],
+    });
+
+    if (!config) {
+      return res.status(200).json({ message: "Configuración no encontrada" });
+    }
 
     res.status(200).json(config);
   } catch (error) {
-    console.error("Error al obtener dias editables:", error.message);
+    console.error("Error al obtener días editables:", error.message);
     res.status(500).json({
-      message: "Error al obtener dias editables.",
+      message: "Error al obtener días editables.",
       error: error.message,
     });
   }
 };
 
-const obtenerConfigEmpresa = async (req,res) => {
+const obtenerConfigEmpresa = async (req, res) => {
+  const { empresa } = req.user;
+
   try {
-    const { empresa } = req.user
-    const config = await getConfigEmpresa(empresa);
+    const config = await db.CONFIG_EMPRESA.findOne({
+      where: { id_empresa: empresa },
+    });
+
+    if (!config) {
+      return res.status(404).json({ message: "Configuración no encontrada" });
+    }
 
     res.status(200).json(config);
   } catch (error) {
     console.error("Error al obtener config empresa:", error.message);
     res.status(500).json({
-      message: "Error al obtener configuracion empresa",
+      message: "Error al obtener configuración empresa",
       error: error.message,
     });
   }
@@ -34,5 +50,5 @@ const obtenerConfigEmpresa = async (req,res) => {
 
 module.exports = {
   getDiasEditables,
-  obtenerConfigEmpresa
+  obtenerConfigEmpresa,
 };

@@ -1,37 +1,40 @@
 const jwt = require("jsonwebtoken");
-const { getUserByUsername } = require("../models/userModel");
+const db = require("../Model");
 
-const JWT_SECRET = "111";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 const login = async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    const user = await getUserByUsername(username);
+    const user = await db.USUARIOS.findOne({
+      where: { user_name: username },
+    });
 
     if (!user) {
-      return res.status(401).json({ message: "Invalid user" });
-    }
-    if (password !== user.contrasena) {
-      return res.status(401).json({ message: "Invalid password" });
+      return res.status(401).json({ message: "Usuario no encontrado" });
     }
 
-    // Generar un nuevo token JWT
+    if (password !== user.contrasena) {
+      return res.status(401).json({ message: "Contraseña incorrecta" });
+    }
+
     const token = jwt.sign(
       {
         id: user.id,
         nomapes: user.nomapes,
         username: user.user_name,
         empresa: user.id_empresa,
-        rol: user.rol
+        rol: user.rol,
       },
       JWT_SECRET,
       { expiresIn: "1h" }
     );
-    return res.json({ token });
+
+    return res.json({ token, user });
   } catch (err) {
-    console.error("Error during login:", err);
-    return res.status(500).json({ message: "Internal server error" });
+    console.error("Error durante el login:", err);
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 

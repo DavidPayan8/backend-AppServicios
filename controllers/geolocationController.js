@@ -1,4 +1,4 @@
-const { obtenerDireccionReversa } = require("../models/geolocationModel");
+const { obtenerDireccionReversa } = require("../Model/others/geolocationModel");
 
 async function geocodificar(req, res) {
   const { lat, lng } = req.query;

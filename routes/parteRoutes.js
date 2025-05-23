@@ -5,18 +5,18 @@ const router = express.Router();
 
 router.use(authenticateToken);
 
-router.post('/check-parte-abierto', checkParteAbierto);
+router.get('/check-parte-abierto', checkParteAbierto);
 
 router.post('/crear-partes-trabajo', crearParteTrabajo);
 
-router.post('/obtener-partes', getPartes);
+router.get('/obtener-partes', getPartes);
 
-router.post('/obtener-parte/:id', getParte);
+router.get('/obtener-parte/:id', getParte);
 
-router.post('/obtener-capitulos', getCapitulos);
+router.get('/obtener-capitulos', getCapitulos);
 
-router.post('/obtener-partidas', getPartidas);
+router.get('/obtener-partidas', getPartidas);
 
-router.put('/actualizar-parte/:id', actualizarParteTrabajo);
+router.patch('/actualizar-parte/:id', actualizarParteTrabajo);
 
 module.exports = router;
