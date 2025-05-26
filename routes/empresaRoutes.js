@@ -2,7 +2,7 @@ const express = require("express");
 const {
   getEmpresa,
   getEmpresas,
-  getColorPrincipal,
+  getConfigEmpresa,
   updateEmpresa,
   updateConfigEmpresa,
 } = require("../controllers/empresaController");
@@ -13,6 +13,7 @@ const router = express.Router();
 router.use(authenticateToken);
 
 router.get("/", authorizeRol("admin", "superadmin"), getEmpresa);
+router.get("/config", getConfigEmpresa)
 router.get("/empresas", authorizeRol("superadmin"), getEmpresas);
 router.put("/", authorizeRol("admin", "superadmin"), updateEmpresa);
 router.put(
@@ -20,8 +21,5 @@ router.put(
   authorizeRol("admin", "superadmin"),
   updateConfigEmpresa
 );
-router.get("/color-principal", getColorPrincipal);
-
-/* router.get("/modulos-habilitados") */
 
 module.exports = router;

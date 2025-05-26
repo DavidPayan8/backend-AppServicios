@@ -14,10 +14,10 @@ const {
 router.use(authenticateToken);
 
 //Rutas para detalles doc
-router.get("/obtener-detallesDoc", obtenerDetallesDoc);
-router.put("/cambiar-detallesDoc", cambiarDetalleAlbaran);
-router.post("/add-detallesDoc", crearDetalleAlbaran);
-router.delete("/borrar-detallesDoc", borrarDetalleAlbaran);
+router.get("/", obtenerDetallesDoc);
+router.put("/", cambiarDetalleAlbaran);
+router.post("/", crearDetalleAlbaran);
+router.delete("/", borrarDetalleAlbaran);
 
 //Rutas para cabecera doc
 router.get("/obtener-cabecera", obtenerCabeceraOt);

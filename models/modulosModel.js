@@ -2,13 +2,61 @@ const sql = require("mssql");
 const config = require("../config/dbConfig");
 
 // Obtener todos los módulos
-exports.obtenerModulos = async () => {
-  const pool = await config.connect();
+const obtenerModulos = async (id_empresa) => {
+  const pool = await sql.connect(config);
+
   try {
-    const result = await pool.request().query("SELECT * FROM MODULOS");
-    return result.recordset;
+    const result = await pool.request().input("id_empresa", sql.Int, id_empresa)
+      .query(`
+        SELECT 
+          m.id AS modulo_id,
+          m.nombre AS modulo_nombre,
+          m.clave_modulo,
+          ISNULL(em.habilitado, 0) AS modulo_habilitado,
+          s.id AS submodulo_id,
+          s.nombre AS submodulo_nombre,
+          s.clave AS submodulo_clave,
+          ISNULL(es.habilitado, 0) AS submodulo_habilitado
+        FROM MODULOS m
+        LEFT JOIN EMPRESAS_MODULOS em ON em.id_modulo = m.id AND em.id_empresa = @id_empresa
+        LEFT JOIN SUBMODULOS s ON s.id_modulo = m.id
+        LEFT JOIN EMPRESAS_SUBMODULOS es ON es.id_submodulo = s.id AND es.id_empresa = @id_empresa
+        ORDER BY m.id, s.id;
+      `);
+
+    const resultado = [];
+    const modulosMap = new Map();
+
+    for (const row of result.recordset) {
+      const moduloId = row.modulo_id;
+
+      if (!modulosMap.has(moduloId)) {
+        const nuevoModulo = {
+          id: moduloId,
+          nombre: row.modulo_nombre,
+          clave_modulo: row.clave_modulo,
+          habilitado: !!row.modulo_habilitado,
+          submodulos: [],
+        };
+
+        modulosMap.set(moduloId, nuevoModulo);
+        resultado.push(nuevoModulo);
+      }
+
+      if (row.submodulo_id) {
+        const submodulo = {
+          id: row.submodulo_id,
+          nombre: row.submodulo_nombre,
+          clave: row.submodulo_clave,
+          habilitado: !!row.submodulo_habilitado,
+        };
+        modulosMap.get(moduloId).submodulos.push(submodulo);
+      }
+    }
+
+    return resultado;
   } catch (error) {
-    console.error("Error al obtener módulos:", error.message);
+    console.error("Error al obtener módulos habilitados:", error.message);
     throw new Error("No se pudieron obtener los módulos");
   } finally {
     pool.close();
@@ -16,8 +64,8 @@ exports.obtenerModulos = async () => {
 };
 
 // Crear un nuevo módulo
-exports.crearModulo = async (nombre, clave_modulo) => {
-  const pool = await config.connect();
+const crearModulo = async (nombre, clave_modulo) => {
+  const pool = await sql.connect(config);
   try {
     const query = `
       INSERT INTO MODULOS (nombre, clave_modulo)
@@ -39,23 +87,9 @@ exports.crearModulo = async (nombre, clave_modulo) => {
   }
 };
 
-// Obtener todos los submódulos
-exports.obtenerSubmodulos = async () => {
-  const pool = await config.connect();
-  try {
-    const result = await pool.request().query("SELECT * FROM SUBMODULOS");
-    return result.recordset;
-  } catch (error) {
-    console.error("Error al obtener submódulos:", error.message);
-    throw new Error("No se pudieron obtener los submódulos");
-  } finally {
-    pool.close();
-  }
-};
-
 // Crear un nuevo submódulo
-exports.crearSubmodulo = async (id_modulo, nombre, clave) => {
-  const pool = await config.connect();
+const crearSubmodulo = async (id_modulo, nombre, clave) => {
+  const pool = await sql.connect(config);
   try {
     const query = `
       INSERT INTO SUBMODULOS (id_modulo, nombre, clave)
@@ -79,59 +113,56 @@ exports.crearSubmodulo = async (id_modulo, nombre, clave) => {
 };
 
 // Vincular un módulo a una empresa
-exports.vincularModuloEmpresa = async (
-  id_empresa,
-  id_modulo,
-  habilitado = 1
-) => {
-  const pool = await config.connect();
+const actualizarModulosEmpresa = async (idEmpresa, modulos) => {
+  const pool = await sql.connect(config);
+  const transaction = new sql.Transaction(pool);
+
   try {
-    const query = `
-      INSERT INTO EMPRESAS_MODULOS (id_empresa, id_modulo, habilitado)
-      VALUES (@id_empresa, @id_modulo, @habilitado)
-    `;
+    await transaction.begin();
 
-    await pool
-      .request()
-      .input("id_empresa", sql.Int, id_empresa)
-      .input("id_modulo", sql.Int, id_modulo)
-      .input("habilitado", sql.Bit, habilitado)
-      .query(query);
+    for (const modulo of modulos) {
+      // Upsert módulo
+      await new sql.Request(transaction)
+        .input("id_empresa", sql.Int, idEmpresa)
+        .input("id_modulo", sql.Int, modulo.id)
+        .input("habilitado", sql.Bit, modulo.habilitado).query(`
+          MERGE EMPRESAS_MODULOS AS target
+          USING (SELECT @id_empresa AS id_empresa, @id_modulo AS id_modulo) AS source
+          ON target.id_empresa = source.id_empresa AND target.id_modulo = source.id_modulo
+          WHEN MATCHED THEN UPDATE SET habilitado = @habilitado
+          WHEN NOT MATCHED THEN
+            INSERT (id_empresa, id_modulo, habilitado)
+            VALUES (@id_empresa, @id_modulo, @habilitado);
+        `);
 
-    return { message: "Módulo vinculado correctamente a la empresa" };
+      for (const sub of modulo.submodulos) {
+        await new sql.Request(transaction)
+          .input("id_submodulo", sql.Int, sub.id)
+          .input("id_empresa", sql.Int, idEmpresa)
+          .input("habilitado", sql.Bit, sub.habilitado).query(`
+            MERGE EMPRESAS_SUBMODULOS AS target
+            USING (SELECT @id_empresa AS id_empresa, @id_submodulo AS id_submodulo) AS source
+            ON target.id_empresa = source.id_empresa AND target.id_submodulo = source.id_submodulo
+            WHEN MATCHED THEN UPDATE SET habilitado = @habilitado
+            WHEN NOT MATCHED THEN
+              INSERT (id_empresa, id_submodulo, habilitado)
+              VALUES (@id_empresa, @id_submodulo, @habilitado);
+          `);
+      }
+    }
+
+    await transaction.commit();
   } catch (error) {
-    console.error("Error al vincular módulo a empresa:", error.message);
-    throw new Error("No se pudo vincular el módulo a la empresa");
+    await transaction.rollback();
+    throw error;
   } finally {
     pool.close();
   }
 };
 
-// Vincular un submódulo a una empresa
-exports.vincularSubmoduloEmpresa = async (
-  id_empresa,
-  id_submodulo,
-  habilitado = 1
-) => {
-  const pool = await config.connect();
-  try {
-    const query = `
-      INSERT INTO EMPRESAS_SUBMODULOS (id_empresa, id_submodulo, habilitado)
-      VALUES (@id_empresa, @id_submodulo, @habilitado)
-    `;
-
-    await pool
-      .request()
-      .input("id_empresa", sql.Int, id_empresa)
-      .input("id_submodulo", sql.Int, id_submodulo)
-      .input("habilitado", sql.Bit, habilitado)
-      .query(query);
-
-    return { message: "Submódulo vinculado correctamente a la empresa" };
-  } catch (error) {
-    console.error("Error al vincular submódulo a empresa:", error.message);
-    throw new Error("No se pudo vincular el submódulo a la empresa");
-  } finally {
-    pool.close();
-  }
+module.exports = {
+  obtenerModulos,
+  crearModulo,
+  crearSubmodulo,
+  actualizarModulosEmpresa,
 };

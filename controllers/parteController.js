@@ -1,16 +1,20 @@
-const parteService = require("../models/parteModel");
+const db = require("../Model");
+const { obtenerDireccionReversa } = require("../models/geolocationModel");
 
 const checkParteAbierto = async (req, res) => {
   const { id_proyecto } = req.query;
   const id_usuario = req.user.id;
 
   try {
-    const hayParteAbierto = await parteService.checkParteAbierto(
-      id_usuario,
-      id_proyecto
-    );
+    const parteAbierto = await db.PARTES_TRABAJO.findOne({
+      where: {
+        id_usuario,
+        id_proyecto,
+        hora_salida: null,
+      },
+    });
 
-    res.status(200).json(hayParteAbierto);
+    res.status(200).json({ abierto: !!parteAbierto });
   } catch (error) {
     res.status(500).json({
       message: "Error al comprobar partes abiertos.",
@@ -18,7 +22,6 @@ const checkParteAbierto = async (req, res) => {
     });
   }
 };
-
 
 const crearParteTrabajo = async (req, res) => {
   const {
@@ -32,20 +35,33 @@ const crearParteTrabajo = async (req, res) => {
     horas_festivo,
   } = req.body;
   const id_usuario = req.user.id;
+  let direccionFinal = null;
 
   try {
-    const newParteId = await parteService.crearParteTrabajo({
+    if (localizacion?.error) {
+      // Si viene error, guardamos el mensaje como ubicación
+      direccionFinal = localizacion.mensaje || "Ubicación no disponible";
+    } else {
+      // Si hay coordenadas, hacemos geolocalización inversa
+      direccionFinal = await obtenerDireccionReversa(
+        localizacion.lat,
+        localizacion.lng
+      );
+    }
+
+    const nuevoParte = await db.PARTES_TRABAJO.create({
       id_usuario,
       id_capitulo,
       id_partida,
       id_proyecto,
       hora_entrada,
       fecha,
-      localizacion,
+      localizacion_entrada: direccionFinal,
       horas_extra,
       horas_festivo,
     });
-    res.status(201).json({ id: newParteId });
+
+    res.status(201).json({ id: nuevoParte.id });
   } catch (error) {
     res.status(500).json({
       message: "Error al crear parte de trabajo.",
@@ -58,16 +74,17 @@ const getPartes = async (req, res) => {
   const { id_proyecto, fecha } = req.query;
   const id_usuario = req.user.id;
 
-  try {
-    const partes = await parteService.getPartes(id_usuario, id_proyecto, fecha);
+  const whereClause = { id_usuario };
+  if (id_proyecto) whereClause.id_proyecto = id_proyecto;
+  if (fecha) whereClause.fecha = fecha;
 
-    if (partes.length > 0) {
-      res.status(200).json(partes);
-    } else {
-      res.status(200).json(partes);
-    }
+  try {
+    const partes = await db.PARTES_TRABAJO.findAll({
+      where: whereClause,
+    });
+
+    res.status(200).json(partes);
   } catch (error) {
-    console.error("Error al obtener partes de trabajo:", error.message);
     res.status(500).json({
       message: "Error al obtener partes de trabajo.",
       error: error.message,
@@ -80,20 +97,13 @@ const getParte = async (req, res) => {
   const id_usuario = req.user.id;
 
   try {
-    const parte = await parteService.getParte(id, id_usuario);
-
-    if (parte.length == 1) {
-      res.status(200).json(parte);
-    } else {
-      res.status(404).json({
-        message:
-          "No se encontraron partes de trabajo para los criterios especificados.",
-      });
-    }
+    const parte = await db.PARTES_TRABAJO.findOne({
+      where: { id, id_usuario },
+    });
+    res.status(200).json(parte);
   } catch (error) {
-    console.error("Error al obtener partes de trabajo:", error.message);
     res.status(500).json({
-      message: "Error al obtener partes de trabajo.",
+      message: "Error al obtener parte de trabajo.",
       error: error.message,
     });
   }
@@ -110,20 +120,44 @@ const actualizarParteTrabajo = async (req, res) => {
     horas_extra,
     localizacion,
   } = req.body;
+  let direccionFinal = null;
+
   try {
-    await parteService.actualizarParteTrabajo(
-      id,
-      id_capitulo,
-      id_partida,
-      id_proyecto,
-      hora_salida,
-      horas_festivo,
-      horas_extra,
-      localizacion
+    if (localizacion?.error) {
+      // Si viene error, guardamos el mensaje como ubicación
+      direccionFinal = localizacion.mensaje || "Ubicación no disponible";
+    } else {
+      // Si hay coordenadas, hacemos geolocalización inversa
+      direccionFinal = await obtenerDireccionReversa(
+        localizacion.lat,
+        localizacion.lng
+      );
+    }
+
+    const [updatedRows] = await db.PARTES_TRABAJO.update(
+      {
+        id_capitulo,
+        id_partida,
+        id_proyecto,
+        hora_salida,
+        horas_festivo,
+        horas_extra,
+        localizacion_salida: direccionFinal,
+      },
+      {
+        where: { id },
+      }
     );
-    res
-      .status(200)
-      .json({ message: "Parte de trabajo actualizado correctamente." });
+
+    if (updatedRows === 0) {
+      res.status(404).json({
+        message: "No se encontró el parte de trabajo para actualizar.",
+      });
+    } else {
+      res
+        .status(200)
+        .json({ message: "Parte de trabajo actualizado correctamente." });
+    }
   } catch (error) {
     res.status(500).json({
       message: "Error al actualizar el parte de trabajo.",
@@ -136,13 +170,16 @@ const getCapitulos = async (req, res) => {
   const { id_proyecto } = req.query;
 
   try {
-    const capitulos = await parteService.getCapitulos(id_proyecto);
+    const capitulos = await db.CAPITULOS.findAll({
+      where: { id_proyecto },
+    });
+
     res.status(200).json(capitulos);
   } catch (error) {
-    console.error("Error al obtener capitulos:", error.message);
-    res
-      .status(500)
-      .json({ message: "Error al obtener capitulos.", error: error.message });
+    res.status(500).json({
+      message: "Error al obtener capítulos.",
+      error: error.message,
+    });
   }
 };
 
@@ -150,7 +187,12 @@ const getPartidas = async (req, res) => {
   const { id_capitulo, id_proyecto } = req.query;
 
   try {
-    const partidas = await parteService.getPartidas(id_capitulo, id_proyecto);
+    const partidas = await db.PARTIDAS.findAll({
+      where: {
+        id_capitulo,
+        id_proyecto,
+      },
+    });
 
     if (partidas.length > 0) {
       res.status(200).json(partidas);
@@ -160,10 +202,10 @@ const getPartidas = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error al obtener partidas:", error.message);
-    res
-      .status(500)
-      .json({ message: "Error al obtener partidas.", error: error.message });
+    res.status(500).json({
+      message: "Error al obtener partidas.",
+      error: error.message,
+    });
   }
 };
 

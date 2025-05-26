@@ -23,7 +23,7 @@ const getEmpresas = async () => {
   try {
     let pool = await sql.connect(config);
     let result = await pool.request().query(`
-          SELECT id, nombre, cif
+          SELECT id_empresa as id, nombre, cif, razon_social
           FROM empresa;
         `);
 
