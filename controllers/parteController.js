@@ -1,4 +1,5 @@
 const db = require("../Model");
+const { obtenerDireccionReversa } = require("../models/geolocationModel");
 
 const checkParteAbierto = async (req, res) => {
   const { id_proyecto } = req.query;
@@ -35,7 +36,6 @@ const crearParteTrabajo = async (req, res) => {
   const id_usuario = req.user.id;
 
   try {
-
     const nuevoParte = await db.PARTES_TRABAJO.create({
       id_usuario,
       id_capitulo,
@@ -126,9 +126,7 @@ const actualizarParteTrabajo = async (req, res) => {
         message: "No se encontró el parte de trabajo para actualizar.",
       });
     } else {
-      res
-        .status(200)
-        .json({ message: "Parte de trabajo actualizado correctamente." });
+      res.status(200).json({ id });
     }
   } catch (error) {
     res.status(500).json({
@@ -181,9 +179,9 @@ const getPartidas = async (req, res) => {
   }
 };
 
-
 const actualizarLocalizacionEntrada = async (req, res) => {
   const { id_parte, localizacion_entrada } = req.body;
+  console.log(req.body);
 
   let direccionFinal = "Ubicación no disponible";
 
@@ -205,9 +203,9 @@ const actualizarLocalizacionEntrada = async (req, res) => {
     }
 
     // Actualizar localización
-    await db.CONTROL_ASISTENCIAS.update(
+    await db.PARTES_TRABAJO.update(
       { localizacion_entrada: direccionFinal },
-      { where: { id: id_parte.id } }
+      { where: { id: id_parte } }
     );
 
     res
@@ -241,9 +239,9 @@ const actualizarLocalizacionSalida = async (req, res) => {
     }
 
     // Actualizar localización
-    await db.CONTROL_ASISTENCIAS.update(
+    await db.PARTES_TRABAJO.update(
       { localizacion_salida: direccionFinal },
-      { where: { id: id_parte.id } }
+      { where: { id: id_parte } }
     );
 
     res
@@ -264,5 +262,5 @@ module.exports = {
   getCapitulos,
   getPartidas,
   actualizarLocalizacionEntrada,
-  actualizarLocalizacionSalida
+  actualizarLocalizacionSalida,
 };
