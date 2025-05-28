@@ -11,7 +11,8 @@ const {
   obtenerObras,
   crearOtObra,
   autoAsignarOrdenTrabajo,
-  obtenerActividades
+  obtenerActividades,
+  createActividad,
 } = require("../controllers/proyectosController");
 
 router.use(authenticateToken);
@@ -19,6 +20,7 @@ router.use(authenticateToken);
 router.get("/id-proyectos", obtenerIdProyectos);
 router.get("/proyectos", obtenerProyectosPorIds);
 router.get("/obtener-actividades", obtenerActividades);
+router.post("/actividad", createActividad);
 router.post("/crear-proyectos", crearProyecto);
 router.get("/obtener-proyectos", obtenerProyecto);
 router.post("/cambiar-estado", cambiarEstado);

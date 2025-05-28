@@ -36,7 +36,7 @@ const getActividades = async (req, res) => {
           },
         },
       ],
-    order: [["orden", "DESC"]],
+      order: [["orden", "DESC"]],
     });
 
     res.status(200).json(actividades);
@@ -48,9 +48,10 @@ const getActividades = async (req, res) => {
 
 const getObras = async (req, res) => {
   const { empresa } = req.user;
+  const { tipo } = req.query;
   try {
     const obras = await db.PROYECTOS.findAll({
-      where: { id_empresa: empresa },
+      where: { id_empresa: empresa, tipo },
       raw: true,
     });
 
@@ -390,6 +391,35 @@ const autoAsignarOrdenTrabajo = async (req, res) => {
   }
 };
 
+const createActividad = async (req, res) => {
+  const { nombre, proyecto, descripcion, orden } = req.body;
+  const id_usuario = req.user.id;
+  const { empresa } = req.user;
+
+  console.log(req.body);
+
+  try {
+    // Crear nueva actividad
+    const nuevaActividad = await db.ORDEN_TRABAJO.create({
+      nombre,
+      id_usuario,
+      id_empresa: empresa,
+      id_servicio_origen: proyecto,
+      observaciones: descripcion,
+      orden,
+      es_ote: true,
+    });
+
+    res.status(201).json({
+      mensaje: "Actividad creada con éxito",
+      actividadId: nuevaActividad.id,
+    });
+  } catch (error) {
+    console.error("Error al crear actividad:", error.message);
+    res.status(500).send("Error del servidor al crear actividad");
+  }
+};
+
 module.exports = {
   obtenerIdProyectos: getIdProyectos,
   obtenerProyectosPorIds,
@@ -401,4 +431,5 @@ module.exports = {
   crearOtObra: createOtObra,
   autoAsignarOrdenTrabajo,
   obtenerActividades: getActividades,
+  createActividad,
 };
