@@ -36,7 +36,7 @@ const obtenerNotificacionesModel = async (req, res) => {
         tipo_notificacion: notificacion.tipo_notificacion,
         leido: result.leido,
         fecha_leido: result.fecha_leido,
-        emisor: notificacion.emisor.nomapes,
+        emisor: notificacion.emisor?.nomapes ?? 'Administracion',
       };
     });
 
