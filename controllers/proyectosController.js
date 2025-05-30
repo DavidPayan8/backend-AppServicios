@@ -1,5 +1,5 @@
 const db = require("../Model");
-const { Op, fn, col } = require("sequelize");
+const { Op, fn, col, literal } = require("sequelize");
 
 const getActividades = async (req, res) => {
   const id_usuario = req.user.id;
@@ -420,6 +420,131 @@ const createActividad = async (req, res) => {
   }
 };
 
+const getProjectsAllWorkers = async (req, res) => {
+  const { empresa } = req.user;
+  const { date } = req.query;
+
+  try {
+    const allData = await db.ORDEN_TRABAJO.findAll({
+      attributes: [
+        "id",
+        "estado",
+        "fecha_inicio",
+        "id_usuario",
+        "nombre",
+        [col("usuario_ot.nomapes"), "nomapes"],
+        [
+          literal(`(
+            SELECT MAX(hora_salida)
+            FROM PARTES_TRABAJO
+            WHERE PARTES_TRABAJO.id_proyecto = ORDEN_TRABAJO.id
+          )`),
+          "fecha_salida",
+        ],
+      ],
+      include: [
+        {
+          model: db.PROYECTOS,
+          as: "proyecto",
+          required: false,
+          where: {
+            tipo: 1,
+            id_empresa: empresa,
+          },
+          attributes: [],
+        },
+        {
+          model: db.USUARIOS,
+          as: "usuario_ot",
+          required: true,
+          attributes: [],
+        },
+        {
+          model: db.CALENDARIO,
+          as: "calendario",
+          required: true,
+          where: {
+            fecha: { [Op.eq]: date },
+          },
+          attributes: [],
+        },
+      ],
+      group: [
+        "ORDEN_TRABAJO.id",
+        "ORDEN_TRABAJO.estado",
+        "ORDEN_TRABAJO.fecha_inicio",
+        "ORDEN_TRABAJO.id_usuario",
+        "ORDEN_TRABAJO.nombre",
+        "usuario_ot.nomapes",
+      ],
+      raw: true,
+    });
+
+    const projectsUserData = agruparPorUsuario(allData);
+
+    res.status(200).json(projectsUserData);
+  } catch (error) {
+    console.log("Error en el servidor", error);
+    res
+      .status(500)
+      .json({ message: "No se pudo obtener proyectos por usuarios", error });
+  }
+};
+
+function agruparPorUsuario(ordenes) {
+  const resultado = {};
+
+  ordenes.forEach((ot) => {
+    const { id_usuario, nomapes, ...resto } = ot;
+
+    if (!resultado[id_usuario]) {
+      resultado[id_usuario] = {
+        id_usuario,
+        nomapes,
+        ordenes: [],
+      };
+    }
+
+    resultado[id_usuario].ordenes.push(resto);
+  });
+
+  return Object.values(resultado);
+}
+
+const reasignarOt = async (req, res) => {
+  const { id_ot, id_usuario } = req.body;
+
+  try {
+    // Validación básica
+    if (!id_ot || !id_usuario) {
+      return res.status(400).json({ message: "Faltan datos requeridos" });
+    }
+
+    // Buscar la orden para confirmar que existe
+    const orden = await db.ORDEN_TRABAJO.findByPk(id_ot);
+
+    if (!orden) {
+      return res
+        .status(404)
+        .json({ message: "Orden de trabajo no encontrada" });
+    }
+
+    // Reasignar al nuevo usuario
+    orden.id_usuario = id_usuario;
+    await orden.save();
+
+    return res.status(200).json({
+      message: "Orden de trabajo reasignada correctamente",
+      orden,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error en el servidor",
+      error,
+    });
+  }
+};
+
 module.exports = {
   obtenerIdProyectos: getIdProyectos,
   obtenerProyectosPorIds,
@@ -432,4 +557,6 @@ module.exports = {
   autoAsignarOrdenTrabajo,
   obtenerActividades: getActividades,
   createActividad,
+  getProjectsAllWorkers,
+  reasignarOt
 };

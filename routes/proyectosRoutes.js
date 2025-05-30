@@ -13,7 +13,10 @@ const {
   autoAsignarOrdenTrabajo,
   obtenerActividades,
   createActividad,
+  getProjectsAllWorkers,
+  reasignarOt,
 } = require("../controllers/proyectosController");
+const authorizeCategory = require("../middleware/categoryMiddleware");
 
 router.use(authenticateToken);
 
@@ -28,5 +31,7 @@ router.get("/obtener-contrato", obtenerContrato);
 router.get("/obtener-obras", obtenerObras);
 router.post("/crear-ot-obra", crearOtObra);
 router.post("/auto-asignar-ot", autoAsignarOrdenTrabajo);
+router.post("/reasignar", authorizeCategory("tecnico"), reasignarOt);
+router.get("/all-users", authorizeCategory("tecnico"), getProjectsAllWorkers);
 
 module.exports = router;
