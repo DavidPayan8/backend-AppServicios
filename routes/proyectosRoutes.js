@@ -15,6 +15,7 @@ const {
   createActividad,
   getProjectsAllWorkers,
   reasignarOt,
+  getNoAsignados
 } = require("../controllers/proyectosController");
 const authorizeCategory = require("../middleware/categoryMiddleware");
 
@@ -33,5 +34,6 @@ router.post("/crear-ot-obra", crearOtObra);
 router.post("/auto-asignar-ot", autoAsignarOrdenTrabajo);
 router.post("/reasignar", authorizeCategory("tecnico"), reasignarOt);
 router.get("/all-users", authorizeCategory("tecnico"), getProjectsAllWorkers);
+router.get("/no-asignados", authorizeCategory("tecnico"), getNoAsignados)
 
 module.exports = router;

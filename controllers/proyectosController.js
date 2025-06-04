@@ -171,6 +171,8 @@ const cambiarEstado = async (req, res) => {
 const obtenerProyectosPorIds = async (req, res) => {
   const { ids } = req.query;
 
+  console.log(ids);
+
   const idsArray = typeof ids === "string" ? ids.split(",").map(Number) : ids;
 
   try {
@@ -192,6 +194,7 @@ const obtenerProyectosPorIds = async (req, res) => {
         "nombre",
         "id_usuario",
         "estado",
+        "es_ote",
         [fn("MIN", col("partes_trabajo.hora_entrada")), "hora_inicio"],
         [fn("MAX", col("partes_trabajo.hora_salida")), "hora_fin"],
       ],
@@ -200,6 +203,7 @@ const obtenerProyectosPorIds = async (req, res) => {
         "ORDEN_TRABAJO.nombre",
         "ORDEN_TRABAJO.id_usuario",
         "ORDEN_TRABAJO.estado",
+        "ORDEn_TRABAJO.es_ote"
       ],
     });
 
@@ -216,47 +220,71 @@ const crearProyecto = async (req, res) => {
   const transaction = await db.sequelize.transaction();
 
   try {
-    const { nombre, observaciones, detalles, id_cliente, es_ote } = req.body;
+    const {
+      nombre,
+      observaciones,
+      descripcion_tecnica,
+      id_cliente,
+      fecha,
+      id_trabajador,
+      es_ote,
+    } = req.body;
     const id_usuario = req.user.id;
-    const { empresa } = req.user;
+    const { empresa, categoria_laboral } = req.user;
 
-    // Crear el nuevo proyecto (OrdenTrabajo)
+    if (categoria_laboral !== "tecnico") {
+      usuario = id_usuario;
+    } else {
+      usuario = id_trabajador || null;
+    }
+
+    // Validaciones básicas
+    if (!nombre || !observaciones || !fecha) {
+      return res.status(400).json({
+        mensaje: "Nombre, observaciones y fecha son campos obligatorios",
+      });
+    }
+
+    // Normalizar id_cliente (0 -> null)
+    const clienteId = id_cliente === 0 ? null : id_cliente;
+
+    const fechaCalendario = fecha ? new Date(fecha) : new Date();
+
+    // Crear el proyecto (OrdenTrabajo) con campos extra
     const nuevoProyecto = await db.ORDEN_TRABAJO.create(
       {
         nombre,
         observaciones,
-        detalles,
-        id_cliente: id_cliente === 0 ? null : id_cliente,
+        descripcion_tecnica,
+        id_cliente: clienteId,
+        id_usuario: usuario,
         es_ote,
-        id_usuario,
         id_empresa: empresa,
       },
       { transaction }
     );
 
-    // Crear entrada en Calendario
+    // Crear entrada en calendario usando la fecha asignada del proyecto
     const calendario = await db.CALENDARIO.create(
       {
-        fecha: new Date(),
-        id_usuario,
+        fecha: fechaCalendario,
+        id_usuario, usuario,
         id_proyecto: nuevoProyecto.id,
       },
       { transaction }
     );
 
-    // Confirmar transacción
     await transaction.commit();
 
     res.status(201).json({
-      mensaje: "Orden Trabajo y calendario creados exitosamente",
+      mensaje: "Orden de trabajo y calendario creados exitosamente",
       proyectoId: nuevoProyecto.id,
       calendarioId: calendario.id,
     });
   } catch (error) {
-    // Revertir transacción si algo falla
     if (transaction) await transaction.rollback();
-    console.error("Error al crear proyecto:", error.message);
-    res.status(500).send("Error del servidor al crear proyecto");
+    console.error("Error al crear proyecto:", error);
+    res.status(500).json({ mensaje: "Error del servidor al crear proyecto" });
   }
 };
 
@@ -512,7 +540,7 @@ function agruparPorUsuario(ordenes) {
 }
 
 const reasignarOt = async (req, res) => {
-  const { id_ot, id_usuario } = req.body;
+  const { id_ot, id_usuario, date } = req.body;
 
   try {
     // Validación básica
@@ -529,19 +557,45 @@ const reasignarOt = async (req, res) => {
         .json({ message: "Orden de trabajo no encontrada" });
     }
 
-    // Reasignar al nuevo usuario
+    // Reasignar al nuevo usuario en la orden de trabajo
     orden.id_usuario = id_usuario;
     await orden.save();
 
+    // Actualizar también el calendario donde el id_proyecto sea igual al id_ot
+    await db.CALENDARIO.update(
+      { id_usuario: id_usuario, fecha: date },
+      { where: { id_proyecto: id_ot } }
+    );
+
     return res.status(200).json({
-      message: "Orden de trabajo reasignada correctamente",
+      message: "Orden de trabajo y calendario reasignados correctamente",
       orden,
     });
   } catch (error) {
+    console.log(error);
     res.status(500).json({
       message: "Error en el servidor",
       error,
     });
+  }
+};
+
+const getNoAsignados = async (req, res) => {
+  try {
+    const ordenesSinUsuario = await db.ORDEN_TRABAJO.findAll({
+      where: {
+        id_usuario: {
+          [Op.or]: [null, 0],
+        },
+      },
+    });
+
+    return res.status(200).json(ordenesSinUsuario);
+  } catch (error) {
+    console.error("Error al obtener órdenes sin usuario:", error);
+    return res
+      .status(500)
+      .json({ message: "Error interno del servidor", error });
   }
 };
 
@@ -558,5 +612,6 @@ module.exports = {
   obtenerActividades: getActividades,
   createActividad,
   getProjectsAllWorkers,
-  reasignarOt
+  reasignarOt,
+  getNoAsignados,
 };
