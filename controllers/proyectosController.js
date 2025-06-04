@@ -1,5 +1,5 @@
 const db = require("../Model");
-const { Op, fn, col } = require("sequelize");
+const { Op, fn, col, literal } = require("sequelize");
 
 const getActividades = async (req, res) => {
   const id_usuario = req.user.id;
@@ -36,7 +36,7 @@ const getActividades = async (req, res) => {
           },
         },
       ],
-    order: [["orden", "DESC"]],
+      order: [["orden", "DESC"]],
     });
 
     res.status(200).json(actividades);
@@ -48,9 +48,10 @@ const getActividades = async (req, res) => {
 
 const getObras = async (req, res) => {
   const { empresa } = req.user;
+  const { tipo } = req.query;
   try {
     const obras = await db.PROYECTOS.findAll({
-      where: { id_empresa: empresa },
+      where: { id_empresa: empresa, tipo },
       raw: true,
     });
 
@@ -170,6 +171,8 @@ const cambiarEstado = async (req, res) => {
 const obtenerProyectosPorIds = async (req, res) => {
   const { ids } = req.query;
 
+  console.log(ids);
+
   const idsArray = typeof ids === "string" ? ids.split(",").map(Number) : ids;
 
   try {
@@ -191,6 +194,7 @@ const obtenerProyectosPorIds = async (req, res) => {
         "nombre",
         "id_usuario",
         "estado",
+        "es_ote",
         [fn("MIN", col("partes_trabajo.hora_entrada")), "hora_inicio"],
         [fn("MAX", col("partes_trabajo.hora_salida")), "hora_fin"],
       ],
@@ -199,6 +203,7 @@ const obtenerProyectosPorIds = async (req, res) => {
         "ORDEN_TRABAJO.nombre",
         "ORDEN_TRABAJO.id_usuario",
         "ORDEN_TRABAJO.estado",
+        "ORDEn_TRABAJO.es_ote"
       ],
     });
 
@@ -215,47 +220,71 @@ const crearProyecto = async (req, res) => {
   const transaction = await db.sequelize.transaction();
 
   try {
-    const { nombre, observaciones, detalles, id_cliente, es_ote } = req.body;
+    const {
+      nombre,
+      observaciones,
+      descripcion_tecnica,
+      id_cliente,
+      fecha,
+      id_trabajador,
+      es_ote,
+    } = req.body;
     const id_usuario = req.user.id;
-    const { empresa } = req.user;
+    const { empresa, categoria_laboral } = req.user;
 
-    // Crear el nuevo proyecto (OrdenTrabajo)
+    if (categoria_laboral !== "tecnico") {
+      usuario = id_usuario;
+    } else {
+      usuario = id_trabajador || null;
+    }
+
+    // Validaciones básicas
+    if (!nombre || !observaciones || !fecha) {
+      return res.status(400).json({
+        mensaje: "Nombre, observaciones y fecha son campos obligatorios",
+      });
+    }
+
+    // Normalizar id_cliente (0 -> null)
+    const clienteId = id_cliente === 0 ? null : id_cliente;
+
+    const fechaCalendario = fecha ? new Date(fecha) : new Date();
+
+    // Crear el proyecto (OrdenTrabajo) con campos extra
     const nuevoProyecto = await db.ORDEN_TRABAJO.create(
       {
         nombre,
         observaciones,
-        detalles,
-        id_cliente: id_cliente === 0 ? null : id_cliente,
+        descripcion_tecnica,
+        id_cliente: clienteId,
+        id_usuario: usuario,
         es_ote,
-        id_usuario,
         id_empresa: empresa,
       },
       { transaction }
     );
 
-    // Crear entrada en Calendario
+    // Crear entrada en calendario usando la fecha asignada del proyecto
     const calendario = await db.CALENDARIO.create(
       {
-        fecha: new Date(),
-        id_usuario,
+        fecha: fechaCalendario,
+        id_usuario, usuario,
         id_proyecto: nuevoProyecto.id,
       },
       { transaction }
     );
 
-    // Confirmar transacción
     await transaction.commit();
 
     res.status(201).json({
-      mensaje: "Orden Trabajo y calendario creados exitosamente",
+      mensaje: "Orden de trabajo y calendario creados exitosamente",
       proyectoId: nuevoProyecto.id,
       calendarioId: calendario.id,
     });
   } catch (error) {
-    // Revertir transacción si algo falla
     if (transaction) await transaction.rollback();
-    console.error("Error al crear proyecto:", error.message);
-    res.status(500).send("Error del servidor al crear proyecto");
+    console.error("Error al crear proyecto:", error);
+    res.status(500).json({ mensaje: "Error del servidor al crear proyecto" });
   }
 };
 
@@ -390,6 +419,186 @@ const autoAsignarOrdenTrabajo = async (req, res) => {
   }
 };
 
+const createActividad = async (req, res) => {
+  const { nombre, proyecto, descripcion, orden } = req.body;
+  const id_usuario = req.user.id;
+  const { empresa } = req.user;
+
+  console.log(req.body);
+
+  try {
+    // Crear nueva actividad
+    const nuevaActividad = await db.ORDEN_TRABAJO.create({
+      nombre,
+      id_usuario,
+      id_empresa: empresa,
+      id_servicio_origen: proyecto,
+      observaciones: descripcion,
+      orden,
+      es_ote: true,
+    });
+
+    res.status(201).json({
+      mensaje: "Actividad creada con éxito",
+      actividadId: nuevaActividad.id,
+    });
+  } catch (error) {
+    console.error("Error al crear actividad:", error.message);
+    res.status(500).send("Error del servidor al crear actividad");
+  }
+};
+
+const getProjectsAllWorkers = async (req, res) => {
+  const { empresa } = req.user;
+  const { date } = req.query;
+
+  try {
+    const allData = await db.ORDEN_TRABAJO.findAll({
+      attributes: [
+        "id",
+        "estado",
+        "fecha_inicio",
+        "id_usuario",
+        "nombre",
+        [col("usuario_ot.nomapes"), "nomapes"],
+        [
+          literal(`(
+            SELECT MAX(hora_salida)
+            FROM PARTES_TRABAJO
+            WHERE PARTES_TRABAJO.id_proyecto = ORDEN_TRABAJO.id
+          )`),
+          "fecha_salida",
+        ],
+      ],
+      include: [
+        {
+          model: db.PROYECTOS,
+          as: "proyecto",
+          required: false,
+          where: {
+            tipo: 1,
+            id_empresa: empresa,
+          },
+          attributes: [],
+        },
+        {
+          model: db.USUARIOS,
+          as: "usuario_ot",
+          required: true,
+          attributes: [],
+        },
+        {
+          model: db.CALENDARIO,
+          as: "calendario",
+          required: true,
+          where: {
+            fecha: { [Op.eq]: date },
+          },
+          attributes: [],
+        },
+      ],
+      group: [
+        "ORDEN_TRABAJO.id",
+        "ORDEN_TRABAJO.estado",
+        "ORDEN_TRABAJO.fecha_inicio",
+        "ORDEN_TRABAJO.id_usuario",
+        "ORDEN_TRABAJO.nombre",
+        "usuario_ot.nomapes",
+      ],
+      raw: true,
+    });
+
+    const projectsUserData = agruparPorUsuario(allData);
+
+    res.status(200).json(projectsUserData);
+  } catch (error) {
+    console.log("Error en el servidor", error);
+    res
+      .status(500)
+      .json({ message: "No se pudo obtener proyectos por usuarios", error });
+  }
+};
+
+function agruparPorUsuario(ordenes) {
+  const resultado = {};
+
+  ordenes.forEach((ot) => {
+    const { id_usuario, nomapes, ...resto } = ot;
+
+    if (!resultado[id_usuario]) {
+      resultado[id_usuario] = {
+        id_usuario,
+        nomapes,
+        ordenes: [],
+      };
+    }
+
+    resultado[id_usuario].ordenes.push(resto);
+  });
+
+  return Object.values(resultado);
+}
+
+const reasignarOt = async (req, res) => {
+  const { id_ot, id_usuario, date } = req.body;
+
+  try {
+    // Validación básica
+    if (!id_ot || !id_usuario) {
+      return res.status(400).json({ message: "Faltan datos requeridos" });
+    }
+
+    // Buscar la orden para confirmar que existe
+    const orden = await db.ORDEN_TRABAJO.findByPk(id_ot);
+
+    if (!orden) {
+      return res
+        .status(404)
+        .json({ message: "Orden de trabajo no encontrada" });
+    }
+
+    // Reasignar al nuevo usuario en la orden de trabajo
+    orden.id_usuario = id_usuario;
+    await orden.save();
+
+    // Actualizar también el calendario donde el id_proyecto sea igual al id_ot
+    await db.CALENDARIO.update(
+      { id_usuario: id_usuario, fecha: date },
+      { where: { id_proyecto: id_ot } }
+    );
+
+    return res.status(200).json({
+      message: "Orden de trabajo y calendario reasignados correctamente",
+      orden,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      message: "Error en el servidor",
+      error,
+    });
+  }
+};
+
+const getNoAsignados = async (req, res) => {
+  try {
+    const ordenesSinUsuario = await db.ORDEN_TRABAJO.findAll({
+      where: {
+        id_usuario: {
+          [Op.or]: [null, 0],
+        },
+      },
+    });
+
+    return res.status(200).json(ordenesSinUsuario);
+  } catch (error) {
+    console.error("Error al obtener órdenes sin usuario:", error);
+    return res
+      .status(500)
+      .json({ message: "Error interno del servidor", error });
+  }
+};
+
 module.exports = {
   obtenerIdProyectos: getIdProyectos,
   obtenerProyectosPorIds,
@@ -401,4 +610,8 @@ module.exports = {
   crearOtObra: createOtObra,
   autoAsignarOrdenTrabajo,
   obtenerActividades: getActividades,
+  createActividad,
+  getProjectsAllWorkers,
+  reasignarOt,
+  getNoAsignados,
 };

@@ -95,7 +95,7 @@ module.exports = function (sequelize, DataTypes) {
 
     ORDEN_TRABAJO.belongsTo(models.USUARIOS, {
       foreignKey: "id_usuario",
-      as: "orden_trabajo",
+      as: "usuario_ot",
     });
 
     ORDEN_TRABAJO.belongsTo(models.PROYECTOS, {
@@ -126,6 +126,11 @@ module.exports = function (sequelize, DataTypes) {
     ORDEN_TRABAJO.hasMany(models.PARTES_TRABAJO, {
       foreignKey: "id_proyecto",
       as: "partes_trabajo",
+    });
+
+    ORDEN_TRABAJO.hasOne(models.CALENDARIO, {
+      foreignKey: "id_proyecto",
+      as: "calendario",
     });
   };
 

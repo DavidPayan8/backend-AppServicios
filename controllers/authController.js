@@ -9,6 +9,13 @@ const login = async (req, res) => {
   try {
     const user = await db.USUARIOS.findOne({
       where: { user_name: username },
+      include: [
+        {
+          model: db.CATEGORIA_LABORAL,
+          as: "categoriaLaboral",
+          attributes: ["nombre", "salario"],
+        },
+      ],
     });
 
     if (!user) {
@@ -26,12 +33,13 @@ const login = async (req, res) => {
         username: user.user_name,
         empresa: user.id_empresa,
         rol: user.rol,
+        categoria_laboral: user.categoriaLaboral.nombre,
       },
       JWT_SECRET,
       { expiresIn: "1h" }
     );
 
-    return res.json({ token, user });
+    return res.status(200).json({ token, user });
   } catch (err) {
     console.error("Error durante el login:", err);
     return res.status(500).json({ message: "Error interno del servidor" });

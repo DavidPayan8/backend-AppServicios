@@ -124,6 +124,11 @@ module.exports = function (sequelize, DataTypes) {
       foreignKey: "id_usuario",
       as: "notificaciones_usuarios",
     });
+
+    USUARIOS.belongsTo(models.CATEGORIA_LABORAL, {
+      foreignKey: "categoria_laboral_id",
+      as: "categoriaLaboral",
+    });
   };
 
   return USUARIOS;
