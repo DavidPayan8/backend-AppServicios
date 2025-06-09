@@ -29,9 +29,11 @@ const crearParteTrabajo = async (req, res) => {
     id_partida,
     id_proyecto,
     hora_entrada,
+    hora_salida,
     fecha,
     horas_extra,
     horas_festivo,
+    observaciones,
   } = req.body;
   const id_usuario = req.user.id;
 
@@ -42,9 +44,11 @@ const crearParteTrabajo = async (req, res) => {
       id_partida,
       id_proyecto,
       hora_entrada,
+      hora_salida,
       fecha,
       horas_extra,
       horas_festivo,
+      observaciones,
     });
 
     res.status(201).json({ id: nuevoParte.id });
