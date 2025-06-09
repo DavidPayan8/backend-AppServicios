@@ -164,7 +164,20 @@ const getDetallesHandler = async (req, res) => {
     const empleado = await db.USUARIOS.findByPk(id);
     if (!empleado) return res.status(404).send("Empleado no encontrado");
 
-    res.status(200).json(empleado);
+    const empleadoFormateado = {
+      id: empleado.id,
+      username: empleado.user_name,
+      password: empleado.contrasena,
+      nombreApellidos: empleado.nomapes,
+      dni: empleado.DNI,
+      seguridadSocial: empleado.num_seguridad_social,
+      email: empleado.email ?? null,
+      telefono: empleado.telefono ?? null,
+      rol: empleado.rol,
+      sexo: empleado.sexo ?? null,
+    };
+
+    res.status(200).json(empleadoFormateado);
   } catch (error) {
     console.error("Error al obtener detalles del empleado: ", error);
     res.status(500).send("Error del servidor");

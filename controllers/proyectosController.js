@@ -171,8 +171,6 @@ const cambiarEstado = async (req, res) => {
 const obtenerProyectosPorIds = async (req, res) => {
   const { ids } = req.query;
 
-  console.log(ids);
-
   const idsArray = typeof ids === "string" ? ids.split(",").map(Number) : ids;
 
   try {
@@ -184,6 +182,11 @@ const obtenerProyectosPorIds = async (req, res) => {
       },
       include: [
         {
+          model: db.CLIENTES,
+          as: "cliente_ot",
+          attributes: ["nombre"],
+        },
+        {
           model: db.PARTES_TRABAJO,
           as: "partes_trabajo",
           attributes: [],
@@ -194,6 +197,7 @@ const obtenerProyectosPorIds = async (req, res) => {
         "nombre",
         "id_usuario",
         "estado",
+        "observaciones",
         "es_ote",
         [fn("MIN", col("partes_trabajo.hora_entrada")), "hora_inicio"],
         [fn("MAX", col("partes_trabajo.hora_salida")), "hora_fin"],
@@ -203,7 +207,10 @@ const obtenerProyectosPorIds = async (req, res) => {
         "ORDEN_TRABAJO.nombre",
         "ORDEN_TRABAJO.id_usuario",
         "ORDEN_TRABAJO.estado",
-        "ORDEn_TRABAJO.es_ote"
+        "ORDEN_TRABAJO.es_ote",
+        "ORDEN_TRABAJO.observaciones",
+        "cliente_ot.id",
+        "cliente_ot.nombre",
       ],
     });
 
@@ -244,8 +251,6 @@ const crearProyecto = async (req, res) => {
         mensaje: "Nombre, observaciones y fecha son campos obligatorios",
       });
     }
-
-    // Normalizar id_cliente (0 -> null)
     const clienteId = id_cliente === 0 ? null : id_cliente;
 
     const fechaCalendario = fecha ? new Date(fecha) : new Date();
@@ -268,7 +273,8 @@ const crearProyecto = async (req, res) => {
     const calendario = await db.CALENDARIO.create(
       {
         fecha: fechaCalendario,
-        id_usuario, usuario,
+        id_usuario,
+        usuario,
         id_proyecto: nuevoProyecto.id,
       },
       { transaction }
