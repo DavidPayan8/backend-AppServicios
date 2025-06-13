@@ -132,7 +132,7 @@ const getIdProyectos = async (req, res) => {
               attributes: [],
             },
           ],
-          attributes: ["id"],
+          attributes: [],
         },
       ],
       attributes: ["id_proyecto"],
