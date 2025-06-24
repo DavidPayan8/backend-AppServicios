@@ -1,4 +1,5 @@
 const db = require("../Model");
+const { obtenerDireccionReversa } = require("../models/geolocationModel");
 
 const checkParteAbierto = async (req, res) => {
   const { id_proyecto } = req.query;
@@ -28,23 +29,26 @@ const crearParteTrabajo = async (req, res) => {
     id_partida,
     id_proyecto,
     hora_entrada,
+    hora_salida,
     fecha,
     horas_extra,
     horas_festivo,
+    observaciones,
   } = req.body;
   const id_usuario = req.user.id;
 
   try {
-
     const nuevoParte = await db.PARTES_TRABAJO.create({
       id_usuario,
       id_capitulo,
       id_partida,
       id_proyecto,
       hora_entrada,
+      hora_salida,
       fecha,
       horas_extra,
       horas_festivo,
+      observaciones,
     });
 
     res.status(201).json({ id: nuevoParte.id });
@@ -57,12 +61,11 @@ const crearParteTrabajo = async (req, res) => {
 };
 
 const getPartes = async (req, res) => {
-  const { id_proyecto, fecha } = req.query;
+  const { id_proyecto } = req.query;
   const id_usuario = req.user.id;
 
   const whereClause = { id_usuario };
   if (id_proyecto) whereClause.id_proyecto = id_proyecto;
-  if (fecha) whereClause.fecha = fecha;
 
   try {
     const partes = await db.PARTES_TRABAJO.findAll({
@@ -126,9 +129,7 @@ const actualizarParteTrabajo = async (req, res) => {
         message: "No se encontró el parte de trabajo para actualizar.",
       });
     } else {
-      res
-        .status(200)
-        .json({ message: "Parte de trabajo actualizado correctamente." });
+      res.status(200).json({ id });
     }
   } catch (error) {
     res.status(500).json({
@@ -181,9 +182,9 @@ const getPartidas = async (req, res) => {
   }
 };
 
-
 const actualizarLocalizacionEntrada = async (req, res) => {
   const { id_parte, localizacion_entrada } = req.body;
+  console.log(req.body);
 
   let direccionFinal = "Ubicación no disponible";
 
@@ -205,9 +206,9 @@ const actualizarLocalizacionEntrada = async (req, res) => {
     }
 
     // Actualizar localización
-    await db.CONTROL_ASISTENCIAS.update(
+    await db.PARTES_TRABAJO.update(
       { localizacion_entrada: direccionFinal },
-      { where: { id: id_parte.id } }
+      { where: { id: id_parte } }
     );
 
     res
@@ -241,9 +242,9 @@ const actualizarLocalizacionSalida = async (req, res) => {
     }
 
     // Actualizar localización
-    await db.CONTROL_ASISTENCIAS.update(
+    await db.PARTES_TRABAJO.update(
       { localizacion_salida: direccionFinal },
-      { where: { id: id_parte.id } }
+      { where: { id: id_parte } }
     );
 
     res
@@ -264,5 +265,5 @@ module.exports = {
   getCapitulos,
   getPartidas,
   actualizarLocalizacionEntrada,
-  actualizarLocalizacionSalida
+  actualizarLocalizacionSalida,
 };

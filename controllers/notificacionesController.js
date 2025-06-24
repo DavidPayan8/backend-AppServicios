@@ -1,5 +1,5 @@
 const db = require("../Model");
-const { fn } = require("sequelize");
+const { fn, where } = require("sequelize");
 
 const obtenerNotificacionesModel = async (req, res) => {
   const id_usuario = req.user.id;
@@ -27,6 +27,7 @@ const obtenerNotificacionesModel = async (req, res) => {
 
     const notificaciones = results.map((result) => {
       const notificacion = result.notificacion;
+      console.log(notificacion)
       return {
         id_notificacion: notificacion.id,
         asunto: notificacion.asunto,
@@ -36,7 +37,7 @@ const obtenerNotificacionesModel = async (req, res) => {
         tipo_notificacion: notificacion.tipo_notificacion,
         leido: result.leido,
         fecha_leido: result.fecha_leido,
-        emisor: notificacion.emisor.nomapes,
+        emisor: notificacion.emisor?.nomapes ?? 'Administracion',
       };
     });
 

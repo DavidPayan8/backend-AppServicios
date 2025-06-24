@@ -1,41 +1,6 @@
 const nodemailer = require("nodemailer");
 const db = require("../Model");
 
-// secure = true para 465, false para otros puertos
-// TLS reemplaza a SSL (deprecated)
-// const transporter = nodemailer.createTransport({
-//   host: "cp7073.webempresa.eu", // Servidor SMTP
-//   port: 465, // Puerto para  SSL
-//   secure: true, // Utilizar SSL
-//   auth: {
-//     user: ADMIN_EMAIL, // Correo
-//     pass: "Pruebas2025.", // Contraseña del correo
-//   },
-// });
-
-// Configurar Nodemailer
-/* const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: ADMIN_EMAIL,
-    pass: "ofhx zqmi xhos fdpu",
-  },
-}); */
-
-/* const transporter = nodemailer.createTransport({
-  host: "smtp.thrspain.com",
-  port: 25,
-  secure: false, // true para 465, false para otros puertos
-  requireTLS: true, // TLS reemplaza a SSL (deprecated)
-  auth: {
-      user: "administracion@thrspain.com",
-      pass: "Administracion2021!",
-  },
-  tls: {
-      rejectUnauthorized: false,
-  },
-});  */
-
 /**
  * Función común para enviar correos electrónicos
  * @param {import("nodemailer").Transporter} transporter - Transportador con el cual enviar el correo
@@ -101,7 +66,7 @@ const enviarEmails = async (req, res) => {
       transporter,
       from,
       email,
-      "Albarán Firmado PDF - " + cliente,
+      "Albarán Firmado PDF - " + cliente ?? 'No disponible',
       "Adjunto una copia del albarán firmado.",
       pdfBuffer
     );
@@ -111,7 +76,7 @@ const enviarEmails = async (req, res) => {
       transporter,
       from,
       administracion,
-      "Albarán Firmado PDF - " + cliente,
+      "Albarán Firmado PDF - " + cliente ?? 'No disponible',
       "Adjunto una copia del albarán firmado.",
       pdfBuffer
     );
