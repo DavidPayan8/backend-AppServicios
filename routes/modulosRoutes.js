@@ -9,11 +9,10 @@ const authenticateToken = require("../middleware/authMiddleware");
 const authorizeRol = require("../middleware/authorizeMiddleware");
 
 router.use(authenticateToken);
-router.use(authorizeRol("superadmin"));
 
 // Módulos
 router.get("/", getModulos);
-router.post("/", createModulo);
-router.put("/", updateModulosEmpresa);
+router.post("/", authorizeRol("superadmin"), createModulo);
+router.put("/", authorizeRol("superadmin"), updateModulosEmpresa);
 
 module.exports = router;
