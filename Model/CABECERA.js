@@ -95,6 +95,11 @@ module.exports = function (sequelize, DataTypes) {
       foreignKey: "cabecera_id",
       as: "cabecera",
     });
+
+    CABECERA.hasMany(models.COBROS_DOC, {
+      foreignKey: "cabecera_id",
+      as: "cobros",
+    });
   };
   return CABECERA;
 };

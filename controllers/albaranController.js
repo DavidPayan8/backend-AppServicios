@@ -48,9 +48,18 @@ const obtenerCabeceraOt = async (req, res) => {
 
     const cabecera = await db.CABECERA.findOne({
       where: { orden_trabajo_id: id_ot },
-      raw: true,
+      attributes: {
+        exclude: ["orden_trabajo_Id"],
+      },
+      include: [
+        {
+          model: db.COBROS_DOC,
+          as: "cobros",
+        },
+      ],
     });
 
+    console.log(cabecera);
     res.status(200).json(cabecera);
   } catch (error) {
     console.error("Error al obtener cabecera doc:", error.message);
@@ -135,12 +144,61 @@ const borrarDetalleAlbaran = async (req, res) => {
   }
 };
 
+const createCobro = async (req, res) => {
+  try {
+    const { cabecera_id, importe, tipo_cobro } = req.body;
+
+    if (!cabecera_id || !importe) {
+      return res
+        .status(400)
+        .json({ error: "cabecera_id e importe son obligatorios." });
+    }
+
+    if (typeof importe !== "number" || importe <= 0) {
+      return res
+        .status(400)
+        .json({ error: "El importe no puede ser menor a 0." });
+    }
+
+    const nuevoCobro = await db.COBROS_DOC.create({
+      cabecera_id,
+      importe,
+      tipo_cobro: tipo_cobro || "efectivo",
+    });
+
+    return res.status(201).json(nuevoCobro);
+  } catch (error) {
+    console.error("Error al crear cobro:", error);
+    return res
+      .status(500)
+      .json({ error: "Error interno al registrar el cobro." });
+  }
+};
+
+const borrarCobro = async (req, res) => {
+  try {
+    const { id_cobro } = req.body;
+
+    const resultado = await db.COBROS_DOC.destroy({
+      where: { id: id_cobro },
+    });
+
+    res.status(201).json({ eliminado: resultado > 0 });
+  } catch (error) {
+    console.error("Error al borrar cobro:", error.message);
+    res.status(500).send("Error del servidor");
+  }
+};
+
 module.exports = {
   cambiarDetalleAlbaran,
   crearDetalleAlbaran,
   borrarDetalleAlbaran,
+  createCobro,
+  borrarCobro,
   obtenerCabeceraOt,
   obtenerDetallesDoc,
   crearCabeceraAlbaran,
   setEstadoCabecera,
+  createCobro,
 };
