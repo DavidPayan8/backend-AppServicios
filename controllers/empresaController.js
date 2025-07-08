@@ -96,9 +96,8 @@ const getConfigEmpresa = async (req, res) => {
       email_entrante: config.email_entrante || "",
       smtp_user: config.smtp_user,
       color_principal: config.color_principal || "#0d5c91",
-      telefono: config.EMPRESA?.telefono || null,
+      telefono: config.empresa?.telefono || null,
     };
-
     res.status(200).json(response);
   } catch (error) {
     console.error("Error al obtener configuración y teléfono:", error);

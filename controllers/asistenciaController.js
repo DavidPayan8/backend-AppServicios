@@ -94,7 +94,7 @@ const actualizarLocalizacionEntrada = async (req, res) => {
     // Actualizar localización
     await db.CONTROL_ASISTENCIAS.update(
       { localizacion_entrada: direccionFinal },
-      { where: { id: id_parte.id } }
+      { where: { id: id_parte } }
     );
 
     res
@@ -130,7 +130,7 @@ const actualizarLocalizacionSalida = async (req, res) => {
     // Actualizar localización
     await db.CONTROL_ASISTENCIAS.update(
       { localizacion_salida: direccionFinal },
-      { where: { id: id_parte.id } }
+      { where: { id: id_parte } }
     );
 
     res
@@ -210,8 +210,7 @@ const obtenerPartesUsuarioFecha = async (req, res) => {
 
 const cerrarParteAbierto = async (req, res) => {
   const userId = req.user.id;
-  const { id_parte, localizacion_salida } = req.body;
-  let direccionFinal = null;
+  const { id_parte } = req.body;
 
   try {
     // Verificar si hay un parte abierto para el usuario en esa fecha
@@ -229,23 +228,11 @@ const cerrarParteAbierto = async (req, res) => {
       });
     }
 
-    if (localizacion_salida?.error) {
-      // Si viene error, guardamos el mensaje como ubicación
-      direccionFinal = localizacion_salida.mensaje || "Ubicación no disponible";
-    } else {
-      // Si hay coordenadas, hacemos geolocalización inversa
-      direccionFinal = await obtenerDireccionReversa(
-        localizacion_salida.lat,
-        localizacion_salida.lng
-      );
-    }
-
     // Actualizar parte con hora de salida
     parteAbierto.hora_salida = db.Sequelize.literal("GETDATE()");
-    parteAbierto.localizacion_salida = direccionFinal;
     await parteAbierto.save();
 
-    res.status(200).json(parteAbierto[0]);
+    res.status(200).json(parteAbierto.id);
   } catch (error) {
     console.error("Error al fichar salida:", error);
     res.status(500).json({ message: "Error del servidor." });

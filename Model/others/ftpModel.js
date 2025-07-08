@@ -1,4 +1,5 @@
 const path = require("path");
+const AdmZip = require("adm-zip");
 const { Writable } = require("stream");
 const stream = require("stream");
 const ftpPool = require("./pool/ftpPool");
@@ -16,16 +17,8 @@ const createPath = (nombreArchivo, id_usuario, id_empresa, tipo) => {
   return `${basePath}/${dbname}/${id_empresa}/Personal/${id_usuario}/${tipo}/${nombreArchivo}`;
 };
 
-// Subir archivo al FTP usando pool
-async function uploadToFtp(
-  nombreArchivo,
-  archivo,
-  id_usuario,
-  id_empresa,
-  tipo
-) {
+async function uploadToFtp(nombreArchivoZip, archivo, id_usuario, id_empresa, tipo) {
   const rutaComprobar = createPath("", id_usuario, id_empresa, tipo);
-  const rutaDestino = createPath(nombreArchivo, id_usuario, id_empresa, tipo);
 
   let client;
   try {
@@ -35,20 +28,45 @@ async function uploadToFtp(
 
     client = await ftpPool.getClient();
 
-    const archivoStream = new stream.PassThrough();
-    archivoStream.end(archivo.buffer);
-
     await client.ensureDir(rutaComprobar);
-    await client.uploadFrom(archivoStream, rutaDestino);
 
-    if (process.env.NODE_ENV === "development") {
-      console.log(`Archivo subido correctamente a: ${rutaDestino}`);
+    const extension = path.extname(nombreArchivoZip).toLowerCase();
+
+    if (extension === '.zip') {
+      const zip = new AdmZip(archivo.buffer);
+      const zipEntries = zip.getEntries();
+
+      for (const entry of zipEntries) {
+        if (!entry.isDirectory) {
+          const fileName = path.basename(entry.entryName); // nombre del archivo plano
+          const fileBuffer = entry.getData();
+
+          const archivoStream = new stream.PassThrough();
+          archivoStream.end(fileBuffer);
+
+          const rutaDestino = createPath(fileName, id_usuario, id_empresa, tipo);
+
+          await client.uploadFrom(archivoStream, rutaDestino);
+
+          if (process.env.NODE_ENV === "development") {
+            console.log(`Archivo del ZIP subido a: ${rutaDestino}`);
+          }
+        }
+      }
+    } else {
+      // No es zip, sube el archivo normal
+      const archivoStream = new stream.PassThrough();
+      archivoStream.end(archivo.buffer);
+
+      const rutaDestino = createPath(nombreArchivoZip, id_usuario, id_empresa, tipo);
+      await client.uploadFrom(archivoStream, rutaDestino);
+
+      if (process.env.NODE_ENV === "development") {
+        console.log(`Archivo subido correctamente a: ${rutaDestino}`);
+      }
     }
   } catch (error) {
-    console.error(
-      `Error al subir archivo al servidor FTP (${rutaDestino}):`,
-      error
-    );
+    console.error(`Error al subir archivo al servidor FTP:`, error);
     throw error;
   } finally {
     if (client) ftpPool.releaseClient(client);
@@ -81,7 +99,7 @@ const listadoArchivos = async (id_usuario, id_empresa, tipo) => {
     const listado = await client.list(ruta);
     return listado;
   } catch (err) {
-     // Ruta no encontrada
+    // Ruta no encontrada
     if (err.code === 550) {
       return [];
     }

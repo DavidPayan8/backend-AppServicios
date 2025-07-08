@@ -27,6 +27,7 @@ const obtenerNotificacionesModel = async (req, res) => {
 
     const notificaciones = results.map((result) => {
       const notificacion = result.notificacion;
+      console.log(notificacion);
       return {
         id_notificacion: notificacion.id,
         asunto: notificacion.asunto,
@@ -36,7 +37,7 @@ const obtenerNotificacionesModel = async (req, res) => {
         tipo_notificacion: notificacion.tipo_notificacion,
         leido: result.leido,
         fecha_leido: result.fecha_leido,
-        emisor: notificacion.emisor.nomapes,
+        emisor: notificacion.emisor?.nomapes || "Administracion",
       };
     });
 
@@ -82,7 +83,7 @@ const obtenerArchivadas = async (req, res) => {
         tipo_notificacion: notificacion.tipo_notificacion,
         leido: result.leido,
         fecha_leido: result.fecha_leido,
-        emisor: notificacion.emisor.nomapes,
+        emisor: notificacion.emisor?.nomapes || "Administracion",
       };
     });
 
@@ -125,13 +126,7 @@ const marcarLeida = async (req, res) => {
 
 const crearNotificacionHandler = async (req, res) => {
   const id_emisor = req.user.id;
-  const {
-    asunto,
-    cuerpo,
-    prioridad,
-    destino,
-    tipo_notificacion,
-  } = req.body;
+  const { asunto, cuerpo, prioridad, destino, tipo_notificacion } = req.body;
 
   if (!Array.isArray(destino) || destino.some((d) => typeof d !== "number")) {
     return res
