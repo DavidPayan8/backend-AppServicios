@@ -105,7 +105,7 @@ const createOtObra = async (req, res) => {
 
 const getIdProyectos = async (req, res) => {
   const userId = req.user.id;
-  const { date } = req.query;
+  const { fecha } = req.query;
   try {
     const calendario = await db.CALENDARIO.findAll({
       where: {
@@ -113,7 +113,7 @@ const getIdProyectos = async (req, res) => {
           {
             [Op.or]: [{ id_usuario: userId }, { id_usuario: 0 }],
           },
-          { fecha: date },
+          { fecha },
         ],
       },
       include: [
