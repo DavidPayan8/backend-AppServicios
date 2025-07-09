@@ -134,7 +134,7 @@ const borrarDetalleAlbaran = async (req, res) => {
     const { id_detalle } = req.body;
 
     const resultado = await db.DETALLES_DOC.destroy({
-      where: { id: id_detalle },
+      where: { id: id_detalle.id },
     });
 
     res.status(201).json({ eliminado: resultado > 0 });
