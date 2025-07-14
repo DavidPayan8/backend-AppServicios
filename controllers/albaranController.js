@@ -104,10 +104,7 @@ const obtenerDetallesDoc = async (req, res) => {
 const cambiarDetalleAlbaran = async (req, res) => {
   try {
     const { detallesDoc } = req.body;
-    console.log(
-      "Detalles a actualizar:",
-      detallesDoc.id.id
-    );
+    console.log("Detalles a actualizar:", detallesDoc.id.id);
 
     const updates = await db.DETALLES_DOC.update(detallesDoc, {
       where: { id: detallesDoc.id || detallesDoc.id.id },
@@ -138,7 +135,7 @@ const borrarDetalleAlbaran = async (req, res) => {
     const { id_detalle } = req.body;
 
     const resultado = await db.DETALLES_DOC.destroy({
-      where: { id: id_detalle.id },
+      where: { id: id_detalle },
     });
 
     res.status(201).json({ eliminado: resultado > 0 });
