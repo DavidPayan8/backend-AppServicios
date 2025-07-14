@@ -129,6 +129,10 @@ module.exports = function (sequelize, DataTypes) {
       foreignKey: "categoria_laboral_id",
       as: "categoriaLaboral",
     });
+    USUARIOS.hasMany(models.ANOTACION_AGENDA, {
+      foreignKey: "usuario_id",
+      as: "anotaciones_agenda",
+    });
   };
 
   return USUARIOS;
