@@ -1,7 +1,7 @@
 const db = require("../Model");
 const { Op, Sequelize } = require("sequelize");
 const { format } = require("date-fns");
-const { mapAnotacionToCalendarEvent } = require("../utils/maps/anotaciones.js");
+const { mapAnotacionToCalendarEvent } = require("../resources/anotaciones.js");
 
 const obtenerAnotaciones = async (req, res) => {
   try {

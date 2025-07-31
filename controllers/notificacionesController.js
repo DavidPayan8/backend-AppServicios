@@ -27,7 +27,6 @@ const obtenerNotificacionesModel = async (req, res) => {
 
     const notificaciones = results.map((result) => {
       const notificacion = result.notificacion;
-      console.log(notificacion);
       return {
         id_notificacion: notificacion.id,
         asunto: notificacion.asunto,
