@@ -64,6 +64,14 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: true,
         defaultValue: "X",
       },
+      ext_cara: {
+        type: DataTypes.STRING(20),
+        allowNull: true
+      },
+      ext_anverso: {
+        type: DataTypes.STRING(20),
+        allowNull: true
+      }
     },
     {
       sequelize,
@@ -129,9 +137,15 @@ module.exports = function (sequelize, DataTypes) {
       foreignKey: "categoria_laboral_id",
       as: "categoriaLaboral",
     });
+
     USUARIOS.hasMany(models.ANOTACION_AGENDA, {
       foreignKey: "usuario_id",
       as: "anotaciones_agenda",
+    });
+
+    USUARIOS.hasMany(models.SOLICITUD, {
+      foreignKey: "usuario_id",
+      as: "",
     });
   };
 
