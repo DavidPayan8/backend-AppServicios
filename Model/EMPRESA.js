@@ -137,9 +137,15 @@ module.exports = function (sequelize, DataTypes) {
       as: "Categoria_laboral",
       foreignKey: "id_empresa",
     });
+
     EMPRESA.hasMany(models.ANOTACION_AGENDA, {
       foreignKey: "id_empresa",
       as: "anotaciones_agenda",
+    });
+
+    EMPRESA.hasMany(models.SOLICITUD, {
+      foreignKey: "empresa_id",
+      as: "solicitud",
     });
   };
 
