@@ -4,6 +4,7 @@ const {
   eliminarArchivo,
   descargarArchivo,
 } = require("../Model/others/ftpModel");
+const db = require("../Model");
 const mime = require("mime-types");
 
 const obtenerListadoFtp = async (req, res) => {
@@ -75,6 +76,8 @@ const subirTarjetaContacto = async (req, res) => {
 
   try {
     const archivos = req.files;
+    let extensionCara = null;
+    let extAnverso = null
 
     if (!archivos || Object.keys(archivos).length === 0) {
       return res.status(400).json({ error: 'No se recibió ningún archivo.' });
@@ -83,7 +86,7 @@ const subirTarjetaContacto = async (req, res) => {
     // Subir cara
     if (archivos.cara) {
       const archivoCara = Array.isArray(archivos.cara) ? archivos.cara[0] : archivos.cara;
-      const extensionCara = archivoCara.filename.substring(archivoCara.filename.lastIndexOf('.'));
+      extensionCara = archivoCara.filename.substring(archivoCara.filename.lastIndexOf('.'));
       const nombreCara = `cara${extensionCara}`;
       await uploadToFtp(nombreCara, archivoCara, id_usuario, empresa, tipo);
     }
@@ -91,10 +94,21 @@ const subirTarjetaContacto = async (req, res) => {
     // Subir anverso
     if (archivos.anverso) {
       const archivoAnverso = Array.isArray(archivos.anverso) ? archivos.anverso[0] : archivos.anverso;
-      const extensionAnverso = archivoAnverso.filename.substring(archivoAnverso.filename.lastIndexOf('.'));
+      extensionAnverso = archivoAnverso.filename.substring(archivoAnverso.filename.lastIndexOf('.'));
       const nombreAnverso = `anverso${extensionAnverso}`;
       await uploadToFtp(nombreAnverso, archivoAnverso, id_usuario, empresa, tipo);
     }
+
+    const camposActualizados = {};
+    if (extensionCara) camposActualizados.ext_cara = extensionCara;
+    if (extensionAnverso) camposActualizados.ext_anverso = extensionAnverso;
+
+    if (Object.keys(camposActualizados).length > 0) {
+      await db.USUARIOS.update(camposActualizados, {
+        where: { id: id_usuario },
+      });
+    }
+
 
     res.status(200).json({ message: 'Tarjeta de contacto subida correctamente.' });
   } catch (error) {
