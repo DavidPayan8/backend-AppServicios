@@ -77,6 +77,16 @@ module.exports = function (sequelize, DataTypes) {
       foreignKey: "entidad_id",
       as: "cabecera",
     });
+
+    CLIENTES.hasMany(models.SOLICITUD, {
+      as: "cliente_solicitudes",
+      foreignKey: "cliente_id",
+    });
+
+    CLIENTES.hasMany(models.PETICIONARIO, {
+      as: "cliente_peticionarios",
+      foreignKey: "cliente_id",
+    });
   };
 
   return CLIENTES;
