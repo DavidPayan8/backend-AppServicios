@@ -3,17 +3,32 @@ const path = require("path");
 const yauzl = require("yauzl");
 
 const ALLOWED_EXTENSIONS = [
-  ".zip",
-  ".jpg",
-  ".jpeg",
-  ".png",
-  ".pdf",
-  ".txt",
-  ".xlsx",
-  ".xls",
-  ".csv",
-  ".ppt",
-  ".pptx",
+  // Documentos y oficina
+  ".zip", ".pdf", ".txt", ".doc", ".docx", ".odt",
+  ".xls", ".xlsx", ".csv", ".ods", ".ppt", ".pptx", ".odp",
+
+  // Imágenes
+  ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp", ".svg", ".ico", ".heic",
+
+  // Videos
+  ".mp4", ".mov", ".avi", ".wmv", ".flv", ".mkv", ".webm", ".3gp", ".mpeg", ".mpg",
+
+  // Audio
+  ".mp3", ".wav", ".ogg", ".aac", ".flac", ".m4a",
+
+  // CAD / Diseño / 3D
+  ".dwg", ".dxf", ".dwf",         // AutoCAD
+  ".step", ".stp", ".iges", ".igs", // CAD neutral
+  ".skp",                         // SketchUp
+  ".sldprt", ".sldasm",          // SolidWorks
+  ".3ds", ".obj", ".fbx", ".stl", // 3D models
+  ".blend",                       // Blender
+
+  // Archivos de diseño
+  ".psd", ".ai", ".xd", ".fig",   // Photoshop, Illustrator, Adobe XD, Figma
+  ".indd",                        // InDesign
+  ".cdr",                         // CorelDRAW
+  ".pdf",                         // Archivos finales de diseño
 ];
 
 const ALLOWED_MIME_TYPES = [
@@ -95,7 +110,6 @@ const uploadMiddleware = (req, res, next) => {
         .send({ message: "Extensión de archivo no permitida" });
     }
 
-
     if (mimetype && !ALLOWED_MIME_TYPES.includes(mimetype)) {
       return res.status(400).send({ message: "Tipo MIME no permitido" });
     }
@@ -119,11 +133,16 @@ const uploadMiddleware = (req, res, next) => {
             }
           }
 
-          files[fieldname] = {
+          if (!files[fieldname]) {
+            files[fieldname] = [];
+          }
+
+          files[fieldname].push({
             filename,
             mimetype,
             buffer,
-          };
+          });
+
           resolve();
         } catch (err) {
           reject(err);

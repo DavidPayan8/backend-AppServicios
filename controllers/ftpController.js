@@ -15,7 +15,6 @@ const obtenerListadoFtp = async (req, res) => {
     const listado = await listadoArchivos(id, empresa, tipo);
     return res.status(200).json(listado);
   } catch (error) {
-    if (error.code === 550) console.log("Si entra aqui");
     console.error("Error al obtener listado FTP:", error);
     res.status(500).json({ error: "Error al obtener listado de archivos." });
   }
@@ -69,6 +68,42 @@ const visualizarArchivoFTP = async (req, res) => {
   }
 };
 
+const subirTarjetaContacto = async (req, res) => {
+  const { empresa } = req.user;
+  const id_usuario = req.user.id;
+  const tipo = 'contacto';
+
+  try {
+    const archivos = req.files;
+
+    if (!archivos || Object.keys(archivos).length === 0) {
+      return res.status(400).json({ error: 'No se recibió ningún archivo.' });
+    }
+
+    // Subir cara
+    if (archivos.cara) {
+      const archivoCara = Array.isArray(archivos.cara) ? archivos.cara[0] : archivos.cara;
+      const extensionCara = archivoCara.filename.substring(archivoCara.filename.lastIndexOf('.'));
+      const nombreCara = `cara${extensionCara}`;
+      await uploadToFtp(nombreCara, archivoCara, id_usuario, empresa, tipo);
+    }
+
+    // Subir anverso
+    if (archivos.anverso) {
+      const archivoAnverso = Array.isArray(archivos.anverso) ? archivos.anverso[0] : archivos.anverso;
+      const extensionAnverso = archivoAnverso.filename.substring(archivoAnverso.filename.lastIndexOf('.'));
+      const nombreAnverso = `anverso${extensionAnverso}`;
+      await uploadToFtp(nombreAnverso, archivoAnverso, id_usuario, empresa, tipo);
+    }
+
+    res.status(200).json({ message: 'Tarjeta de contacto subida correctamente.' });
+  } catch (error) {
+    console.error('Error al subir tarjeta de contacto:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
 const subirArchivoFtp = async (req, res) => {
   const { nombre, tipo, id_usuario } = req.body;
   const { archivo } = req.files;
@@ -101,4 +136,5 @@ module.exports = {
   eliminarArchivoFTP,
   descargarArchivoFTP,
   visualizarArchivoFTP,
+  subirTarjetaContacto
 };
