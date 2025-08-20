@@ -1,5 +1,7 @@
 const db = require("../Model");
 const { Op, fn, col, literal } = require("sequelize");
+const { mapformatOrdenesTrabajo } = require("../resources/proyectos");
+const { paginatedResponse } = require('../resources/helpers/paginator');
 
 const getActividades = async (req, res) => {
   const id_usuario = req.user.id;
@@ -45,6 +47,93 @@ const getActividades = async (req, res) => {
     res.status(500).json({ error: "Error al obtener actividades" });
   }
 };
+
+const getAllProyects = async (req, res) => {
+  try {
+    const { empresa } = req.user;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    // Filtros
+    const filtro = req.query.filtro || null;
+    const filtroPor = req.query.by || null;
+
+    // Condiciones base
+    const where = {
+      id_empresa: empresa,
+      activo: true,
+      es_ote: false,
+    };
+
+    // Aplicar filtro si viene
+    if (filtro && filtroPor) {
+      if (filtroPor === "nombre") {
+        where.nombre = { [Op.like]: `%${filtro}%` };
+      } else if (filtroPor === "num_ot") {
+        where.num_ot = { [Op.like]: `%${filtro}%` };
+      }
+    }
+
+    const rows = await db.ORDEN_TRABAJO.findAll({
+      attributes: [
+        "id",
+        "num_ot",
+        "nombre",
+        "observaciones",
+        "estado",
+        "direccion",
+        "horas_concedidas",
+        "fecha_limite",
+        "fecha_inicio",
+        "fecha_fin",
+      ],
+      include: [
+        {
+          model: db.CLIENTES,
+          as: "cliente_ot",
+          attributes: ["id", "nombre", "email", "nombre_empresa", "direccion"],
+        },
+      ],
+      where,
+      group: [
+        "ORDEN_TRABAJO.id",
+        "ORDEN_TRABAJO.num_ot",
+        "ORDEN_TRABAJO.nombre",
+        "ORDEN_TRABAJO.observaciones",
+        "ORDEN_TRABAJO.estado",
+        "ORDEN_TRABAJO.direccion",
+        "ORDEN_TRABAJO.horas_concedidas",
+        "ORDEN_TRABAJO.fecha_limite",
+        "ORDEN_TRABAJO.id_cliente",
+        "ORDEN_TRABAJO.fecha_inicio",
+        "ORDEN_TRABAJO.fecha_fin",
+        "cliente_ot.id",
+        "cliente_ot.nombre",
+        "cliente_ot.email",
+        "cliente_ot.nombre_empresa",
+        "cliente_ot.direccion",
+      ],
+      limit,
+      offset,
+      subQuery: false,
+    });
+
+    const count = await db.ORDEN_TRABAJO.count({
+      where,
+      distinct: true, // evita duplicados por joins
+      col: "ORDEN_TRABAJO.id",
+    });
+
+    const data = mapformatOrdenesTrabajo(rows);
+
+    res.status(200).json(paginatedResponse(data, count, page, limit));
+  } catch (error) {
+    console.error("Error al obtener órdenes de trabajo:", error);
+    res.status(500).json({ message: "Error al obtener órdenes de trabajo" });
+  }
+};
+
 
 const getObras = async (req, res) => {
   const { empresa } = req.user;
@@ -620,4 +709,5 @@ module.exports = {
   getProjectsAllWorkers,
   reasignarOt,
   getNoAsignados,
+  getAllProyects
 };

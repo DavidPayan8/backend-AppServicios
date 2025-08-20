@@ -13,6 +13,10 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
+      num_ot: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
       nombre: {
         type: DataTypes.STRING(50),
         allowNull: false,
@@ -24,6 +28,11 @@ module.exports = function (sequelize, DataTypes) {
       id_cliente: {
         type: DataTypes.INTEGER,
         allowNull: true,
+      },
+      activo: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
       },
       es_ote: {
         type: DataTypes.BOOLEAN,
@@ -63,11 +72,20 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
+      horas_concedidas: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: 0,
+      },
       fecha_inicio: {
         type: DataTypes.DATE,
         allowNull: true,
       },
       fecha_fin: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      fecha_limite: {
         type: DataTypes.DATE,
         allowNull: true,
       },
