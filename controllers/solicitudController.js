@@ -176,6 +176,11 @@ const update = async (req, res) => {
             return res.status(404).json({ message: "Solicitud no encontrada" });
         }
 
+        if (solicitud.estado > 0) {
+            await t.rollback();
+            return res.status(400).json({ message: "No se puede actualizar una solicitud que ya ha sido procesada" });
+        }
+
         // Actualizar la solicitud
         await solicitud.update({
             peticionario_id,

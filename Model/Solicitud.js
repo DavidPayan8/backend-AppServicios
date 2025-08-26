@@ -46,6 +46,14 @@ module.exports = function (sequelize, DataTypes) {
                 type: DataTypes.STRING(2000),
                 allowNull: true,
             },
+            estado: {
+                type: DataTypes.TINYINT,
+                allowNull: false,
+                defaultValue: 0,
+                validate: {
+                    isIn: [[0, 1, 2]]
+                }
+            }
         },
         {
             sequelize,
