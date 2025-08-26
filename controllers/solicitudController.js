@@ -3,6 +3,8 @@ const { mapSolicitudNomalized } = require("../resources/solicitud");
 const { enviarSolicitud } = require('../controllers/emailController');
 const { paginatedResponse } = require('../resources/helpers/paginator');
 const SOLICITUD = db.SOLICITUD;
+const { Op } = require("sequelize");
+
 
 const getAllSolicitudes = async (req, res) => {
     try {
@@ -11,26 +13,53 @@ const getAllSolicitudes = async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const offset = (page - 1) * limit;
 
-        const { rows, count } = await SOLICITUD.findAndCountAll({
-            where: {
-                usuario_id: id,
-                empresa_id: empresa,
+
+        console.log(req.query)
+        // Filtros opcionales
+        const { cliente, fecha } = req.query;
+
+        const where = {
+            usuario_id: id,
+            empresa_id: empresa,
+        };
+
+        if (fecha) {
+            const fechaInicio = new Date(fecha);
+            fechaInicio.setHours(0, 0, 0, 0);
+
+            const fechaFin = new Date(fecha);
+            fechaFin.setHours(23, 59, 59, 999);
+
+            where.fecha_solicitud = { [Op.between]: [fechaInicio, fechaFin] };
+        }
+
+        const include = [
+            { model: db.PETICIONARIO, as: "solicitud_peticionario" },
+            {
+                model: db.CLIENTES,
+                as: "solicitud_cliente",
+                ...(cliente && {
+                    where: {
+                        nombre: { [Op.like]: `%${cliente}%` },
+                    },
+                }),
             },
-            include: [
-                { model: db.PETICIONARIO, as: 'solicitud_peticionario' },
-                { model: db.CLIENTES, as: 'solicitud_cliente' }
-            ],
+        ];
+
+        const { rows, count } = await SOLICITUD.findAndCountAll({
+            where,
+            include,
             limit,
             offset,
-            order: [['fecha_solicitud', 'DESC']]
+            order: [["fecha_solicitud", "DESC"]],
+            distinct: true, // Necesario por los include
         });
 
         const data = rows.map(mapSolicitudNomalized);
 
         res.status(200).json(paginatedResponse(data, count, page, limit));
-
     } catch (error) {
-        console.log(error)
+        console.log(error);
         res.status(500).json({ message: "Error al obtener solicitudes", error });
     }
 };
