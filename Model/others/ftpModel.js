@@ -6,63 +6,78 @@ const ftpPool = require("./pool/ftpPool");
 const FTP_CONFIG = require("../../config/ftpConfig");
 
 // Crear ruta dinámica
-const createPath = (nombreArchivo, id_usuario, id_empresa, tipo) => {
+const createPath = (ambito, nombreArchivo, id, id_empresa, tipo) => {
   const dbname = process.env.DB_NAME;
   const basePath = FTP_CONFIG.BASE_PATH;
 
-  if (!nombreArchivo) {
-    return `${basePath}/${dbname}/${id_empresa}/Personal/${id_usuario}/${tipo}`;
+  if (ambito === 'Empresa') {
+    if (!nombreArchivo) {
+      return `${basePath}/${dbname}/${id_empresa}/${ambito}/${tipo}/${id}`;
+    }
+    return `${basePath}/${dbname}/${id_empresa}/${ambito}/${tipo}/${id}/${nombreArchivo}`;
   }
 
-  return `${basePath}/${dbname}/${id_empresa}/Personal/${id_usuario}/${tipo}/${nombreArchivo}`;
+  // Ruta estándar para otros ambitos
+  if (!nombreArchivo) {
+    return `${basePath}/${dbname}/${id_empresa}/${ambito}/${id}/${tipo}`;
+  }
+
+  return `${basePath}/${dbname}/${id_empresa}/${ambito}/${id}/${tipo}/${nombreArchivo}`;
 };
 
-async function uploadToFtp(nombreArchivoZip, archivo, id_usuario, id_empresa, tipo) {
-  const rutaComprobar = createPath("", id_usuario, id_empresa, tipo);
+
+async function uploadToFtp(ambito, archivos, id_usuario, id_empresa, tipo) {
+  // Aseguramos que siempre sea un array
+  const files = Array.isArray(archivos) ? archivos : [archivos];
 
   let client;
   try {
-    if (!(archivo.buffer instanceof Buffer)) {
-      throw new Error("El archivo no es un Buffer válido");
-    }
-
     client = await ftpPool.getClient();
 
-    await client.ensureDir(rutaComprobar);
+    for (const file of files) {
+      // Validación básica
+      if (!file || !Buffer.isBuffer(file.buffer)) {
+        throw new Error(`El archivo ${file?.filename} no es un Buffer válido`);
+      }
 
-    const extension = path.extname(nombreArchivoZip).toLowerCase();
+      // Creamos la carpeta si no existe
+      const rutaComprobar = createPath(ambito, "", id_usuario, id_empresa, tipo);
+      await client.ensureDir(rutaComprobar);
 
-    if (extension === '.zip') {
-      const zip = new AdmZip(archivo.buffer);
-      const zipEntries = zip.getEntries();
+      const extension = path.extname(file.filename).toLowerCase();
 
-      for (const entry of zipEntries) {
-        if (!entry.isDirectory) {
-          const fileName = path.basename(entry.entryName); // nombre del archivo plano
-          const fileBuffer = entry.getData();
+      if (extension === ".zip") {
+        // Procesar contenido del ZIP
+        const zip = new AdmZip(file.buffer);
+        const zipEntries = zip.getEntries();
 
-          const archivoStream = new stream.PassThrough();
-          archivoStream.end(fileBuffer);
+        for (const entry of zipEntries) {
+          if (!entry.isDirectory) {
+            const fileName = path.basename(entry.entryName);
+            const fileBuffer = entry.getData();
 
-          const rutaDestino = createPath(fileName, id_usuario, id_empresa, tipo);
+            const archivoStream = new stream.PassThrough();
+            archivoStream.end(fileBuffer);
 
-          await client.uploadFrom(archivoStream, rutaDestino);
+            const rutaDestino = createPath(ambito, fileName, id_usuario, id_empresa, tipo);
+            await client.uploadFrom(archivoStream, rutaDestino);
 
-          if (process.env.NODE_ENV === "development") {
-            console.log(`Archivo del ZIP subido a: ${rutaDestino}`);
+            if (process.env.NODE_ENV === "development") {
+              console.log(`Archivo del ZIP subido a: ${rutaDestino}`);
+            }
           }
         }
-      }
-    } else {
-      // No es zip, sube el archivo normal
-      const archivoStream = new stream.PassThrough();
-      archivoStream.end(archivo.buffer);
+      } else {
+        // Subida normal
+        const archivoStream = new stream.PassThrough();
+        archivoStream.end(file.buffer);
 
-      const rutaDestino = createPath(nombreArchivoZip, id_usuario, id_empresa, tipo);
-      await client.uploadFrom(archivoStream, rutaDestino);
+        const rutaDestino = createPath(ambito, file.filename, id_usuario, id_empresa, tipo);
+        await client.uploadFrom(archivoStream, rutaDestino);
 
-      if (process.env.NODE_ENV === "development") {
-        console.log(`Archivo subido correctamente a: ${rutaDestino}`);
+        if (process.env.NODE_ENV === "development") {
+          console.log(`Archivo subido correctamente a: ${rutaDestino}`);
+        }
       }
     }
   } catch (error) {
@@ -73,9 +88,11 @@ async function uploadToFtp(nombreArchivoZip, archivo, id_usuario, id_empresa, ti
   }
 }
 
+
+
 // Eliminar archivo del FTP usando pool
-async function eliminarArchivo(nombreArchivo, id_usuario, id_empresa, tipo) {
-  const rutaArchivo = createPath(nombreArchivo, id_usuario, id_empresa, tipo);
+async function eliminarArchivo(ambito, nombreArchivo, id_usuario, id_empresa, tipo) {
+  const rutaArchivo = createPath(ambito, nombreArchivo, id_usuario, id_empresa, tipo);
 
   let client;
   try {
@@ -90,13 +107,21 @@ async function eliminarArchivo(nombreArchivo, id_usuario, id_empresa, tipo) {
 }
 
 // Listar archivos en FTP usando pool
-const listadoArchivos = async (id_usuario, id_empresa, tipo) => {
-  const ruta = createPath("", id_usuario, id_empresa, tipo);
+const listadoArchivos = async (ambito, id_usuario, id_empresa, tipo) => {
+  console.log("DEBUG >> listadoArchivos llamado con:", {
+    ambito,
+    id_usuario,
+    id_empresa,
+    tipo,
+  });
+
+  const ruta = createPath(ambito, "", id_usuario, id_empresa, tipo);
 
   let client;
   try {
     client = await ftpPool.getClient();
     const listado = await client.list(ruta);
+    console.log(`Listado de archivos en FTP (${ruta}):`, listado);
     return listado;
   } catch (err) {
     // Ruta no encontrada
@@ -112,12 +137,13 @@ const listadoArchivos = async (id_usuario, id_empresa, tipo) => {
 
 // Descargar archivo del FTP usando pool
 const descargarArchivo = async (
+  ambito,
   nombreArchivo,
   id_usuario,
   id_empresa,
   tipo
 ) => {
-  const ruta = createPath(nombreArchivo, id_usuario, id_empresa, tipo);
+  const ruta = createPath(ambito, nombreArchivo, id_usuario, id_empresa, tipo);
 
   let client;
   try {

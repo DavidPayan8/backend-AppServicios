@@ -106,6 +106,7 @@ const create = async (req, res) => {
             solicitud_id: nuevaSolicitud.id,
             empresaId: empresa,
             archivos,
+            user: id
         });
 
         await t.commit();

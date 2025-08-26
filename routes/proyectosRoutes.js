@@ -16,7 +16,8 @@ const {
   getProjectsAllWorkers,
   reasignarOt,
   getNoAsignados,
-  getAllProyects
+  getAllProyects,
+  getByIdLaTorre
 } = require("../controllers/proyectosController");
 const authorizeCategory = require("../middleware/categoryMiddleware");
 
@@ -39,5 +40,6 @@ router.get("/no-asignados", authorizeCategory("tecnico"), getNoAsignados)
 
 //LaTorre
 router.get("/all", getAllProyects);
+router.get("/la-torre/:id", getByIdLaTorre)
 
 module.exports = router;

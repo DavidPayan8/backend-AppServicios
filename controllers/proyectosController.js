@@ -1,6 +1,6 @@
 const db = require("../Model");
 const { Op, fn, col, literal } = require("sequelize");
-const { mapformatOrdenesTrabajo } = require("../resources/proyectos");
+const { mapformatOrdenesTrabajo, formatOrdenTrabajo } = require("../resources/proyectos");
 const { paginatedResponse } = require('../resources/helpers/paginator');
 
 const getActividades = async (req, res) => {
@@ -134,6 +134,63 @@ const getAllProyects = async (req, res) => {
   }
 };
 
+const getByIdLaTorre = async (req, res) => {
+  try {
+    const { empresa } = req.user;
+    const { id } = req.params;
+
+    const result = await db.ORDEN_TRABAJO.findOne({
+      attributes: [
+        "id",
+        "num_ot",
+        "nombre",
+        "observaciones",
+        "estado",
+        "direccion",
+        "horas_concedidas",
+        "fecha_limite",
+        "fecha_inicio",
+        "fecha_fin",
+      ],
+      include: [
+        {
+          model: db.CLIENTES,
+          as: "cliente_ot",
+          attributes: ["id", "nombre", "email", "nombre_empresa", "direccion"],
+        },
+      ],
+      where: {
+        id,
+        id_empresa: empresa,
+      },
+      group: [
+        "ORDEN_TRABAJO.id",
+        "ORDEN_TRABAJO.num_ot",
+        "ORDEN_TRABAJO.nombre",
+        "ORDEN_TRABAJO.observaciones",
+        "ORDEN_TRABAJO.estado",
+        "ORDEN_TRABAJO.direccion",
+        "ORDEN_TRABAJO.horas_concedidas",
+        "ORDEN_TRABAJO.fecha_limite",
+        "ORDEN_TRABAJO.id_cliente",
+        "ORDEN_TRABAJO.fecha_inicio",
+        "ORDEN_TRABAJO.fecha_fin",
+        "cliente_ot.id",
+        "cliente_ot.nombre",
+        "cliente_ot.email",
+        "cliente_ot.nombre_empresa",
+        "cliente_ot.direccion",
+      ],
+      subQuery: false,
+    });
+
+
+    res.status(200).json(formatOrdenTrabajo(result));
+  } catch (error) {
+    console.error("Error al obtener la órden de trabajo:", error);
+    res.status(500).json({ message: "Error al obtener órdenes de trabajo" });
+  }
+};
 
 const getObras = async (req, res) => {
   const { empresa } = req.user;
@@ -709,5 +766,6 @@ module.exports = {
   getProjectsAllWorkers,
   reasignarOt,
   getNoAsignados,
-  getAllProyects
+  getAllProyects,
+  getByIdLaTorre
 };

@@ -4,16 +4,25 @@ const {
   eliminarArchivo,
   descargarArchivo,
 } = require("../Model/others/ftpModel");
+const { enviarAdjuntosOt } = require('./emailController')
 const db = require("../Model");
 const mime = require("mime-types");
 
 const obtenerListadoFtp = async (req, res) => {
   const { id, empresa } = req.user;
-  const { tipo } = req.query;
+  const { ambito, tipo, identify } = req.query;
 
   try {
     console.log("[BACK] llamada a listadoArchivos");
-    const listado = await listadoArchivos(id, empresa, tipo);
+    let identification = null;
+
+    if (identify && identify !== 0) {
+      identification = Number(identify);
+    } else {
+      identification = id;
+    }
+
+    const listado = await listadoArchivos(ambito, identification, empresa, tipo);
     return res.status(200).json(listado);
   } catch (error) {
     console.error("Error al obtener listado FTP:", error);
@@ -22,15 +31,24 @@ const obtenerListadoFtp = async (req, res) => {
 };
 
 const descargarArchivoFTP = async (req, res) => {
-  const { nombreArchivo, tipo } = req.query;
+  const { nombreArchivo, tipo, ambito, identify } = req.query;
   const { id, empresa } = req.user;
+
+  let identification = null;
+
+  if (identify && identify !== 0) {
+    identification = Number(identify);
+  } else {
+    identification = id;
+  }
 
   try {
     const { buffer, fileName } = await descargarArchivo(
+      ambito,
       nombreArchivo,
-      id,
+      identification,
       empresa,
-      tipo
+      tipo,
     );
     res.setHeader(
       "Content-Type",
@@ -46,15 +64,24 @@ const descargarArchivoFTP = async (req, res) => {
 };
 
 const visualizarArchivoFTP = async (req, res) => {
-  const { nombreArchivo, tipo } = req.query;
+  const { nombreArchivo, tipo, ambito, identify } = req.query;
   const { id, empresa } = req.user;
+
+  let identification = null;
+
+  if (identify && identify !== 0) {
+    identification = Number(identify);
+  } else {
+    identification = id;
+  }
 
   try {
     const { buffer, fileName } = await descargarArchivo(
+      ambito,
       nombreArchivo,
       id,
       empresa,
-      tipo
+      tipo,
     );
     res.setHeader(
       "Content-Type",
@@ -119,24 +146,48 @@ const subirTarjetaContacto = async (req, res) => {
 
 
 const subirArchivoFtp = async (req, res) => {
-  const { nombre, tipo, id_usuario } = req.body;
-  const { archivo } = req.files;
-  const { empresa } = req.user;
+  const { ambito, tipo, identify } = req.body;
+  const { empresa, id } = req.user;
+
+  let identification = null;
+
+  if (identify && identify !== 0) {
+    identification = Number(identify);
+  } else {
+    identification = id;
+  }
+
+  const archivos = Object.values(req.files)
+    .flatMap(fileArray => Array.isArray(fileArray) ? fileArray : [fileArray]);
+
 
   try {
-    await uploadToFtp(nombre, archivo, id_usuario, empresa, tipo);
-    res.json({ message: "Archivo subido correctamente." });
+    await uploadToFtp(ambito, archivos, identification, empresa, tipo);
+    if (tipo === 'OT') await enviarAdjuntosOt({ identify, empresa, archivos, accion: 'create', user: id });
+
+    res.status(201).json({ message: "Archivo subido correctamente." });
   } catch (error) {
+    console.log("Fallo al subir archivo:", error.message);
     res.status(500).json({ error: error.message });
   }
 };
 
 const eliminarArchivoFTP = async (req, res) => {
-  const { empresa } = req.user;
-  const { nombre, tipo, id_usuario } = req.body;
+  const { empresa, id } = req.user;
+  const { nombre, tipo, identify, ambito } = req.body;
+
+  let identification = null;
+
+  if (identify && identify !== 0) {
+    identification = Number(identify);
+  } else {
+    identification = id;
+  }
 
   try {
-    await eliminarArchivo(nombre, id_usuario, empresa, tipo);
+    await eliminarArchivo(ambito, nombre, identification, empresa, tipo);
+    if (tipo === 'OT') await enviarAdjuntosOt({ identify, empresa, accion: 'delete', user: id });
+
     res.status(200).json({ message: "Archivo eliminado correctamente." });
   } catch (error) {
     console.error("Fallo al eliminar archivo:", error.message);

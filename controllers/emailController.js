@@ -1,4 +1,5 @@
 const db = require("../Model");
+const { create } = require('xmlbuilder2');
 const { sendEmail } = require("../utils/sendMail");
 
 const enviarEmails = async (req, res) => {
@@ -59,16 +60,7 @@ const enviarEmails = async (req, res) => {
  * @param {number} params.empresaId - ID de empresa
  * @param {Array} params.archivos - Archivos adjuntos
  */
-const enviarSolicitud = async ({ solicitud_id, empresaId, archivos }) => {
-  /*   // Preparar HTML
-    const html = `
-        <p id="solicitud_id">${solicitud.id}</p>
-        <p id="fecha_solicitud"> ${solicitud.fecha_solicitud}</p>
-        <p id="cliente_id">
-        <p id="peticionario_id"> ${solicitud.peticionario_id}<</p>
-        <p id="notas">${solicitud.nota}</p>
-    `; */
-
+const enviarSolicitud = async ({ solicitud_id, empresaId, archivos, user }) => {
 
   const configRaw = await db.CONFIG_EMPRESA.findOne({
     where: { id_empresa: empresaId },
@@ -81,13 +73,15 @@ const enviarSolicitud = async ({ solicitud_id, empresaId, archivos }) => {
 
   const config = configRaw.get({ plain: true });
 
+  const xmlData = await createXml('Solicitud', solicitud_id, 'create', user);
+
   const info = await sendEmail(
     config,
     {
       from: config.smtp_user,
       to: 'davidpayanalvarado@gmail.com',
-      subject: `Solicitud Presupuesto #${solicitud_id}`,
-      html: '',
+      subject: `Solicitud`,
+      text: xmlData,
       attachments: archivos.map((archivo) => ({
         filename: archivo.filename,
         content: archivo.buffer,
@@ -99,7 +93,70 @@ const enviarSolicitud = async ({ solicitud_id, empresaId, archivos }) => {
 };
 
 
+/**
+ * Envía un correo con los adjuntos de la OT
+ * @param {Object} params
+ * @param {number} params.ot_id - ID de orden trabajo creada
+ * @param {number} params.empresaId - ID de empresa
+ * @param {Array} params.archivos - Archivos adjuntos
+ */
+const enviarAdjuntosOt = async ({ identify, empresa, archivos, accion, user }) => {
+
+  console.log('Enviando adjuntos OT:', identify, empresa, accion);
+
+  const configRaw = await db.CONFIG_EMPRESA.findOne({
+    where: { id_empresa: empresa },
+    attributes: ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass'],
+  });
+
+  if (!configRaw) {
+    throw new Error('La empresa no tiene configuración de correo');
+  }
+
+  const config = configRaw.get({ plain: true });
+
+  const xmlData = await createXml('OT', identify, accion, user);
+
+  const attachments = accion === 'delete' ? [] : archivos?.map((archivo) => ({
+    filename: archivo.filename,
+    content: archivo.buffer,
+    contentType: archivo.mimetype || 'application/octet-stream',
+  }));
+
+  const info = await sendEmail(
+    config,
+    {
+      from: config.smtp_user,
+      to: 'davidpayanalvarado@gmail.com',
+      subject: `OT`,
+      text: xmlData,
+      attachments
+    }
+  );
+  return info
+};
+
+async function createXml(tipo, id, accion, user) {
+  const syncData = {
+    SyncRequest: {
+      '@schema': 'kong.sync.v1',
+      '@entity': tipo,
+      '@action': accion,
+      '@user': user,
+      '@env': 'prod',
+      '@timestamp': new Date().toISOString(),
+      Id: id
+    }
+  };
+
+  return await create({ version: '1.0', encoding: 'UTF-8' })
+    .ele(syncData)
+    .end({ prettyPrint: true });
+}
+
+
 module.exports = {
   enviarEmails,
-  enviarSolicitud
+  enviarSolicitud,
+  enviarAdjuntosOt
 };
