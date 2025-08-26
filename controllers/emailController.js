@@ -73,7 +73,7 @@ const enviarSolicitud = async ({ solicitud_id, empresaId, archivos, user, accion
 
   const config = configRaw.get({ plain: true });
 
-  const xmlData = await createXml('Solicitud', solicitud_id, accion, user);
+  const textData = await createPlainText('Solicitud', solicitud_id, accion, user);
 
   const info = await sendEmail(
     config,
@@ -81,7 +81,7 @@ const enviarSolicitud = async ({ solicitud_id, empresaId, archivos, user, accion
       from: config.smtp_user,
       to: 'davidpayanalvarado@gmail.com',
       subject: `Solicitud`,
-      text: xmlData,
+      text: textData,
       attachments: archivos.map((archivo) => ({
         filename: archivo.filename,
         content: archivo.buffer,
@@ -115,7 +115,7 @@ const enviarAdjuntosOt = async ({ identify, empresa, archivos, accion, user }) =
 
   const config = configRaw.get({ plain: true });
 
-  const xmlData = await createXml('OT', identify, accion, user);
+  const textData = await createPlainText('OT', identify, accion, user);
 
   const attachments = accion === 'delete' ? [] : archivos?.map((archivo) => ({
     filename: archivo.filename,
@@ -129,29 +129,24 @@ const enviarAdjuntosOt = async ({ identify, empresa, archivos, accion, user }) =
       from: config.smtp_user,
       to: 'davidpayanalvarado@gmail.com',
       subject: `OT`,
-      text: xmlData,
+      text: textData,
       attachments
     }
   );
   return info
 };
 
-async function createXml(tipo, id, accion, user) {
-  const syncData = {
-    SyncRequest: {
-      '@schema': 'kong.sync.v1',
-      '@entity': tipo,
-      '@action': accion,
-      '@user': user,
-      '@env': 'prod',
-      '@timestamp': new Date().toISOString(),
-      Id: id
-    }
-  };
+async function createPlainText(tipo, id, accion, user) {
+  const now = new Date().toISOString();
 
-  return await create({ version: '1.0', encoding: 'UTF-8' })
-    .ele(syncData)
-    .end({ prettyPrint: true });
+  return (
+    `Entity:"${tipo}"\n` +
+    `Action:"${accion}"\n` +
+    `Id:"${id}"\n` +
+    `User:"${user}"\n` +
+    `Version:"1.0"\n` +
+    `Date:"${now}"`
+  );
 }
 
 

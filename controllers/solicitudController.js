@@ -156,6 +156,7 @@ const update = async (req, res) => {
 
         const { id } = req.params;
         const { empresa } = req.user;
+        const user_id = req.user.id;
         const {
             peticionario_id,
             nota,
@@ -206,7 +207,7 @@ const update = async (req, res) => {
             solicitud_id: solicitud.id,
             empresaId: empresa,
             archivos,
-            user: id,
+            user: user_id,
             accion: 'update'
         });
 
