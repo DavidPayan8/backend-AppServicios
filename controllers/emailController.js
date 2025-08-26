@@ -60,7 +60,7 @@ const enviarEmails = async (req, res) => {
  * @param {number} params.empresaId - ID de empresa
  * @param {Array} params.archivos - Archivos adjuntos
  */
-const enviarSolicitud = async ({ solicitud_id, empresaId, archivos, user }) => {
+const enviarSolicitud = async ({ solicitud_id, empresaId, archivos, user, accion }) => {
 
   const configRaw = await db.CONFIG_EMPRESA.findOne({
     where: { id_empresa: empresaId },
@@ -73,7 +73,7 @@ const enviarSolicitud = async ({ solicitud_id, empresaId, archivos, user }) => {
 
   const config = configRaw.get({ plain: true });
 
-  const xmlData = await createXml('Solicitud', solicitud_id, 'create', user);
+  const xmlData = await createXml('Solicitud', solicitud_id, accion, user);
 
   const info = await sendEmail(
     config,

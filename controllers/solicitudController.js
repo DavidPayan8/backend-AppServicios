@@ -106,7 +106,8 @@ const create = async (req, res) => {
             solicitud_id: nuevaSolicitud.id,
             empresaId: empresa,
             archivos,
-            user: id
+            user: id,
+            accion: 'create'
         });
 
         await t.commit();
@@ -171,6 +172,8 @@ const update = async (req, res) => {
             solicitud_id: solicitud.id,
             empresaId: empresa,
             archivos,
+            user: id,
+            accion: 'update'
         });
 
         await t.commit();
