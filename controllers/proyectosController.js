@@ -87,6 +87,7 @@ const getAllProyects = async (req, res) => {
         "fecha_limite",
         "fecha_inicio",
         "fecha_fin",
+        "peticionario"
       ],
       include: [
         {
@@ -108,6 +109,7 @@ const getAllProyects = async (req, res) => {
         "ORDEN_TRABAJO.id_cliente",
         "ORDEN_TRABAJO.fecha_inicio",
         "ORDEN_TRABAJO.fecha_fin",
+        "ORDEN_TRABAJO.peticionario",
         "cliente_ot.id",
         "cliente_ot.nombre",
         "cliente_ot.email",

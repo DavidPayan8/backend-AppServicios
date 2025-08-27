@@ -13,16 +13,15 @@ const getAllSolicitudes = async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const offset = (page - 1) * limit;
 
-
-        console.log(req.query)
         // Filtros opcionales
-        const { cliente, fecha } = req.query;
+        const { cliente, fecha, estados } = req.query;
 
         const where = {
             usuario_id: id,
             empresa_id: empresa,
         };
 
+        // Filtrado por fecha
         if (fecha) {
             const fechaInicio = new Date(fecha);
             fechaInicio.setHours(0, 0, 0, 0);
@@ -31,6 +30,26 @@ const getAllSolicitudes = async (req, res) => {
             fechaFin.setHours(23, 59, 59, 999);
 
             where.fecha_solicitud = { [Op.between]: [fechaInicio, fechaFin] };
+        }
+
+        if (estados) {
+            const estadosArray = Array.isArray(estados)
+                ? estados
+                : estados.split(',').map(s => s.trim());
+
+            // Mapear de nombres a números
+            const estadosNumericos = estadosArray.map(e => {
+                switch (e.toLowerCase()) {
+                    case 'pendiente': return 0;
+                    case 'ofertado': return 1;
+                    case 'rechazado': return 2;
+                    default: return null;
+                }
+            }).filter(e => e !== null);
+
+            if (estadosNumericos.length > 0) {
+                where.estado = { [Op.in]: estadosNumericos };
+            }
         }
 
         const include = [

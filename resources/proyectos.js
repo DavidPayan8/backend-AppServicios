@@ -5,7 +5,7 @@ function formatOrdenTrabajo(data) {
         nombre_empresa: data.cliente_ot?.nombre_empresa || null,
         email: data.cliente_ot?.email || null,
         direccion: data.cliente_ot?.direccion || null,
-        peticionarios: [],
+        peticionario: data.peticionario || "",
     };
 
     return {
