@@ -1,3 +1,5 @@
+
+
 function formatOrdenTrabajo(data) {
     const cliente = {
         id: data.cliente_ot?.id || 0,
@@ -15,6 +17,7 @@ function formatOrdenTrabajo(data) {
         observaciones: data.observaciones,
         estado: data.estado,
         direccion: data.direccion,
+        transporte: data.transporte,
         horas_concedidas: data.horas_concedidas,
         fecha_limite: data.fecha_limite,
         fecha_inicio: data.fecha_inicio,

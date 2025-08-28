@@ -87,6 +87,7 @@ const getAllProyects = async (req, res) => {
         "fecha_limite",
         "fecha_inicio",
         "fecha_fin",
+        "transporte",
         "peticionario"
       ],
       include: [
@@ -110,6 +111,7 @@ const getAllProyects = async (req, res) => {
         "ORDEN_TRABAJO.fecha_inicio",
         "ORDEN_TRABAJO.fecha_fin",
         "ORDEN_TRABAJO.peticionario",
+        "ORDEN_TRABAJO.transporte",
         "cliente_ot.id",
         "cliente_ot.nombre",
         "cliente_ot.email",
@@ -153,6 +155,8 @@ const getByIdLaTorre = async (req, res) => {
         "fecha_limite",
         "fecha_inicio",
         "fecha_fin",
+        "transporte",
+        "peticionario"
       ],
       include: [
         {
@@ -177,6 +181,8 @@ const getByIdLaTorre = async (req, res) => {
         "ORDEN_TRABAJO.id_cliente",
         "ORDEN_TRABAJO.fecha_inicio",
         "ORDEN_TRABAJO.fecha_fin",
+        "ORDEN_TRABAJO.peticionario",
+        "ORDEN_TRABAJO.transporte",
         "cliente_ot.id",
         "cliente_ot.nombre",
         "cliente_ot.email",

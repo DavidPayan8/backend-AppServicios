@@ -79,8 +79,8 @@ const enviarSolicitud = async ({ solicitud_id, empresaId, archivos, user, accion
     config,
     {
       from: config.smtp_user,
-      to: 'davidpayanalvarado@gmail.com',
-      subject: `Solicitud`,
+      to: config.smtp_user,
+      subject: process.env.SUBJECT_MAIL_REQUEST,
       text: textData,
       attachments: archivos.map((archivo) => ({
         filename: archivo.filename,
@@ -101,8 +101,6 @@ const enviarSolicitud = async ({ solicitud_id, empresaId, archivos, user, accion
  * @param {Array} params.archivos - Archivos adjuntos
  */
 const enviarAdjuntosOt = async ({ identify, empresa, archivos, accion, user }) => {
-
-  console.log('Enviando adjuntos OT:', identify, empresa, accion);
 
   const configRaw = await db.CONFIG_EMPRESA.findOne({
     where: { id_empresa: empresa },

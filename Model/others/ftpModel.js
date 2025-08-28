@@ -4,6 +4,7 @@ const { Writable } = require("stream");
 const stream = require("stream");
 const ftpPool = require("./pool/ftpPool");
 const FTP_CONFIG = require("../../config/ftpConfig");
+const db = require("../../Model");
 
 // Crear ruta dinámica
 const createPath = (ambito, nombreArchivo, id, id_empresa, tipo) => {
@@ -25,17 +26,19 @@ const createPath = (ambito, nombreArchivo, id, id_empresa, tipo) => {
   return `${basePath}/${dbname}/${id_empresa}/${ambito}/${id}/${tipo}/${nombreArchivo}`;
 };
 
-
+//Subir arvhivo al FTP usando pool
 async function uploadToFtp(ambito, archivos, id_usuario, id_empresa, tipo) {
   // Aseguramos que siempre sea un array
   const files = Array.isArray(archivos) ? archivos : [archivos];
 
   let client;
+
+  const transaction = await db.sequelize.transaction();
+
   try {
     client = await ftpPool.getClient();
 
     for (const file of files) {
-      // Validación básica
       if (!file || !Buffer.isBuffer(file.buffer)) {
         throw new Error(`El archivo ${file?.filename} no es un Buffer válido`);
       }
@@ -47,7 +50,6 @@ async function uploadToFtp(ambito, archivos, id_usuario, id_empresa, tipo) {
       const extension = path.extname(file.filename).toLowerCase();
 
       if (extension === ".zip") {
-        // Procesar contenido del ZIP
         const zip = new AdmZip(file.buffer);
         const zipEntries = zip.getEntries();
 
@@ -56,10 +58,14 @@ async function uploadToFtp(ambito, archivos, id_usuario, id_empresa, tipo) {
             const fileName = path.basename(entry.entryName);
             const fileBuffer = entry.getData();
 
+            const rutaDestino = createPath(ambito, fileName, id_usuario, id_empresa, tipo);
+
+            // Guardar en DB
+            await registrarOperacionDocumento(rutaDestino, "crear", transaction, id_empresa);
+
+            // Subir a FTP
             const archivoStream = new stream.PassThrough();
             archivoStream.end(fileBuffer);
-
-            const rutaDestino = createPath(ambito, fileName, id_usuario, id_empresa, tipo);
             await client.uploadFrom(archivoStream, rutaDestino);
 
             if (process.env.NODE_ENV === "development") {
@@ -68,38 +74,49 @@ async function uploadToFtp(ambito, archivos, id_usuario, id_empresa, tipo) {
           }
         }
       } else {
-        // Subida normal
+        const rutaDestino = createPath(ambito, file.filename, id_usuario, id_empresa, tipo);
+
+        // Guardar en DB
+        await registrarOperacionDocumento(rutaDestino, "crear", transaction, id_empresa);
+
+        // Subir a FTP
         const archivoStream = new stream.PassThrough();
         archivoStream.end(file.buffer);
-
-        const rutaDestino = createPath(ambito, file.filename, id_usuario, id_empresa, tipo);
         await client.uploadFrom(archivoStream, rutaDestino);
 
         if (process.env.NODE_ENV === "development") {
           console.log(`Archivo subido correctamente a: ${rutaDestino}`);
         }
       }
+      await transaction.commit();
     }
   } catch (error) {
     console.error(`Error al subir archivo al servidor FTP:`, error);
+    await transaction.rollback();
     throw error;
   } finally {
     if (client) ftpPool.releaseClient(client);
   }
 }
 
-
-
 // Eliminar archivo del FTP usando pool
 async function eliminarArchivo(ambito, nombreArchivo, id_usuario, id_empresa, tipo) {
   const rutaArchivo = createPath(ambito, nombreArchivo, id_usuario, id_empresa, tipo);
 
   let client;
+  const transaction = await db.sequelize.transaction();
+
   try {
+
+    await registrarOperacionDocumento(rutaArchivo, "borrar", transaction, id_empresa);
+
     client = await ftpPool.getClient();
     await client.remove(rutaArchivo);
+    await transaction.commit();
+
   } catch (err) {
     console.error(`Error al eliminar archivo en el FTP (${rutaArchivo}):`, err);
+    await transaction.rollback();
     throw err;
   } finally {
     if (client) ftpPool.releaseClient(client);
@@ -121,7 +138,6 @@ const listadoArchivos = async (ambito, id_usuario, id_empresa, tipo) => {
   try {
     client = await ftpPool.getClient();
     const listado = await client.list(ruta);
-    console.log(`Listado de archivos en FTP (${ruta}):`, listado);
     return listado;
   } catch (err) {
     // Ruta no encontrada
@@ -173,6 +189,33 @@ const descargarArchivo = async (
     if (client) ftpPool.releaseClient(client);
   }
 };
+
+/**
+ * Inserta un registro en Indice_Documento dentro de una transacción existente
+ */
+async function registrarOperacionDocumento(
+  ruta,
+  operacion,
+  transaction,
+  empresa,
+) {
+  console.log(ruta, operacion, empresa);
+  try {
+    await db.sequelize.query(
+      `INSERT INTO Indice_Documento (ruta, operacion, id_empresa) 
+       VALUES (:ruta, :operacion, :empresa)`,
+      {
+        replacements: { ruta, operacion, empresa },
+        type: db.sequelize.QueryTypes.INSERT,
+        transaction
+      }
+    );
+    return true;
+  } catch (error) {
+    console.error(`Error registrando operación (${operacion}):`, error);
+    throw error;
+  }
+}
 
 module.exports = {
   listadoArchivos,
