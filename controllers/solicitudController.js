@@ -116,7 +116,6 @@ const create = async (req, res) => {
     try {
         const { empresa, id } = req.user;
         const {
-            fecha_solicitud,
             cliente_id,
             peticionario_id,
             nota,
@@ -129,7 +128,6 @@ const create = async (req, res) => {
         const nuevaSolicitud = await db.SOLICITUD.create({
             usuario_id: id,
             cliente_id,
-            fecha_solicitud,
             empresa_id: empresa,
             peticionario_id,
             nota,

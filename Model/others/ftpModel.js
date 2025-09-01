@@ -61,7 +61,7 @@ async function uploadToFtp(ambito, archivos, id_usuario, id_empresa, tipo) {
             const rutaDestino = createPath(ambito, fileName, id_usuario, id_empresa, tipo);
 
             // Guardar en DB
-            await registrarOperacionDocumento(rutaDestino, "crear", transaction, id_empresa);
+            await registrarOperacionDocumento(rutaDestino, "crear", transaction, id_empresa, id_usuario, tipo);
 
             // Subir a FTP
             const archivoStream = new stream.PassThrough();
@@ -77,7 +77,7 @@ async function uploadToFtp(ambito, archivos, id_usuario, id_empresa, tipo) {
         const rutaDestino = createPath(ambito, file.filename, id_usuario, id_empresa, tipo);
 
         // Guardar en DB
-        await registrarOperacionDocumento(rutaDestino, "crear", transaction, id_empresa);
+        await registrarOperacionDocumento(rutaDestino, "crear", transaction, id_empresa, id_usuario, tipo);
 
         // Subir a FTP
         const archivoStream = new stream.PassThrough();
@@ -108,7 +108,7 @@ async function eliminarArchivo(ambito, nombreArchivo, id_usuario, id_empresa, ti
 
   try {
 
-    await registrarOperacionDocumento(rutaArchivo, "borrar", transaction, id_empresa);
+    await registrarOperacionDocumento(rutaArchivo, "borrar", transaction, id_empresa, id_usuario, tipo);
 
     client = await ftpPool.getClient();
     await client.remove(rutaArchivo);
@@ -125,12 +125,6 @@ async function eliminarArchivo(ambito, nombreArchivo, id_usuario, id_empresa, ti
 
 // Listar archivos en FTP usando pool
 const listadoArchivos = async (ambito, id_usuario, id_empresa, tipo) => {
-  console.log("DEBUG >> listadoArchivos llamado con:", {
-    ambito,
-    id_usuario,
-    id_empresa,
-    tipo,
-  });
 
   const ruta = createPath(ambito, "", id_usuario, id_empresa, tipo);
 
@@ -198,14 +192,25 @@ async function registrarOperacionDocumento(
   operacion,
   transaction,
   empresa,
+  user_id,
+  ambito
 ) {
-  console.log(ruta, operacion, empresa);
   try {
     await db.sequelize.query(
-      `INSERT INTO Indice_Documento (ruta, operacion, id_empresa) 
-       VALUES (:ruta, :operacion, :empresa)`,
+      `MERGE Indice_Documento AS target
+       USING (SELECT :ruta AS ruta, :empresa AS id_empresa) AS source
+       ON target.ruta = source.ruta AND target.id_empresa = source.id_empresa
+       WHEN MATCHED THEN
+         UPDATE SET operacion = :operacion,
+                    user_id = :user_id,
+                    tipo = :ambito,
+                    sincronizado = 0,
+                    fecha_modificacion = GETDATE()
+       WHEN NOT MATCHED THEN
+         INSERT (ruta, operacion, id_empresa, user_id, tipo, sincronizado, fecha_modificacion)
+         VALUES (:ruta, :operacion, :empresa, :user_id, :ambito, 0, GETDATE());`,
       {
-        replacements: { ruta, operacion, empresa },
+        replacements: { ruta, operacion, empresa, user_id, ambito },
         type: db.sequelize.QueryTypes.INSERT,
         transaction
       }

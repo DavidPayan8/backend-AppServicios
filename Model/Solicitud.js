@@ -1,4 +1,5 @@
 const Sequelize = require("sequelize");
+const { now } = require("sequelize/lib/utils");
 
 module.exports = function (sequelize, DataTypes) {
     const SOLICITUD = sequelize.define(
@@ -24,6 +25,7 @@ module.exports = function (sequelize, DataTypes) {
             },
             fecha_solicitud: {
                 type: DataTypes.DATE,
+                defaultValue: sequelize.literal("GETDATE()"),
                 allowNull: false,
             },
             cliente_id: {
