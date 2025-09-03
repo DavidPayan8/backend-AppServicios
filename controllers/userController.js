@@ -52,6 +52,7 @@ const actualizarPerfilHandler = async (req, res) => {
 
     // Validación de DNI/NIE
     if (!identidad.esDniValido(dni) && !identidad.esNieValido(dni)) {
+      console.log("No es valido");
       return res.status(400).json({ message: "DNI no válido" });
     }
 
@@ -70,13 +71,13 @@ const actualizarPerfilHandler = async (req, res) => {
     });
 
     if (dniExistente) {
-      return res.status(409).json({ message: "DNI ya está en uso" });
+      return res.status(409).json({ message: "DNI en uso" });
     }
 
     // Actualizar
     const updateData = {
       nomapes: nombreApellidos,
-      dni,
+      DNI: dni,
       num_seguridad_social: seguridadSocial,
       email,
       telefono,
@@ -88,6 +89,7 @@ const actualizarPerfilHandler = async (req, res) => {
 
     await db.USUARIOS.update(updateData, {
       where: { id: req.user.id },
+      logging: console.log,
     });
 
     res.status(200).json({ message: "Actualizado correctamente" });

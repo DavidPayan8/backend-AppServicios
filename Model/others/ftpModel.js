@@ -4,69 +4,95 @@ const { Writable } = require("stream");
 const stream = require("stream");
 const ftpPool = require("./pool/ftpPool");
 const FTP_CONFIG = require("../../config/ftpConfig");
+const db = require("../../Model");
 
 // Crear ruta dinámica
-const createPath = (nombreArchivo, id_usuario, id_empresa, tipo) => {
+const createPath = (ambito, nombreArchivo, id, id_empresa, tipo) => {
   const dbname = process.env.DB_NAME;
   const basePath = FTP_CONFIG.BASE_PATH;
 
-  if (!nombreArchivo) {
-    return `${basePath}/${dbname}/${id_empresa}/Personal/${id_usuario}/${tipo}`;
+  if (ambito === 'Empresa') {
+    if (!nombreArchivo) {
+      return `${basePath}/${dbname}/${id_empresa}/${ambito}/${tipo}/${id}`;
+    }
+    return `${basePath}/${dbname}/${id_empresa}/${ambito}/${tipo}/${id}/${nombreArchivo}`;
   }
 
-  return `${basePath}/${dbname}/${id_empresa}/Personal/${id_usuario}/${tipo}/${nombreArchivo}`;
+  // Ruta estándar para otros ambitos
+  if (!nombreArchivo) {
+    return `${basePath}/${dbname}/${id_empresa}/${ambito}/${id}/${tipo}`;
+  }
+
+  return `${basePath}/${dbname}/${id_empresa}/${ambito}/${id}/${tipo}/${nombreArchivo}`;
 };
 
-async function uploadToFtp(nombreArchivoZip, archivo, id_usuario, id_empresa, tipo) {
-  const rutaComprobar = createPath("", id_usuario, id_empresa, tipo);
+//Subir arvhivo al FTP usando pool
+async function uploadToFtp(ambito, archivos, id_usuario, id_empresa, tipo) {
+  // Aseguramos que siempre sea un array
+  const files = Array.isArray(archivos) ? archivos : [archivos];
 
   let client;
-  try {
-    if (!(archivo.buffer instanceof Buffer)) {
-      throw new Error("El archivo no es un Buffer válido");
-    }
 
+  const transaction = await db.sequelize.transaction();
+
+  try {
     client = await ftpPool.getClient();
 
-    await client.ensureDir(rutaComprobar);
+    for (const file of files) {
+      if (!file || !Buffer.isBuffer(file.buffer)) {
+        throw new Error(`El archivo ${file?.filename} no es un Buffer válido`);
+      }
 
-    const extension = path.extname(nombreArchivoZip).toLowerCase();
+      // Creamos la carpeta si no existe
+      const rutaComprobar = createPath(ambito, "", id_usuario, id_empresa, tipo);
+      await client.ensureDir(rutaComprobar);
 
-    if (extension === '.zip') {
-      const zip = new AdmZip(archivo.buffer);
-      const zipEntries = zip.getEntries();
+      const extension = path.extname(file.filename).toLowerCase();
 
-      for (const entry of zipEntries) {
-        if (!entry.isDirectory) {
-          const fileName = path.basename(entry.entryName); // nombre del archivo plano
-          const fileBuffer = entry.getData();
+      if (extension === ".zip") {
+        const zip = new AdmZip(file.buffer);
+        const zipEntries = zip.getEntries();
 
-          const archivoStream = new stream.PassThrough();
-          archivoStream.end(fileBuffer);
+        for (const entry of zipEntries) {
+          if (!entry.isDirectory) {
+            const fileName = path.basename(entry.entryName);
+            const fileBuffer = entry.getData();
 
-          const rutaDestino = createPath(fileName, id_usuario, id_empresa, tipo);
+            const rutaDestino = createPath(ambito, fileName, id_usuario, id_empresa, tipo);
 
-          await client.uploadFrom(archivoStream, rutaDestino);
+            // Guardar en DB
+            await registrarOperacionDocumento(rutaDestino, "crear", transaction, id_empresa, id_usuario, tipo);
 
-          if (process.env.NODE_ENV === "development") {
-            console.log(`Archivo del ZIP subido a: ${rutaDestino}`);
+            // Subir a FTP
+            const archivoStream = new stream.PassThrough();
+            archivoStream.end(fileBuffer);
+            await client.uploadFrom(archivoStream, rutaDestino);
+
+            if (process.env.NODE_ENV === "development") {
+              console.log(`Archivo del ZIP subido a: ${rutaDestino}`);
+            }
           }
         }
-      }
-    } else {
-      // No es zip, sube el archivo normal
-      const archivoStream = new stream.PassThrough();
-      archivoStream.end(archivo.buffer);
+      } else {
+        const rutaDestino = createPath(ambito, file.filename, id_usuario, id_empresa, tipo);
 
-      const rutaDestino = createPath(nombreArchivoZip, id_usuario, id_empresa, tipo);
-      await client.uploadFrom(archivoStream, rutaDestino);
+        // Guardar en DB
+        await registrarOperacionDocumento(rutaDestino, "crear", transaction, id_empresa, id_usuario, tipo);
 
-      if (process.env.NODE_ENV === "development") {
-        console.log(`Archivo subido correctamente a: ${rutaDestino}`);
+        // Subir a FTP
+        const archivoStream = new stream.PassThrough();
+        archivoStream.end(file.buffer);
+        await client.uploadFrom(archivoStream, rutaDestino);
+
+        if (process.env.NODE_ENV === "development") {
+          console.log(`Archivo subido correctamente a: ${rutaDestino}`);
+        }
       }
+      await transaction.commit();
     }
   } catch (error) {
     console.error(`Error al subir archivo al servidor FTP:`, error);
+    await transaction.rollback();
     throw error;
   } finally {
     if (client) ftpPool.releaseClient(client);
@@ -74,15 +100,23 @@ async function uploadToFtp(nombreArchivoZip, archivo, id_usuario, id_empresa, ti
 }
 
 // Eliminar archivo del FTP usando pool
-async function eliminarArchivo(nombreArchivo, id_usuario, id_empresa, tipo) {
-  const rutaArchivo = createPath(nombreArchivo, id_usuario, id_empresa, tipo);
+async function eliminarArchivo(ambito, nombreArchivo, id_usuario, id_empresa, tipo) {
+  const rutaArchivo = createPath(ambito, nombreArchivo, id_usuario, id_empresa, tipo);
 
   let client;
+  const transaction = await db.sequelize.transaction();
+
   try {
+
+    await registrarOperacionDocumento(rutaArchivo, "borrar", transaction, id_empresa, id_usuario, tipo);
+
     client = await ftpPool.getClient();
     await client.remove(rutaArchivo);
+    await transaction.commit();
+
   } catch (err) {
     console.error(`Error al eliminar archivo en el FTP (${rutaArchivo}):`, err);
+    await transaction.rollback();
     throw err;
   } finally {
     if (client) ftpPool.releaseClient(client);
@@ -90,8 +124,9 @@ async function eliminarArchivo(nombreArchivo, id_usuario, id_empresa, tipo) {
 }
 
 // Listar archivos en FTP usando pool
-const listadoArchivos = async (id_usuario, id_empresa, tipo) => {
-  const ruta = createPath("", id_usuario, id_empresa, tipo);
+const listadoArchivos = async (ambito, id_usuario, id_empresa, tipo) => {
+
+  const ruta = createPath(ambito, "", id_usuario, id_empresa, tipo);
 
   let client;
   try {
@@ -112,12 +147,13 @@ const listadoArchivos = async (id_usuario, id_empresa, tipo) => {
 
 // Descargar archivo del FTP usando pool
 const descargarArchivo = async (
+  ambito,
   nombreArchivo,
   id_usuario,
   id_empresa,
   tipo
 ) => {
-  const ruta = createPath(nombreArchivo, id_usuario, id_empresa, tipo);
+  const ruta = createPath(ambito, nombreArchivo, id_usuario, id_empresa, tipo);
 
   let client;
   try {
@@ -147,6 +183,44 @@ const descargarArchivo = async (
     if (client) ftpPool.releaseClient(client);
   }
 };
+
+/**
+ * Inserta un registro en Indice_Documento dentro de una transacción existente
+ */
+async function registrarOperacionDocumento(
+  ruta,
+  operacion,
+  transaction,
+  empresa,
+  user_id,
+  ambito
+) {
+  try {
+    await db.sequelize.query(
+      `MERGE Indice_Documento AS target
+       USING (SELECT :ruta AS ruta, :empresa AS id_empresa) AS source
+       ON target.ruta = source.ruta AND target.id_empresa = source.id_empresa
+       WHEN MATCHED THEN
+         UPDATE SET operacion = :operacion,
+                    user_id = :user_id,
+                    tipo = :ambito,
+                    sincronizado = 0,
+                    fecha_modificacion = GETDATE()
+       WHEN NOT MATCHED THEN
+         INSERT (ruta, operacion, id_empresa, user_id, tipo, sincronizado, fecha_modificacion)
+         VALUES (:ruta, :operacion, :empresa, :user_id, :ambito, 0, GETDATE());`,
+      {
+        replacements: { ruta, operacion, empresa, user_id, ambito },
+        type: db.sequelize.QueryTypes.INSERT,
+        transaction
+      }
+    );
+    return true;
+  } catch (error) {
+    console.error(`Error registrando operación (${operacion}):`, error);
+    throw error;
+  }
+}
 
 module.exports = {
   listadoArchivos,

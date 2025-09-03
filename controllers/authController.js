@@ -36,7 +36,7 @@ const login = async (req, res) => {
         categoria_laboral: user.categoriaLaboral.nombre,
       },
       JWT_SECRET,
-      { expiresIn: "1h" }
+      { expiresIn: "8h" }
     );
 
     return res.status(200).json({ token, user });

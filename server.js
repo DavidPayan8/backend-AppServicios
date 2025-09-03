@@ -9,6 +9,8 @@ const asistenciaRoutes = require("./routes/asistenciaRoutes");
 const proyectosRoutes = require("./routes/proyectosRoutes");
 const parteRoutes = require("./routes/parteRoutes");
 const notificacionesRoutes = require("./routes/notificacionesRoutes");
+const anotacionesRoutes = require("./routes/anotacionesRoutes");
+const solicitudRoutes = require("./routes/solicitudRoutes");
 const articulosRoutes = require("./routes/articulosRoutes");
 const albaranRoutes = require("./routes/albaranRoutes");
 const emailRoutes = require("./routes/emailRoutes");
@@ -53,6 +55,8 @@ app.use("/api/email", emailRoutes);
 app.use("/api/clientes", clientesRoutes);
 app.use("/api/partes", parteRoutes);
 app.use("/api/notificaciones", notificacionesRoutes);
+app.use("/api/anotaciones", anotacionesRoutes);
+app.use("/api/solicitud", solicitudRoutes)
 app.use("/api/configuraciones", configuracionesRoutes);
 app.use("/api/estadisticas", estadisticasRoutes);
 app.use("/api/vacaciones", vacacionesRoutes);
@@ -69,10 +73,10 @@ app.get("/protected", authenticateToken, (req, res) => {
 
 // Ruta para verificar que el servidor funciona
 app.get("/", (req, res) => {
-  res.json({ message: "Localhost funciona" });
+  res.json({ message: "Levantado" });
 });
 
 // Iniciar el servidor
 app.listen(port, () => {
-  console.log(`Servidor Node.js corriendo en http://localhost:${port}`);
+  console.log(`Servidor Node.js corriendo en puerto ${port}`);
 });

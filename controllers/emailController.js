@@ -1,47 +1,12 @@
-const nodemailer = require("nodemailer");
 const db = require("../Model");
+const { create } = require('xmlbuilder2');
+const { sendEmail } = require("../utils/sendMail");
 
-/**
- * Función común para enviar correos electrónicos
- * @param {import("nodemailer").Transporter} transporter - Transportador con el cual enviar el correo
- * @param {string} from - Dirección de correo del remitente
- * @param {string} to - Dirección de correo del destinatario
- * @param {string} subject - Asunto del correo
- * @param {string} text - Cuerpo del correo
- * @param {Buffer} pdfBuffer - El archivo PDF en formato Buffer
- */
-const enviarEmail = async (transporter, from, to, subject, text, pdfBuffer) => {
-  const mailOptions = {
-    from: from,
-    to: to,
-    subject: subject,
-    text: text,
-    attachments: [
-      {
-        filename: "albaranFirmado.pdf",
-        content: pdfBuffer,
-      },
-    ],
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    return info;
-  } catch (error) {
-    console.error("Error enviando correo:", error);
-    throw new Error("Error enviando el correo");
-  }
-};
-
-/**
- * Función para enviar el correo al cliente y luego al admin
- */
 const enviarEmails = async (req, res) => {
-  const { cliente, email, pdf } = req.body;
+  const { cliente, email, pdf, htmlContent } = req.body;
   const { empresa } = req.user;
 
   try {
-    // Obtener datos de transporte para la empresa
     const config = await db.CONFIG_EMPRESA.findOne({
       where: { id_empresa: empresa },
       attributes: ["smtp_host", "smtp_port", "smtp_user", "smtp_pass"],
@@ -53,71 +18,138 @@ const enviarEmails = async (req, res) => {
       });
     }
 
-    const transporter = getTransporter(config);
-
     const from = config.smtp_user;
-    const administracion = config.smtp_user;
+    const admin = config.smtp_user;
+    const subject = `Albarán firmado - ${cliente ?? "Cliente desconocido"}`;
 
-    // Convertir el PDF de base64 a Buffer
-    const pdfBuffer = Buffer.from(pdf, "base64");
+    const attachments = [{
+      filename: "albaranFirmado.pdf",
+      content: Buffer.from(pdf, "base64"),
+    }];
 
-    // Enviar email al cliente
-    await enviarEmail(
-      transporter,
+    // Enviar a cliente
+    await sendEmail(config, {
       from,
-      email,
-      "Albarán Firmado PDF - " + cliente ?? 'No disponible',
-      "Adjunto una copia del albarán firmado.",
-      pdfBuffer
-    );
+      to: email,
+      subject,
+      html: htmlContent || "<p>Adjunto albarán firmado</p>",
+      attachments,
+    });
 
-    // Enviar email a la administración
-    await enviarEmail(
-      transporter,
+    // Enviar a administración
+    await sendEmail(config, {
       from,
-      administracion,
-      "Albarán Firmado PDF - " + cliente ?? 'No disponible',
-      "Adjunto una copia del albarán firmado.",
-      pdfBuffer
-    );
+      to: admin,
+      subject,
+      html: htmlContent || '<p>Adjunto albarán firmado</p>',
+      attachments,
+    });
 
-    res
-      .status(200)
-      .send({ message: "Mail enviado correctamente a cliente y admin" });
+    res.status(200).json({ message: "Email enviado correctamente" });
+
   } catch (error) {
-    res
-      .status(500)
-      .send({ message: "Error enviando mail", error: error.message });
+    console.error(error);
+    res.status(500).json({ message: "Error enviando mail", error: error.message });
   }
 };
 
-const getTransporter = (data) => {
-  const options = {
-    host: data.smtp_host,
-    port: data.smtp_port,
-    auth: {
-      user: data.smtp_user,
-      pass: data.smtp_pass,
-    },
-  };
+/**
+ * Envía un correo con la solicitud y archivos
+ * @param {Object} params
+ * @param {Object} params.solicitud - Instancia de SOLICITUD creada
+ * @param {number} params.empresaId - ID de empresa
+ * @param {Array} params.archivos - Archivos adjuntos
+ */
+const enviarSolicitud = async ({ solicitud_id, empresaId, archivos, user, accion }) => {
 
-  if (options.port == 465) {
-    // Utilizar SSL (deprecated)
-    options.secure = true;
-    options.requireTLS = false;
-  } else {
-    // Utilizar TLS
-    options.secure = false;
-    options.requireTLS = true;
-    options.tls = {
-      requireTLS: false,
-      rejectUnauthorized: false,
-    };
+  const configRaw = await db.CONFIG_EMPRESA.findOne({
+    where: { id_empresa: empresaId },
+    attributes: ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass'],
+  });
+
+  if (!configRaw) {
+    throw new Error('La empresa no tiene configuración de correo');
   }
 
-  return nodemailer.createTransport(options);
+  const config = configRaw.get({ plain: true });
+
+  const textData = await createPlainText('Solicitud', solicitud_id, accion, user);
+
+  const info = await sendEmail(
+    config,
+    {
+      from: config.smtp_user,
+      to: config.smtp_user,
+      subject: process.env.SUBJECT_MAIL_REQUEST,
+      text: textData,
+      attachments: archivos.map((archivo) => ({
+        filename: archivo.filename,
+        content: archivo.buffer,
+        contentType: archivo.mimetype || 'application/octet-stream',
+      }))
+    }
+  );
+  return info
 };
+
+
+/**
+ * Envía un correo con los adjuntos de la OT
+ * @param {Object} params
+ * @param {number} params.ot_id - ID de orden trabajo creada
+ * @param {number} params.empresaId - ID de empresa
+ * @param {Array} params.archivos - Archivos adjuntos
+ */
+const enviarAdjuntosOt = async ({ identify, empresa, archivos, accion, user }) => {
+
+  const configRaw = await db.CONFIG_EMPRESA.findOne({
+    where: { id_empresa: empresa },
+    attributes: ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass'],
+  });
+
+  if (!configRaw) {
+    throw new Error('La empresa no tiene configuración de correo');
+  }
+
+  const config = configRaw.get({ plain: true });
+
+  const textData = await createPlainText('OT', identify, accion, user);
+
+  const attachments = accion === 'delete' ? [] : archivos?.map((archivo) => ({
+    filename: archivo.filename,
+    content: archivo.buffer,
+    contentType: archivo.mimetype || 'application/octet-stream',
+  }));
+
+  const info = await sendEmail(
+    config,
+    {
+      from: config.smtp_user,
+      to: 'davidpayanalvarado@gmail.com',
+      subject: `OT`,
+      text: textData,
+      attachments
+    }
+  );
+  return info
+};
+
+async function createPlainText(tipo, id, accion, user) {
+  const now = new Date().toISOString();
+
+  return (
+    `Entity:"${tipo}"\n` +
+    `Action:"${accion}"\n` +
+    `Id:"${id}"\n` +
+    `User:"${user}"\n` +
+    `Version:"1.0"\n` +
+    `Date:"${now}"`
+  );
+}
+
 
 module.exports = {
   enviarEmails,
+  enviarSolicitud,
+  enviarAdjuntosOt
 };
