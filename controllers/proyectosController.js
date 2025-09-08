@@ -50,7 +50,7 @@ const getActividades = async (req, res) => {
 
 const getAllProyects = async (req, res) => {
   try {
-    const { empresa } = req.user;
+    const { empresa, id } = req.user;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
@@ -97,6 +97,26 @@ const getAllProyects = async (req, res) => {
           as: "cliente_ot",
           attributes: ["id", "nombre", "email", "nombre_empresa", "direccion"],
         },
+        {
+          model: db.PARTES_TRABAJO,
+          as: "partes_trabajo",
+          attributes: ["hora_entrada"],
+          where: {
+            fecha: db.sequelize.where(
+              db.sequelize.fn(
+                "CONVERT",
+                db.sequelize.literal("date"),
+                db.sequelize.col("partes_trabajo.fecha")
+              ),
+              "=",
+              db.sequelize.fn("CONVERT", db.sequelize.literal("date"), db.sequelize.fn("GETDATE"))
+            ),
+          },
+          required: false,
+          separate: true,
+          limit: 1,
+          order: [["hora_entrada", "ASC"]],
+        },
       ],
       where,
       group: [
@@ -124,15 +144,40 @@ const getAllProyects = async (req, res) => {
       subQuery: false,
     });
 
+
     const count = await db.ORDEN_TRABAJO.count({
       where,
       distinct: true, // evita duplicados por joins
       col: "ORDEN_TRABAJO.id",
     });
 
+    const { totalHorasHoy } = await db.PARTES_TRABAJO.findAll({
+      attributes: [
+        [
+          db.sequelize.fn(
+            "SUM",
+            db.sequelize.literal("DATEDIFF(SECOND, hora_entrada, hora_salida) / 3600.0")
+          ),
+          "totalHorasHoy",
+        ],
+      ],
+      where: {
+        id_usuario: id,
+        hora_entrada: { [Op.ne]: null },
+        hora_salida: { [Op.ne]: null },
+        fecha: db.sequelize.where(
+          db.sequelize.fn("CONVERT", db.sequelize.literal("date"), db.sequelize.fn("GETDATE")),
+          "=",
+          db.sequelize.fn("CONVERT", db.sequelize.literal("date"), db.sequelize.col("fecha"))
+        ),
+      },
+      raw: true,
+      plain: true,
+    });
+
     const data = mapformatOrdenesTrabajo(rows);
 
-    res.status(200).json(paginatedResponse(data, count, page, limit));
+    res.status(200).json(paginatedResponse(data, count, page, limit, totalHorasHoy));
   } catch (error) {
     console.error("Error al obtener órdenes de trabajo:", error);
     res.status(500).json({ message: "Error al obtener órdenes de trabajo" });
