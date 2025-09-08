@@ -64,6 +64,7 @@ const getAllProyects = async (req, res) => {
       id_empresa: empresa,
       activo: true,
       es_ote: false,
+      estado: 'en curso'
     };
 
     // Aplicar filtro si viene

@@ -1,5 +1,4 @@
 const db = require("../Model");
-const { create } = require('xmlbuilder2');
 const { sendEmail } = require("../utils/sendMail");
 
 const enviarEmails = async (req, res) => {

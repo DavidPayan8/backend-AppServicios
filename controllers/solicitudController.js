@@ -14,30 +14,43 @@ const getAllSolicitudes = async (req, res) => {
         const offset = (page - 1) * limit;
 
         // Filtros opcionales
-        const { cliente, fecha, estados } = req.query;
+        const { cliente, fechaDesde, fechaHasta, estados } = req.query;
 
         const where = {
             usuario_id: id,
             empresa_id: empresa,
         };
 
-        // Filtrado por fecha
-        if (fecha) {
-            const fechaInicio = new Date(fecha);
-            fechaInicio.setHours(0, 0, 0, 0);
+        // 🔹 Filtrado por rango de fechas
+        if (fechaDesde || fechaHasta) {
+            let fechaInicio;
+            let fechaFin;
 
-            const fechaFin = new Date(fecha);
-            fechaFin.setHours(23, 59, 59, 999);
+            if (fechaDesde) {
+                fechaInicio = new Date(fechaDesde);
+                fechaInicio.setHours(0, 0, 0, 0);
+            }
 
-            where.fecha_solicitud = { [Op.between]: [fechaInicio, fechaFin] };
+            if (fechaHasta) {
+                fechaFin = new Date(fechaHasta);
+                fechaFin.setHours(23, 59, 59, 999);
+            }
+
+            if (fechaInicio && fechaFin) {
+                where.fecha_solicitud = { [Op.between]: [fechaInicio, fechaFin] };
+            } else if (fechaInicio) {
+                where.fecha_solicitud = { [Op.gte]: fechaInicio };
+            } else if (fechaFin) {
+                where.fecha_solicitud = { [Op.lte]: fechaFin };
+            }
         }
 
+        // 🔹 Filtrado por estados
         if (estados) {
             const estadosArray = Array.isArray(estados)
                 ? estados
-                : estados.split(',').map(s => s.trim());
+                : (estados).split(',').map(s => s.trim());
 
-            // Mapear de nombres a números
             const estadosNumericos = estadosArray.map(e => {
                 switch (e.toLowerCase()) {
                     case 'pendiente': return 0;
