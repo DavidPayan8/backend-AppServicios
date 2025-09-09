@@ -76,6 +76,7 @@ const getAllProyects = async (req, res) => {
       }
     }
 
+
     const rows = await db.ORDEN_TRABAJO.findAll({
       attributes: [
         "id",
@@ -89,7 +90,25 @@ const getAllProyects = async (req, res) => {
         "fecha_inicio",
         "fecha_fin",
         "transporte",
-        "peticionario"
+        "peticionario",
+        // Suma de horas de hoy
+        [
+          db.sequelize.literal(
+            "COALESCE(SUM(DATEDIFF(SECOND, [partes_trabajo].[hora_entrada], [partes_trabajo].[hora_salida])), 0) / 3600.0"
+          ),
+          "sumHorasHoy"
+        ],
+        // Primera hora_entrada de hoy para ordenar
+        [
+          db.sequelize.literal(`(
+            SELECT MAX(pt.hora_entrada)
+            FROM PARTES_TRABAJO AS pt
+            WHERE pt.id_proyecto = ORDEN_TRABAJO.id
+              AND pt.hora_salida IS NOT NULL
+              AND CONVERT(date, pt.fecha) = CONVERT(date, GETDATE())
+          )`),
+          "primeraHoraHoy"
+        ]
       ],
       include: [
         {
@@ -100,9 +119,12 @@ const getAllProyects = async (req, res) => {
         {
           model: db.PARTES_TRABAJO,
           as: "partes_trabajo",
-          attributes: ["hora_entrada"],
+          attributes: [],
+          required: false,
           where: {
-            fecha: db.sequelize.where(
+            hora_entrada: { [Op.ne]: null },
+            hora_salida: { [Op.ne]: null },
+            [Op.and]: db.sequelize.where(
               db.sequelize.fn(
                 "CONVERT",
                 db.sequelize.literal("date"),
@@ -110,12 +132,8 @@ const getAllProyects = async (req, res) => {
               ),
               "=",
               db.sequelize.fn("CONVERT", db.sequelize.literal("date"), db.sequelize.fn("GETDATE"))
-            ),
-          },
-          required: false,
-          separate: true,
-          limit: 1,
-          order: [["hora_entrada", "ASC"]],
+            )
+          }
         },
       ],
       where,
@@ -139,11 +157,17 @@ const getAllProyects = async (req, res) => {
         "cliente_ot.nombre_empresa",
         "cliente_ot.direccion",
       ],
+      order: [
+        [db.sequelize.literal("primeraHoraHoy"), "DESC"]
+      ],
       limit,
       offset,
       subQuery: false,
     });
 
+
+
+    const plainRows = rows.map(r => r.get({ plain: true }));
 
     const count = await db.ORDEN_TRABAJO.count({
       where,
@@ -175,7 +199,7 @@ const getAllProyects = async (req, res) => {
       plain: true,
     });
 
-    const data = mapformatOrdenesTrabajo(rows);
+    const data = mapformatOrdenesTrabajo(plainRows);
 
     res.status(200).json(paginatedResponse(data, count, page, limit, totalHorasHoy));
   } catch (error) {

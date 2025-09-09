@@ -1,4 +1,5 @@
 function formatOrdenTrabajo(data) {
+
     const cliente = {
         id: data.cliente_ot?.id || 0,
         nombre: data.cliente_ot?.nombre || "",
@@ -7,11 +8,6 @@ function formatOrdenTrabajo(data) {
         direccion: data.cliente_ot?.direccion || null,
         peticionario: data.peticionario || "",
     };
-
-    // Primer parte de hoy, si existe
-    const primerParteHoy = data.partes_trabajo && data.partes_trabajo.length > 0
-        ? data.partes_trabajo[0]
-        : null;
 
     return {
         id: data.id,
@@ -26,7 +22,7 @@ function formatOrdenTrabajo(data) {
         fecha_inicio: data.fecha_inicio,
         fecha_fin: data.fecha_fin,
         cliente,
-        parteHoy: primerParteHoy?.hora_entrada || null,
+        sumHorasHoy: data.sumHorasHoy,
     };
 }
 
