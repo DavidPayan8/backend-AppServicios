@@ -1,5 +1,6 @@
 const db = require("../Model");
 const { validateCIFFormat, validateCIFUnique } = require("../shared/validator");
+const { configEmpresaResource } = require("../resources/empresa")
 
 const getEmpresas = async (req, res) => {
   try {
@@ -36,7 +37,7 @@ const getEmpresa = async (req, res) => {
 
     const config = empresa.config;
 
-    res.json({
+    res.status(200).json({
       id: empresa.id_empresa,
       nombre: empresa.nombre,
       razonSocial: empresa.razon_social,
@@ -75,6 +76,7 @@ const getConfigEmpresa = async (req, res) => {
         "email_entrante",
         "smtp_user",
         "color_principal",
+        "isLaTorre",
       ],
       include: [
         {
@@ -91,14 +93,8 @@ const getConfigEmpresa = async (req, res) => {
       return res.status(404).send("Configuración no encontrada");
     }
 
-    const response = {
-      es_tipo_obra: config.es_tipo_obra,
-      email_entrante: config.email_entrante || "",
-      smtp_user: config.smtp_user,
-      color_principal: config.color_principal || "#0d5c91",
-      telefono: config.EMPRESA?.telefono || null,
-    };
-
+    const response = configEmpresaResource(config);
+    
     res.status(200).json(response);
   } catch (error) {
     console.error("Error al obtener configuración y teléfono:", error);

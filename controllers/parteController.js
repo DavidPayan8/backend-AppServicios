@@ -29,36 +29,26 @@ const crearParteTrabajo = async (req, res) => {
     id_partida,
     id_proyecto,
     hora_entrada,
+    hora_salida,
     fecha,
-    localizacion,
     horas_extra,
     horas_festivo,
+    observaciones,
   } = req.body;
   const id_usuario = req.user.id;
-  let direccionFinal = null;
 
   try {
-    if (localizacion?.error) {
-      // Si viene error, guardamos el mensaje como ubicación
-      direccionFinal = localizacion.mensaje || "Ubicación no disponible";
-    } else {
-      // Si hay coordenadas, hacemos geolocalización inversa
-      direccionFinal = await obtenerDireccionReversa(
-        localizacion.lat,
-        localizacion.lng
-      );
-    }
-
     const nuevoParte = await db.PARTES_TRABAJO.create({
       id_usuario,
       id_capitulo,
       id_partida,
       id_proyecto,
       hora_entrada,
+      hora_salida,
       fecha,
-      localizacion_entrada: direccionFinal,
       horas_extra,
       horas_festivo,
+      observaciones,
     });
 
     res.status(201).json({ id: nuevoParte.id });
@@ -71,12 +61,11 @@ const crearParteTrabajo = async (req, res) => {
 };
 
 const getPartes = async (req, res) => {
-  const { id_proyecto, fecha } = req.query;
+  const { id_proyecto } = req.query;
   const id_usuario = req.user.id;
 
   const whereClause = { id_usuario };
   if (id_proyecto) whereClause.id_proyecto = id_proyecto;
-  if (fecha) whereClause.fecha = fecha;
 
   try {
     const partes = await db.PARTES_TRABAJO.findAll({
@@ -118,22 +107,9 @@ const actualizarParteTrabajo = async (req, res) => {
     hora_salida,
     horas_festivo,
     horas_extra,
-    localizacion,
   } = req.body;
-  let direccionFinal = null;
 
   try {
-    if (localizacion?.error) {
-      // Si viene error, guardamos el mensaje como ubicación
-      direccionFinal = localizacion.mensaje || "Ubicación no disponible";
-    } else {
-      // Si hay coordenadas, hacemos geolocalización inversa
-      direccionFinal = await obtenerDireccionReversa(
-        localizacion.lat,
-        localizacion.lng
-      );
-    }
-
     const [updatedRows] = await db.PARTES_TRABAJO.update(
       {
         id_capitulo,
@@ -142,7 +118,6 @@ const actualizarParteTrabajo = async (req, res) => {
         hora_salida,
         horas_festivo,
         horas_extra,
-        localizacion_salida: direccionFinal,
       },
       {
         where: { id },
@@ -154,9 +129,7 @@ const actualizarParteTrabajo = async (req, res) => {
         message: "No se encontró el parte de trabajo para actualizar.",
       });
     } else {
-      res
-        .status(200)
-        .json({ message: "Parte de trabajo actualizado correctamente." });
+      res.status(200).json({ id });
     }
   } catch (error) {
     res.status(500).json({
@@ -209,6 +182,80 @@ const getPartidas = async (req, res) => {
   }
 };
 
+const actualizarLocalizacionEntrada = async (req, res) => {
+  const { id_parte, localizacion_entrada } = req.body;
+  console.log(req.body);
+
+  let direccionFinal = "Ubicación no disponible";
+
+  try {
+    if (!id_parte) return res.status(400).json({ message: "Id requerido." });
+
+    if (localizacion_entrada?.error) {
+      direccionFinal =
+        localizacion_entrada.mensaje || "Ubicación no disponible";
+    } else {
+      try {
+        direccionFinal = await obtenerDireccionReversa(
+          localizacion_entrada.lat,
+          localizacion_entrada.lng
+        );
+      } catch (err) {
+        console.error("Error al obtener dirección:", err);
+      }
+    }
+
+    // Actualizar localización
+    await db.PARTES_TRABAJO.update(
+      { localizacion_entrada: direccionFinal },
+      { where: { id: id_parte } }
+    );
+
+    res
+      .status(200)
+      .json({ message: "Localización actualizada correctamente." });
+  } catch (error) {
+    console.error("Error al actualizar localización:", error);
+    res.status(500).json({ message: "Error del servidor." });
+  }
+};
+
+const actualizarLocalizacionSalida = async (req, res) => {
+  const { id_parte, localizacion_salida } = req.body;
+
+  let direccionFinal = "Ubicación no disponible";
+
+  try {
+    if (!id_parte) return res.status(400).json({ message: "Id requerido." });
+
+    if (localizacion_salida?.error) {
+      direccionFinal = localizacion_salida.mensaje || "Ubicación no disponible";
+    } else {
+      try {
+        direccionFinal = await obtenerDireccionReversa(
+          localizacion_salida.lat,
+          localizacion_salida.lng
+        );
+      } catch (err) {
+        console.error("Error al obtener dirección:", err);
+      }
+    }
+
+    // Actualizar localización
+    await db.PARTES_TRABAJO.update(
+      { localizacion_salida: direccionFinal },
+      { where: { id: id_parte } }
+    );
+
+    res
+      .status(200)
+      .json({ message: "Localización actualizada correctamente." });
+  } catch (error) {
+    console.error("Error al actualizar localización:", error);
+    res.status(500).json({ message: "Error del servidor." });
+  }
+};
+
 module.exports = {
   checkParteAbierto,
   crearParteTrabajo,
@@ -217,4 +264,6 @@ module.exports = {
   actualizarParteTrabajo,
   getCapitulos,
   getPartidas,
+  actualizarLocalizacionEntrada,
+  actualizarLocalizacionSalida,
 };

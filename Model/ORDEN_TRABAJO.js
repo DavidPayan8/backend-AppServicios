@@ -13,6 +13,10 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
+      num_ot: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
       nombre: {
         type: DataTypes.STRING(50),
         allowNull: false,
@@ -24,6 +28,11 @@ module.exports = function (sequelize, DataTypes) {
       id_cliente: {
         type: DataTypes.INTEGER,
         allowNull: true,
+      },
+      activo: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
       },
       es_ote: {
         type: DataTypes.BOOLEAN,
@@ -63,12 +72,29 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
+      horas_concedidas: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: 0,
+      },
       fecha_inicio: {
         type: DataTypes.DATE,
         allowNull: true,
       },
       fecha_fin: {
         type: DataTypes.DATE,
+        allowNull: true,
+      },
+      fecha_limite: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      peticionario: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+      },
+      transporte: {
+        type: DataTypes.STRING(255),
         allowNull: true,
       },
     },
@@ -95,7 +121,7 @@ module.exports = function (sequelize, DataTypes) {
 
     ORDEN_TRABAJO.belongsTo(models.USUARIOS, {
       foreignKey: "id_usuario",
-      as: "orden_trabajo",
+      as: "usuario_ot",
     });
 
     ORDEN_TRABAJO.belongsTo(models.PROYECTOS, {
@@ -126,6 +152,11 @@ module.exports = function (sequelize, DataTypes) {
     ORDEN_TRABAJO.hasMany(models.PARTES_TRABAJO, {
       foreignKey: "id_proyecto",
       as: "partes_trabajo",
+    });
+
+    ORDEN_TRABAJO.hasOne(models.CALENDARIO, {
+      foreignKey: "id_proyecto",
+      as: "calendario",
     });
   };
 

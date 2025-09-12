@@ -164,7 +164,20 @@ const getDetallesHandler = async (req, res) => {
     const empleado = await db.USUARIOS.findByPk(id);
     if (!empleado) return res.status(404).send("Empleado no encontrado");
 
-    res.status(200).json(empleado);
+    const empleadoFormateado = {
+      id: empleado.id,
+      username: empleado.user_name,
+      password: empleado.contrasena,
+      nombreApellidos: empleado.nomapes,
+      dni: empleado.DNI,
+      seguridadSocial: empleado.num_seguridad_social,
+      email: empleado.email ?? null,
+      telefono: empleado.telefono ?? null,
+      rol: empleado.rol,
+      sexo: empleado.sexo ?? null,
+    };
+
+    res.status(200).json(empleadoFormateado);
   } catch (error) {
     console.error("Error al obtener detalles del empleado: ", error);
     res.status(500).send("Error del servidor");
@@ -271,6 +284,7 @@ const getVacacionesHandler = async (req, res) => {
 
 const getVacacionHandler = async (req, res) => {
   const idVacacion = req.body.id;
+
   try {
     const vacacion = await db.VACACIONES.findOne({
       where: { id: idVacacion },
@@ -289,42 +303,40 @@ const getVacacionHandler = async (req, res) => {
           model: db.VACACIONES_ESTADOS,
           as: "vacaciones_estado",
           attributes: ["estado", "tiempo"],
-          order: [["tiempo", "DESC"]],
-          limit: 1,
-        },
-        {
-          model: db.DIAS_VACACION,
-          as: "dias_vacacion",
-          attributes: ["dia"],
         },
       ],
     });
 
     if (!vacacion) {
-      res.status(400).json({ message: "Id no encontrado" });
+      return res.status(400).json({ message: "Id no encontrado" });
     }
+
+    // Obtener días por separado para evitar problemas con include
+    const diasRelacionados = await vacacion.getDias_vacacion({
+      attributes: ["dia"],
+    });
+
+    // Ordenar los estados para obtener el último
+    vacacion.vacaciones_estado.sort(
+      (a, b) => new Date(b.tiempo) - new Date(a.tiempo)
+    );
+    const ultimoEstado = vacacion.vacaciones_estado[0];
 
     const empleado = vacacion.usuario?.nomapes;
     const tipo = vacacion.tipo_vacaciones.nombre;
+    const estado = ultimoEstado ? ultimoEstado : "pendiente";
 
-    const estado =
-      vacacion.vacaciones_estado?.length > 0
-        ? vacacion.vacaciones_estado[0].estado
-        : "pendiente";
+    const dias = diasRelacionados.map((d) => d.dia);
 
-    console.log(vacacion.dias_vacacion);
-
-    const dias = vacacion.dias_vacacion?.map((d) => d.dia) || [];
-
-    res.status(200).json({
+    return res.status(200).json({
       empleado,
       tipo,
       estado,
       dias,
     });
   } catch (error) {
-    console.error("Error al obtener detalles de vacación: ", idVacacion, error);
-    res.status(500).json(error);
+    console.error("Error en getVacacionHandler:", error);
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 

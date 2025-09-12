@@ -110,27 +110,42 @@ module.exports = function (sequelize, DataTypes) {
     });
 
     EMPRESA.belongsToMany(models.MODULOS, {
-      as: "empresa_modulos_modulos", // antes: "modulos"
+      as: "empresa_modulos_modulos",
       through: models.EMPRESAS_MODULOS,
       foreignKey: "id_empresa",
       otherKey: "id_modulo",
     });
-    
+
     EMPRESA.belongsToMany(models.SUBMODULOS, {
-      as: "empresa_submodulos_submodulos", // antes: "submodulos"
+      as: "empresa_submodulos_submodulos",
       through: models.EMPRESAS_SUBMODULOS,
       foreignKey: "id_empresa",
       otherKey: "id_submodulo",
     });
-    
+
     EMPRESA.hasMany(models.EMPRESAS_MODULOS, {
-      as: "empresa_modulos", // OK
+      as: "empresa_modulos",
       foreignKey: "id_empresa",
     });
-    
+
     EMPRESA.hasMany(models.EMPRESAS_SUBMODULOS, {
-      as: "empresa_submodulos", // OK
+      as: "empresa_submodulos",
       foreignKey: "id_empresa",
+    });
+
+    EMPRESA.hasMany(models.CATEGORIA_LABORAL, {
+      as: "Categoria_laboral",
+      foreignKey: "id_empresa",
+    });
+
+    EMPRESA.hasMany(models.ANOTACION_AGENDA, {
+      foreignKey: "id_empresa",
+      as: "anotaciones_agenda",
+    });
+
+    EMPRESA.hasMany(models.SOLICITUD, {
+      foreignKey: "empresa_id",
+      as: "solicitud",
     });
   };
 

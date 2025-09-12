@@ -17,10 +17,6 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.STRING(50),
         allowNull: true,
       },
-      apellidos: {
-        type: DataTypes.STRING(50),
-        allowNull: true,
-      },
       nombre_empresa: {
         type: DataTypes.STRING(255),
         allowNull: true,
@@ -76,6 +72,16 @@ module.exports = function (sequelize, DataTypes) {
     CLIENTES.hasMany(models.CABECERA, {
       foreignKey: "entidad_id",
       as: "cabecera",
+    });
+
+    CLIENTES.hasMany(models.SOLICITUD, {
+      as: "cliente_solicitudes",
+      foreignKey: "cliente_id",
+    });
+
+    CLIENTES.hasMany(models.PETICIONARIO, {
+      as: "cliente_peticionarios",
+      foreignKey: "cliente_id",
     });
   };
 
