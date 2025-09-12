@@ -50,7 +50,7 @@ const getActividades = async (req, res) => {
 
 const getAllProyects = async (req, res) => {
   try {
-    const { empresa } = req.user;
+    const { empresa, id } = req.user;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
@@ -64,6 +64,7 @@ const getAllProyects = async (req, res) => {
       id_empresa: empresa,
       activo: true,
       es_ote: false,
+      estado: 'en curso'
     };
 
     // Aplicar filtro si viene
@@ -74,6 +75,7 @@ const getAllProyects = async (req, res) => {
         where.num_ot = { [Op.like]: `%${filtro}%` };
       }
     }
+
 
     const rows = await db.ORDEN_TRABAJO.findAll({
       attributes: [
@@ -88,13 +90,50 @@ const getAllProyects = async (req, res) => {
         "fecha_inicio",
         "fecha_fin",
         "transporte",
-        "peticionario"
+        "peticionario",
+        // Suma de horas de hoy
+        [
+          db.sequelize.literal(
+            "COALESCE(SUM(DATEDIFF(SECOND, [partes_trabajo].[hora_entrada], [partes_trabajo].[hora_salida])), 0) / 3600.0"
+          ),
+          "sumHorasHoy"
+        ],
+        // Primera hora_entrada de hoy para ordenar
+        [
+          db.sequelize.literal(`(
+            SELECT MAX(pt.hora_entrada)
+            FROM PARTES_TRABAJO AS pt
+            WHERE pt.id_proyecto = ORDEN_TRABAJO.id
+              AND pt.hora_salida IS NOT NULL
+              AND CONVERT(date, pt.fecha) = CONVERT(date, GETDATE())
+          )`),
+          "primeraHoraHoy"
+        ]
       ],
       include: [
         {
           model: db.CLIENTES,
           as: "cliente_ot",
           attributes: ["id", "nombre", "email", "nombre_empresa", "direccion"],
+        },
+        {
+          model: db.PARTES_TRABAJO,
+          as: "partes_trabajo",
+          attributes: [],
+          required: false,
+          where: {
+            hora_entrada: { [Op.ne]: null },
+            hora_salida: { [Op.ne]: null },
+            [Op.and]: db.sequelize.where(
+              db.sequelize.fn(
+                "CONVERT",
+                db.sequelize.literal("date"),
+                db.sequelize.col("partes_trabajo.fecha")
+              ),
+              "=",
+              db.sequelize.fn("CONVERT", db.sequelize.literal("date"), db.sequelize.fn("GETDATE"))
+            )
+          }
         },
       ],
       where,
@@ -118,10 +157,17 @@ const getAllProyects = async (req, res) => {
         "cliente_ot.nombre_empresa",
         "cliente_ot.direccion",
       ],
+      order: [
+        [db.sequelize.literal("primeraHoraHoy"), "DESC"]
+      ],
       limit,
       offset,
       subQuery: false,
     });
+
+
+
+    const plainRows = rows.map(r => r.get({ plain: true }));
 
     const count = await db.ORDEN_TRABAJO.count({
       where,
@@ -129,9 +175,33 @@ const getAllProyects = async (req, res) => {
       col: "ORDEN_TRABAJO.id",
     });
 
-    const data = mapformatOrdenesTrabajo(rows);
+    const { totalHorasHoy } = await db.PARTES_TRABAJO.findAll({
+      attributes: [
+        [
+          db.sequelize.fn(
+            "SUM",
+            db.sequelize.literal("DATEDIFF(SECOND, hora_entrada, hora_salida) / 3600.0")
+          ),
+          "totalHorasHoy",
+        ],
+      ],
+      where: {
+        id_usuario: id,
+        hora_entrada: { [Op.ne]: null },
+        hora_salida: { [Op.ne]: null },
+        fecha: db.sequelize.where(
+          db.sequelize.fn("CONVERT", db.sequelize.literal("date"), db.sequelize.fn("GETDATE")),
+          "=",
+          db.sequelize.fn("CONVERT", db.sequelize.literal("date"), db.sequelize.col("fecha"))
+        ),
+      },
+      raw: true,
+      plain: true,
+    });
 
-    res.status(200).json(paginatedResponse(data, count, page, limit));
+    const data = mapformatOrdenesTrabajo(plainRows);
+
+    res.status(200).json(paginatedResponse(data, count, page, limit, totalHorasHoy));
   } catch (error) {
     console.error("Error al obtener órdenes de trabajo:", error);
     res.status(500).json({ message: "Error al obtener órdenes de trabajo" });

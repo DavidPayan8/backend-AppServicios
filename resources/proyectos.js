@@ -1,6 +1,5 @@
-
-
 function formatOrdenTrabajo(data) {
+
     const cliente = {
         id: data.cliente_ot?.id || 0,
         nombre: data.cliente_ot?.nombre || "",
@@ -23,11 +22,12 @@ function formatOrdenTrabajo(data) {
         fecha_inicio: data.fecha_inicio,
         fecha_fin: data.fecha_fin,
         cliente,
+        sumHorasHoy: data.sumHorasHoy,
     };
-};
+}
 
 function mapformatOrdenesTrabajo(data) {
     return data.map(d => formatOrdenTrabajo(d));
-};
+}
 
 module.exports = { mapformatOrdenesTrabajo, formatOrdenTrabajo };

@@ -1,6 +1,3 @@
-const Sequelize = require("sequelize");
-const { now } = require("sequelize/lib/utils");
-
 module.exports = function (sequelize, DataTypes) {
     const SOLICITUD = sequelize.define(
         "SOLICITUD",
@@ -10,6 +7,10 @@ module.exports = function (sequelize, DataTypes) {
                 type: DataTypes.INTEGER,
                 allowNull: false,
                 primaryKey: true,
+            },
+            nombre: {
+                type: DataTypes.STRING(255),
+                allowNull: true,
             },
             id_origen: {
                 type: DataTypes.INTEGER,
@@ -27,6 +28,10 @@ module.exports = function (sequelize, DataTypes) {
                 type: DataTypes.DATE,
                 defaultValue: sequelize.literal("GETDATE()"),
                 allowNull: false,
+            },
+            fecha_limite: {
+                type: DataTypes.DATE,
+                allowNull: true,
             },
             cliente_id: {
                 type: DataTypes.INTEGER,
