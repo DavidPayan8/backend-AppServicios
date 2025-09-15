@@ -34,6 +34,7 @@ const login = async (req, res) => {
         empresa: user.id_empresa,
         rol: user.rol,
         categoria_laboral: user.categoriaLaboral.nombre,
+        canClockIn: user.fichaje_activo
       },
       JWT_SECRET,
       { expiresIn: "8h" }
