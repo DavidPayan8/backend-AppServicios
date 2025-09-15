@@ -71,7 +71,12 @@ module.exports = function (sequelize, DataTypes) {
       ext_anverso: {
         type: DataTypes.STRING(20),
         allowNull: true
-      }
+      },
+      fichaje_activo: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
     },
     {
       sequelize,

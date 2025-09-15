@@ -4,8 +4,15 @@ const { obtenerDireccionReversa } = require("../models/geolocationModel");
 // Fichar entrada
 const ficharEntradaHandler = async (req, res) => {
   const userId = req.user.id;
+  const { canClockIn } = req.user;
   const { date } = req.body;
   const fecha = formatFecha(date);
+
+  if (canClockIn === false) {
+    return res
+      .status(403)
+      .json({ message: "Permiso para fichar desactivado." });
+  }
 
   try {
     // Verificar parte abierto
@@ -38,7 +45,14 @@ const ficharEntradaHandler = async (req, res) => {
 // Fichar salida
 const ficharSalidaHandler = async (req, res) => {
   const userId = req.user.id;
+  const { canClockIn } = req.user;
   const { date } = req.body;
+
+  if (canClockIn === false) {
+    return res
+      .status(403)
+      .json({ message: "Permiso para fichar desactivado." });
+  }
 
   try {
     const fecha = formatFecha(date);
