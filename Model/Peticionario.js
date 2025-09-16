@@ -38,6 +38,10 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.STRING(100),
         allowNull: true,
       },
+      id_empresa: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
     },
     {
       sequelize,
@@ -55,6 +59,11 @@ module.exports = function (sequelize, DataTypes) {
   );
 
   PETICIONARIO.associate = (models) => {
+    PETICIONARIO.belongsTo(models.EMPRESA, {
+      as: "peticionario_empresa",
+      foreignKey: "id_empresa",
+    });
+
     PETICIONARIO.belongsTo(models.CLIENTES, {
       as: "peticionario_cliente",
       foreignKey: "cliente_id",
