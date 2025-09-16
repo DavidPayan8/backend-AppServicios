@@ -40,7 +40,7 @@ module.exports = function (sequelize, DataTypes) {
       },
       id_empresa: {
         type: DataTypes.INTEGER,
-        allowNull: falstrue,
+        allowNull: true,
       },
     },
     {
