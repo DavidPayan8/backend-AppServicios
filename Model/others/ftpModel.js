@@ -136,6 +136,7 @@ const listadoArchivos = async (ambito, id_usuario, id_empresa, tipo) => {
   } catch (err) {
     // Ruta no encontrada
     if (err.code === 550) {
+      console.log('Entra en el error 550')
       return [];
     }
     console.error(`Error al listar archivos en FTP (${ruta}):`, err);
@@ -177,7 +178,9 @@ const descargarArchivo = async (
       fileName: path.basename(ruta),
     };
   } catch (error) {
-    console.error(`Error al descargar archivo desde FTP (${ruta}):`, error);
+    if (error.code === 550) {
+      return [];
+    }
     throw new Error("Error al descargar archivo: " + error.message);
   } finally {
     if (client) ftpPool.releaseClient(client);
