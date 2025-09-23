@@ -4,9 +4,6 @@ const crearCabeceraAlbaran = async (req, res) => {
   const { empresa } = req.user;
   const { cabecera } = req.body;
 
-  console.log(cabecera)
-
-
   try {
     // Paso 1: Obtener el último número y sumarle 1
     const ultimoNumero = await db.CABECERA.max("numero", {
@@ -21,8 +18,6 @@ const crearCabeceraAlbaran = async (req, res) => {
       numero: nuevoNumero,
       id_empresa: empresa,
     });
-
-    console.log(cabeceraCreada)
 
     res.status(201).json(cabeceraCreada);
   } catch (error) {
