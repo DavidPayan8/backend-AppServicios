@@ -59,7 +59,7 @@ const descargarArchivoFTP = async (req, res) => {
   } catch (error) {
     console.error("Fallo en descarga:", error);
     if (!res.headersSent)
-      res.status(500).json({message: "Error al procesar la descarga."});
+      res.status(500).json({ message: "Error al procesar la descarga." });
   }
 };
 
@@ -92,7 +92,7 @@ const visualizarArchivoFTP = async (req, res) => {
   } catch (error) {
     console.error("Fallo en visualización:", error);
     if (!res.headersSent)
-      res.status(500).json({message:"Error al procesar la descarga."});
+      res.status(500).json({ message: "Error al procesar la descarga." });
   }
 };
 

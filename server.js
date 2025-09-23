@@ -2,6 +2,7 @@ require("dotenv").config(); //dotenv
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
+const BASE_API_URL = process.env.BASE_API_URL;
 const userRoutes = require("./routes/userRoutes");
 const clientesRoutes = require("./routes/clientesRoutes");
 const authRoutes = require("./routes/authRoutes");
@@ -18,6 +19,7 @@ const configuracionesRoutes = require("./routes/configuracionRoutes");
 const estadisticasRoutes = require("./routes/estadisticasRoutes");
 const vacacionesRoutes = require("./routes/vacacionesRoutes");
 const ftpRoutes = require("./routes/ftpRoutes");
+const blobStorageRoutes = require("./routes/blobStorageRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const fichajesProyectoRoutes = require("./routes/fichajesProyectoRoutes");
 const geolocationRoutes = require("./routes/geolocationRoutes");
@@ -27,7 +29,32 @@ const authenticateToken = require("./middleware/authMiddleware");
 
 const app = express();
 
-const port = process.env.PORT || 0;
+const port = process.env.PORT;
+
+const routes = [
+  { path: "auth", router: authRoutes, noBase: true },
+  { path: "users", router: userRoutes },
+  { path: "asistencia", router: asistenciaRoutes },
+  { path: "proyectos", router: proyectosRoutes },
+  { path: "articulos", router: articulosRoutes },
+  { path: "albaran", router: albaranRoutes },
+  { path: "email", router: emailRoutes },
+  { path: "clientes", router: clientesRoutes },
+  { path: "partes", router: parteRoutes },
+  { path: "notificaciones", router: notificacionesRoutes },
+  { path: "anotaciones", router: anotacionesRoutes },
+  { path: "solicitud", router: solicitudRoutes },
+  { path: "configuraciones", router: configuracionesRoutes },
+  { path: "estadisticas", router: estadisticasRoutes },
+  { path: "vacaciones", router: vacacionesRoutes },
+  { path: "fichajes-proyecto", router: fichajesProyectoRoutes },
+  { path: "admin", router: adminRoutes },
+  { path: "empresa", router: empresaRoutes },
+  { path: "modulos", router: modulosRoutes },
+  { path: "ftp", router: ftpRoutes },
+  { path: "blobStorage", router: blobStorageRoutes },
+  { path: "geolocation", router: geolocationRoutes },
+];
 
 // Middleware para cors
 app.use(cors());
@@ -44,29 +71,12 @@ app.use((req, res, next) => {
   }
 });
 
-// Rutas
-app.use("/auth", authRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/asistencia", asistenciaRoutes);
-app.use("/api/proyectos", proyectosRoutes);
-app.use("/api/articulos", articulosRoutes);
-app.use("/api/albaran", albaranRoutes);
-app.use("/api/email", emailRoutes);
-app.use("/api/clientes", clientesRoutes);
-app.use("/api/partes", parteRoutes);
-app.use("/api/notificaciones", notificacionesRoutes);
-app.use("/api/anotaciones", anotacionesRoutes);
-app.use("/api/solicitud", solicitudRoutes)
-app.use("/api/configuraciones", configuracionesRoutes);
-app.use("/api/estadisticas", estadisticasRoutes);
-app.use("/api/vacaciones", vacacionesRoutes);
-app.use("/api/fichajes-proyecto", fichajesProyectoRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/empresa", empresaRoutes);
-app.use("/api/modulos", modulosRoutes);
-app.use("/api/ftp", ftpRoutes);
-app.use("/api/geolocation", geolocationRoutes);
+// Configurar rutas
+routes.forEach(({ path, router, noBase }) => {
+  app.use(noBase ? `/${path}` : `${BASE_API_URL}${path}`, router);
+});
 
+// Ruta protegida de token
 app.get("/protected", authenticateToken, (req, res) => {
   res.json({ message: "Acceso autorizado", user: req.user });
 });
