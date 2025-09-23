@@ -536,14 +536,14 @@ const obtenerContrato = async (req, res) => {
       include: [
         {
           model: db.DETALLES_CONTRATO,
-          as: "detalles",
+          as: "detalles_contrato",
         },
       ],
     });
 
     res.status(200).json(contrato);
   } catch (error) {
-    console.error("Error al obtener contrato:", error.message);
+    console.error("Error al obtener contrato:", error);
     res.status(500).json({ message: "Error en el servidor", data: null });
   }
 };

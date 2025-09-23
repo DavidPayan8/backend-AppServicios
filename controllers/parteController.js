@@ -1,5 +1,5 @@
 const db = require("../Model");
-const { obtenerDireccionReversa } = require("../models/geolocationModel");
+const { obtenerDireccionReversa } = require("../Model/others/geolocationModel");
 
 const checkParteAbierto = async (req, res) => {
   const { id_proyecto } = req.query;

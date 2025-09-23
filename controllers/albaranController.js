@@ -28,17 +28,19 @@ const crearCabeceraAlbaran = async (req, res) => {
 
 const setEstadoCabecera = async (req, res) => {
   try {
-    const { cabecera_id } = req.query;
+    const { cabecera_id } = req.body;
 
-    await db.CABECERA.update(
+    const result = await db.CABECERA.update(
       { actualizar: true },
       { where: { id: cabecera_id } }
     );
 
-    res.status(200).send();
+    console.log("Actualziada", result)
+
+    res.status(200).json({ message: "Estado cabecera actualizado" });
   } catch (error) {
     console.error("Error al cambiar estado cabecera:", error.message);
-    res.status(500).send("Error del servidor");
+    res.status(500).json({ message: "Error del servidor" });
   }
 };
 
@@ -59,7 +61,6 @@ const obtenerCabeceraOt = async (req, res) => {
       ],
     });
 
-    console.log(cabecera);
     res.status(200).json(cabecera);
   } catch (error) {
     console.error("Error al obtener cabecera doc:", error.message);
@@ -72,7 +73,7 @@ const obtenerDetallesDoc = async (req, res) => {
     const { id_cabecera } = req.query;
 
     if (!id_cabecera) {
-      return res.status(400).send("El parámetro 'id_cabecera' es obligatorio");
+      return res.status(400).json({ message: "El parámetro 'id_cabecera' es obligatorio" });
     }
 
     const detalles = await db.DETALLES_DOC.findAll({
@@ -97,14 +98,13 @@ const obtenerDetallesDoc = async (req, res) => {
     res.status(200).json(detalles);
   } catch (error) {
     console.error("Error al obtener detalles doc:", error.message);
-    res.status(500).send("Error del servidor");
+    res.status(500).json({ message: "Error del servidor" });
   }
 };
 
 const cambiarDetalleAlbaran = async (req, res) => {
   try {
     const { detallesDoc } = req.body;
-    console.log("Detalles a actualizar:", detallesDoc.id.id);
 
     const updates = await db.DETALLES_DOC.update(detallesDoc, {
       where: { id: detallesDoc.id || detallesDoc.id.id },
@@ -113,7 +113,7 @@ const cambiarDetalleAlbaran = async (req, res) => {
     res.status(201).json(updates);
   } catch (error) {
     console.error("Error al cambiar detalles doc:", error.message);
-    res.status(500).send("Error del servidor");
+    res.status(500).json({ message: "Error del servidor" });
   }
 };
 
@@ -126,7 +126,7 @@ const crearDetalleAlbaran = async (req, res) => {
     res.status(201).json(nuevoDetalle);
   } catch (error) {
     console.error("Error al crear detalles doc:", error.message);
-    res.status(500).send("Error del servidor");
+    res.status(500).json({ message: "Error del servidor" });
   }
 };
 
@@ -141,7 +141,7 @@ const borrarDetalleAlbaran = async (req, res) => {
     res.status(201).json({ eliminado: resultado > 0 });
   } catch (error) {
     console.error("Error al borrar detalles doc:", error.message);
-    res.status(500).send("Error del servidor");
+    res.status(500).json({ message: "Error del servidor" });
   }
 };
 
@@ -187,7 +187,7 @@ const borrarCobro = async (req, res) => {
     res.status(201).json({ eliminado: resultado > 0 });
   } catch (error) {
     console.error("Error al borrar cobro:", error.message);
-    res.status(500).send("Error del servidor");
+    res.status(500).json({ message: "Error del servidor" });
   }
 };
 
