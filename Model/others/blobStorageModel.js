@@ -210,7 +210,7 @@ async function generarUrlTemporalAzure(
         containerName: CONTAINER_NAME,
         blobName: blobPath,
         permissions: BlobSASPermissions.parse("r"), // solo lectura
-        startsOn: new Date(Date.now() - 5 * 60 * 1000),
+        startsOn: new Date(),
         expiresOn: new Date(Date.now() + expiracionEnMinutos * 60 * 1000),
         contentDisposition: "inline",
         contentType: mime.lookup(nombreArchivo) || "application/octet-stream"

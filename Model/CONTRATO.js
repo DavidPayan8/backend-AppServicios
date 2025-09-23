@@ -83,7 +83,7 @@ module.exports = function (sequelize, DataTypes) {
     });
 
     CONTRATO.hasMany(models.DETALLES_CONTRATO, {
-      foreignKey: "id_cliente",
+      foreignKey: "id_contrato",
       as: "detalles_contrato",
     });
   };
