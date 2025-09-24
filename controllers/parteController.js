@@ -34,8 +34,11 @@ const crearParteTrabajo = async (req, res) => {
     horas_extra,
     horas_festivo,
     observaciones,
+    desplazamientos,
   } = req.body;
   const id_usuario = req.user.id;
+
+  console.log(desplazamientos, observaciones);
 
   try {
     const nuevoParte = await db.PARTES_TRABAJO.create({
@@ -49,6 +52,7 @@ const crearParteTrabajo = async (req, res) => {
       horas_extra,
       horas_festivo,
       observaciones,
+      desplazamientos_count: desplazamientos,
     });
 
     res.status(201).json({ id: nuevoParte.id });
@@ -107,7 +111,11 @@ const actualizarParteTrabajo = async (req, res) => {
     hora_salida,
     horas_festivo,
     horas_extra,
+    observaciones,
+    desplazamientos
   } = req.body;
+
+  console.log(desplazamientos, observaciones);
 
   try {
     const [updatedRows] = await db.PARTES_TRABAJO.update(
@@ -118,6 +126,8 @@ const actualizarParteTrabajo = async (req, res) => {
         hora_salida,
         horas_festivo,
         horas_extra,
+        observaciones,
+        desplazamientos_count: desplazamientos || 0,
       },
       {
         where: { id },

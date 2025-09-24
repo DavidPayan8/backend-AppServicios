@@ -19,7 +19,7 @@ const login = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(401).json({ message: "Usuario no encontrado" });
+      return res.status(401).json({ message: "Credenciales incorrectas" });
     }
 
     if (password !== user.contrasena) {

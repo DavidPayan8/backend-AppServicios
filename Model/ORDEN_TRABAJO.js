@@ -64,6 +64,10 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
+      seccion_id_origen:{
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
       direccion: {
         type: DataTypes.STRING(255),
         allowNull: true,

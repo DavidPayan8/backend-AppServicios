@@ -226,7 +226,8 @@ const getByIdLaTorre = async (req, res) => {
         "fecha_inicio",
         "fecha_fin",
         "transporte",
-        "peticionario"
+        "peticionario",
+        "seccion_id_origen"
       ],
       include: [
         {
@@ -253,6 +254,7 @@ const getByIdLaTorre = async (req, res) => {
         "ORDEN_TRABAJO.fecha_fin",
         "ORDEN_TRABAJO.peticionario",
         "ORDEN_TRABAJO.transporte",
+        "ORDEN_TRABAJO.seccion_id_origen",
         "cliente_ot.id",
         "cliente_ot.nombre",
         "cliente_ot.email",
@@ -568,6 +570,7 @@ const obtenerProyecto = async (req, res) => {
         "id_contrato",
         "direccion",
         "id_empresa",
+        "seccion_id_origen",
         [fn("MIN", col("partes_trabajo.hora_entrada")), "hora_inicio"],
         [fn("MAX", col("partes_trabajo.hora_salida")), "hora_fin"],
       ],
@@ -601,6 +604,7 @@ const obtenerProyecto = async (req, res) => {
         "Orden_Trabajo.id_contrato",
         "Orden_Trabajo.direccion",
         "Orden_Trabajo.id_empresa",
+        "Orden_Trabajo.seccion_id_origen",
         "cliente_ot.nombre",
         "cliente_ot.id",
       ],
