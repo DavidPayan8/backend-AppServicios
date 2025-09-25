@@ -38,8 +38,6 @@ const crearParteTrabajo = async (req, res) => {
   } = req.body;
   const id_usuario = req.user.id;
 
-  console.log(desplazamientos, observaciones);
-
   try {
     const nuevoParte = await db.PARTES_TRABAJO.create({
       id_usuario,
@@ -114,8 +112,6 @@ const actualizarParteTrabajo = async (req, res) => {
     observaciones,
     desplazamientos
   } = req.body;
-
-  console.log(desplazamientos, observaciones);
 
   try {
     const [updatedRows] = await db.PARTES_TRABAJO.update(

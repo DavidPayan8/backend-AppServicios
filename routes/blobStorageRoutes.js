@@ -6,7 +6,8 @@ const {
     descargarArchivoAzure,
     visualizarArchivoAzure,
     subirTarjetaContacto,
-    visualizarTarjetaContacto
+    visualizarTarjetaContacto,
+    visualizarImagenOT
 } = require("../controllers/blobStorageController");
 const uploadMiddleware = require("../middleware/fileMiddleware");
 const authenticateToken = require("../middleware/authMiddleware");
@@ -22,5 +23,7 @@ router.delete("/eliminar", eliminarArchivoAzure);
 
 router.post("/tarjeta-contacto", uploadMiddleware, subirTarjetaContacto);
 router.get("/tarjeta-contacto", visualizarTarjetaContacto);
+
+router.get("/img-ot", visualizarImagenOT)
 
 module.exports = router;

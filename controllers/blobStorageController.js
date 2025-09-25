@@ -3,7 +3,9 @@ const {
     deleteArchivoAzure,
     listadoArchivosAzure,
     downloadArchivoAzure,
-    generarUrlTemporalAzure
+    generarUrlTemporalAzure,
+    obtenerPrimerBlobEmpresa,
+    obtenerPrimerArchivo
 } = require("../Model/others/blobStorageModel");
 const { enviarAdjuntosOt } = require('./emailController')
 const db = require("../Model");
@@ -253,6 +255,35 @@ const visualizarTarjetaContacto = async (req, res) => {
     }
 };
 
+const visualizarImagenOT = async (req, res) => {
+    const { empresa } = req.user;
+    const { idProyecto, idOT } = req.query;
+    const expiracionMin = 60;
+
+    try {
+        tipo = "OT";
+        let nombreArchivo = await obtenerPrimerArchivo("Empresa", idProyecto, idOT, empresa, "OT");
+
+        if (!nombreArchivo) {
+            nombreArchivo = await obtenerPrimerArchivo("Empresa", idProyecto, null, empresa, "General");
+            tipo = "General";
+        }
+
+        if (!nombreArchivo) {
+            return res.status(404).json({ message: "No hay archivos en OT ni en General." });
+        }
+
+
+        // Determinar tipo para generar la URL
+        const url = await generarUrlTemporalAzure("Empresa", nombreArchivo, null, empresa, tipo, expiracionMin, idProyecto, idOT);
+
+        res.status(200).json({ url, expiracionMin });
+    } catch (err) {
+        console.error("Error generando URL temporal:", err);
+        res.status(500).json({ message: "Error al generar la URL." });
+    }
+};
+
 
 module.exports = {
     obtenerListadoAzure,
@@ -261,5 +292,6 @@ module.exports = {
     visualizarArchivoAzure,
     subirTarjetaContacto,
     descargarArchivoAzure,
-    visualizarTarjetaContacto
+    visualizarTarjetaContacto,
+    visualizarImagenOT
 };
