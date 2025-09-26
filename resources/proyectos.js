@@ -18,7 +18,7 @@ function formatOrdenTrabajo(data) {
         estado: data.estado,
         direccion: data.direccion,
         transporte: data.transporte,
-        seccion_id: data.seccion_id_origen,
+        seccion_id_origen: data.seccion_id_origen,
         id_servicio_origen: data.id_servicio_origen,
         horas_concedidas: data.horas_concedidas,
         fecha_limite: data.fecha_limite,
