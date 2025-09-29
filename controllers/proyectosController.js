@@ -216,6 +216,7 @@ const getByIdLaTorre = async (req, res) => {
     const result = await db.ORDEN_TRABAJO.findOne({
       attributes: [
         "id",
+        "id_origen",
         "num_ot",
         "nombre",
         "observaciones",
@@ -226,7 +227,9 @@ const getByIdLaTorre = async (req, res) => {
         "fecha_inicio",
         "fecha_fin",
         "transporte",
-        "peticionario"
+        "peticionario",
+        "id_servicio_origen",
+        "seccion_id_origen"
       ],
       include: [
         {
@@ -241,6 +244,7 @@ const getByIdLaTorre = async (req, res) => {
       },
       group: [
         "ORDEN_TRABAJO.id",
+        "ORDEN_TRABAJO.id_origen",
         "ORDEN_TRABAJO.num_ot",
         "ORDEN_TRABAJO.nombre",
         "ORDEN_TRABAJO.observaciones",
@@ -253,6 +257,8 @@ const getByIdLaTorre = async (req, res) => {
         "ORDEN_TRABAJO.fecha_fin",
         "ORDEN_TRABAJO.peticionario",
         "ORDEN_TRABAJO.transporte",
+        "ORDEN_TRABAJO.id_servicio_origen",
+        "ORDEN_TRABAJO.seccion_id_origen",
         "cliente_ot.id",
         "cliente_ot.nombre",
         "cliente_ot.email",
@@ -263,7 +269,10 @@ const getByIdLaTorre = async (req, res) => {
     });
 
 
-    res.status(200).json(formatOrdenTrabajo(result));
+    const prueba = formatOrdenTrabajo(result)
+    console.log(prueba)
+
+    res.status(200).json(prueba);
   } catch (error) {
     console.error("Error al obtener la órden de trabajo:", error);
     res.status(500).json({ message: "Error al obtener órdenes de trabajo" });
@@ -568,6 +577,7 @@ const obtenerProyecto = async (req, res) => {
         "id_contrato",
         "direccion",
         "id_empresa",
+        "seccion_id_origen",
         [fn("MIN", col("partes_trabajo.hora_entrada")), "hora_inicio"],
         [fn("MAX", col("partes_trabajo.hora_salida")), "hora_fin"],
       ],
@@ -601,6 +611,7 @@ const obtenerProyecto = async (req, res) => {
         "Orden_Trabajo.id_contrato",
         "Orden_Trabajo.direccion",
         "Orden_Trabajo.id_empresa",
+        "Orden_Trabajo.seccion_id_origen",
         "cliente_ot.nombre",
         "cliente_ot.id",
       ],
