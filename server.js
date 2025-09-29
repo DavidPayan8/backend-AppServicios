@@ -20,6 +20,7 @@ const estadisticasRoutes = require("./routes/estadisticasRoutes");
 const vacacionesRoutes = require("./routes/vacacionesRoutes");
 const ftpRoutes = require("./routes/ftpRoutes");
 const blobStorageRoutes = require("./routes/blobStorageRoutes");
+const exportRoutes = require("./routes/exportRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const fichajesProyectoRoutes = require("./routes/fichajesProyectoRoutes");
 const geolocationRoutes = require("./routes/geolocationRoutes");
@@ -53,6 +54,7 @@ const routes = [
   { path: "modulos", router: modulosRoutes },
   { path: "ftp", router: ftpRoutes },
   { path: "blobStorage", router: blobStorageRoutes },
+  { path: "export", router: exportRoutes },
   { path: "geolocation", router: geolocationRoutes },
 ];
 

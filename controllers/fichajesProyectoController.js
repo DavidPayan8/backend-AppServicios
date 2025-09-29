@@ -31,7 +31,7 @@ const obtenerFichajesProyecto = async (req, res) => {
           model: db.USUARIOS,
           as: "usuario",
           where: whereUsuario,
-          attributes: ["user_name", "rol"],
+          attributes: ["nomapes", "rol"],
         },
       ],
       attributes: [
@@ -53,7 +53,7 @@ const obtenerFichajesProyecto = async (req, res) => {
     // Añadir trabajador y rol manualmente al objeto plano
     const resultado = fichajes.map((f) => ({
       ...f,
-      Trabajador: f["usuario.user_name"],
+      Trabajador: f["usuario.nomapes"],
       Rol: f["usuario.rol"],
     }));
 
