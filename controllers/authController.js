@@ -13,7 +13,7 @@ const login = async (req, res) => {
         {
           model: db.CATEGORIA_LABORAL,
           as: "categoriaLaboral",
-          attributes: ["nombre", "salario"],
+          attributes: ["nombre", "codigo_rol"],
         },
       ],
     });
@@ -26,21 +26,25 @@ const login = async (req, res) => {
       return res.status(401).json({ message: "Contraseña incorrecta" });
     }
 
+    const userPlain = user.toJSON();
+
     const token = jwt.sign(
       {
-        id: user.id,
-        nomapes: user.nomapes,
-        username: user.user_name,
-        empresa: user.id_empresa,
-        rol: user.rol,
-        categoria_laboral: user.categoriaLaboral.nombre,
-        canClockIn: user.fichaje_activo
+        id: userPlain.id,
+        nomapes: userPlain.nomapes,
+        username: userPlain.user_name,
+        empresa: userPlain.id_empresa,
+        rol: userPlain.rol,
+        categoria_laboral: userPlain.categoriaLaboral?.codigo_rol,
+        canClockIn: userPlain.fichaje_activo
       },
       JWT_SECRET,
       { expiresIn: "8h" }
     );
 
-    return res.status(200).json({ token, user });
+    const { id, id_origen, rol, id_empresa, fichaje_activo, contrasena, categoriaLaboral, categoria_laboral_id, ...userFormated } = userPlain;
+
+    return res.status(200).json({ token, user: userFormated });
   } catch (err) {
     console.error("Error durante el login:", err);
     return res.status(500).json({ message: "Error interno del servidor" });

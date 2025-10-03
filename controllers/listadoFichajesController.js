@@ -18,7 +18,7 @@ const obtenerFichajesProyecto = async (req, res) => {
       };
     }
     if (trabajador) {
-      whereUsuario.USER_NAME = { [Op.like]: `%${trabajador}%` };
+      whereUsuario.nomapes = { [Op.like]: `%${trabajador}%` };
     }
     if (rol) {
       whereUsuario.rol = { [Op.eq]: rol };

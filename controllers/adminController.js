@@ -5,17 +5,20 @@ const { Op, fn } = require("sequelize");
 
 const darAltaEmpleadoHandler = async (req, res) => {
   try {
+    const { empresa } = req.user;
     const {
       username,
       password,
       nombreApellidos,
       dni,
-      segSocial,
+      seguridadSocial,
       email,
       telefono,
       sexo,
       rol,
     } = req.body;
+
+    console.log(req.body)
 
     if (!identidad.esDniValido(dni) && !identidad.esNieValido(dni)) {
       return res.status(400).json({ message: "DNI no válido" });
@@ -33,21 +36,24 @@ const darAltaEmpleadoHandler = async (req, res) => {
         .json({ message: "Nombre de usuario y/o DNI en uso" });
     }
 
-    await db.USUARIOS.create({
+    const result = await db.USUARIOS.create({
+      id_empresa: empresa,
       user_name: username,
       contrasena: password,
       nomapes: nombreApellidos,
-      dni,
-      num_seguridad_social: segSocial,
+      DNI: dni,
+      num_seguridad_social: seguridadSocial,
       email,
       telefono,
       sexo,
       rol,
     });
 
+    console.log(result)
+
     res.status(201).json({ message: "Alta completada" });
   } catch (error) {
-    console.error("Error al dar de alta empleado: ", error);
+    console.log("Error al dar de alta empleado: ", error);
     res.status(500).send("Error del servidor");
   }
 };

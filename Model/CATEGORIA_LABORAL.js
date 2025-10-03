@@ -18,10 +18,9 @@ module.exports = (sequelize, DataTypes) => {
       nombre: {
         type: DataTypes.STRING(100),
         allowNull: false,
-        unique: true,
       },
-      salario: {
-        type: DataTypes.DECIMAL(10, 2),
+      codigo_rol: {
+        type: DataTypes.STRING(50),
         allowNull: false,
       },
     },
@@ -40,6 +39,11 @@ module.exports = (sequelize, DataTypes) => {
     CATEGORIA_LABORAL.belongsTo(models.EMPRESA, {
       foreignKey: "id_empresa",
       as: "empresa",
+    });
+  
+    CATEGORIA_LABORAL.hasMany(models.TARIFAS_CATEGORIAS, {
+      foreignKey: "id_grupo",
+      as: "tarifas",
     });
   };
 

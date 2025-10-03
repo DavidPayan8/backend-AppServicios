@@ -26,6 +26,7 @@ const fichajesProyectoRoutes = require("./routes/fichajesProyectoRoutes");
 const geolocationRoutes = require("./routes/geolocationRoutes");
 const empresaRoutes = require("./routes/empresaRoutes");
 const modulosRoutes = require("./routes/modulosRoutes");
+const horariosRoutes = require("./routes/horariosRoutes");
 const authenticateToken = require("./middleware/authMiddleware");
 
 const app = express();
@@ -56,6 +57,7 @@ const routes = [
   { path: "blobStorage", router: blobStorageRoutes },
   { path: "export", router: exportRoutes },
   { path: "geolocation", router: geolocationRoutes },
+  { path: "horarios", router: horariosRoutes },
 ];
 
 // Middleware para cors
