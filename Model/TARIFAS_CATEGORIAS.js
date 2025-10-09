@@ -42,6 +42,7 @@ module.exports = (sequelize, DataTypes) => {
         TARIFAS_CATEGORIAS.belongsTo(models.CATEGORIA_LABORAL, {
             foreignKey: "id_grupo",
             as: "categoriaLaboral",
+            onDelete: 'CASCADE',
         });
 
         TARIFAS_CATEGORIAS.belongsTo(models.EMPRESA, {

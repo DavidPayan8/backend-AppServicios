@@ -107,7 +107,7 @@ const actualizarLocalizacionEntrada = async (req, res) => {
 
     // Actualizar localización
     await db.CONTROL_ASISTENCIAS.update(
-      { localizacion_entrada: direccionFinal },
+      { localizacion_entrada: direccionFinal.formatted_address || direccionFinal },
       { where: { id: id_parte } }
     );
 
@@ -143,7 +143,7 @@ const actualizarLocalizacionSalida = async (req, res) => {
 
     // Actualizar localización
     await db.CONTROL_ASISTENCIAS.update(
-      { localizacion_salida: direccionFinal },
+      { localizacion_salida: direccionFinal.formatted_address || direccionFinal },
       { where: { id: id_parte } }
     );
 

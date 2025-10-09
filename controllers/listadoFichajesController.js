@@ -1,5 +1,6 @@
 const { Op, literal } = require("sequelize");
 const db = require("../Model");
+const { mapfichajeResource } = require("../resources/fichajes");
 
 const obtenerFichajesProyecto = async (req, res) => {
   try {
@@ -31,35 +32,41 @@ const obtenerFichajesProyecto = async (req, res) => {
           model: db.USUARIOS,
           as: "usuario",
           where: whereUsuario,
-          attributes: ["nomapes", "rol"],
-        },
+          attributes: ["nomapes", "rol", "horas_personalizadas", "categoria_laboral_id"],
+          include: [
+            {
+              model: db.CATEGORIA_LABORAL,
+              as: "categoriaLaboral",
+              attributes: ["id", "nombre"],
+              include: [
+                {
+                  model: db.TARIFAS_CATEGORIAS,
+                  as: "tarifas",
+                  attributes: ["horas_jornada", "salario_base"]
+                }
+              ]
+            }
+          ]
+        }
       ],
       attributes: [
         ["id", "Id"],
         ["fecha", "Fecha"],
         ["hora_entrada", "Entrada"],
         ["hora_salida", "Salida"],
-        [
-          literal("ROUND(DATEDIFF(MINUTE, hora_entrada, hora_salida), 2)"),
-          "Total",
-        ],
+        [literal("ROUND(DATEDIFF(MINUTE, hora_entrada, hora_salida), 2)"), "Total"],
         ["localizacion_entrada", "Ubicacion_entrada"],
-        ["localizacion_salida", "Ubicacion_salida"],
+        ["localizacion_salida", "Ubicacion_salida"]
       ],
       order: [["hora_entrada", "DESC"]],
       raw: true,
+      nest: true
     });
 
-    // Añadir trabajador y rol manualmente al objeto plano
-    const resultado = fichajes.map((f) => ({
-      ...f,
-      Trabajador: f["usuario.nomapes"],
-      Rol: f["usuario.rol"],
-    }));
 
-    res.status(200).json(resultado);
+    res.status(200).json(mapfichajeResource(fichajes));
   } catch (error) {
-    console.error("Error al obtener fichajes por proyecto:", error.message);
+    console.log("Error al obtener fichajes por proyecto:", error);
     res.status(500).json({ error: "Error del servidor" });
   }
 };
@@ -90,6 +97,7 @@ const eliminarFichajes = async (req, res) => {
       res.status(404).json({ message: "Fichajes no encontrados" });
     }
   } catch (error) {
+    console.log(error)
     res
       .status(500)
       .json({ error: "Error al eliminar los fichajes: " + error.message });
@@ -127,6 +135,7 @@ const patchFichaje = async (req, res) => {
       res.status(404).json({ message: "Fichaje no encontrado" });
     }
   } catch (error) {
+    console.log(error)
     res
       .status(500)
       .json({ error: "Error al actualizar el fichaje: " + error.message });
@@ -143,15 +152,12 @@ const postFichaje = async (req, res) => {
       localizacionSalida,
     } = req.query;
 
-    const entradaDate = new Date(entrada);
-    const salidaDate = salida ? new Date(salida) : null;
-
     // Crear un nuevo fichaje
     const result = await db.CONTROL_ASISTENCIAS.create({
       id_usuario: idUsuario,
-      fecha: entradaDate,
-      hora_entrada: entradaDate,
-      hora_salida: salidaDate,
+      fecha: entrada,
+      hora_entrada: entrada,
+      hora_salida: salida,
       localizacion_entrada: localizacionEntrada,
       localizacion_salida: localizacionSalida,
     });
@@ -160,6 +166,7 @@ const postFichaje = async (req, res) => {
       .status(201)
       .json({ message: "Fichaje creado correctamente", id: result.id });
   } catch (error) {
+    console.log(error)
     res.status(500).json({
       error: "Controller: Error al crear el fichaje: " + error.message,
     });
