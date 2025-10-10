@@ -122,13 +122,17 @@ const getEmpleadosHandler = async (req, res) => {
       };
     }
 
-    if (filtros.rol) {
-      where.rol = {
-        [Op.like]: `%${filtros.rol}%`,
-        [Op.not]: "superadmin",
-      };
-    } else {
-      where.rol = { [Op.not]: "superadmin" };
+    if (req.user.rol !== "superadmin") {
+      if (filtros.rol) {
+        where.rol = {
+          [Op.and]: [
+            { [Op.like]: `%${filtros.rol}%` },
+            { [Op.not]: "superadmin" },
+          ],
+        };
+      } else {
+        where.rol = { [Op.not]: "superadmin" };
+      }
     }
 
     const { count: total, rows } = await db.USUARIOS.findAndCountAll({
@@ -208,12 +212,10 @@ const editarEmpleadoHandler = async (req, res) => {
     const {
       id, username, password, nombreApellidos, dni, seguridadSocial,
       email, telefono, rol, sexo,
-      categoriaLaboral, id_horario,
+      categoriaLaboral, horario,
       salario,
       horas
     } = req.body;
-
-    console.log(req.body)
 
     // Campos actualizables
     const camposActualizables = {
@@ -252,18 +254,20 @@ const editarEmpleadoHandler = async (req, res) => {
 
     await db.USUARIOS.update(campos, { where: { id } });
 
-    if (id_horario !== undefined) {
+    console.log("Actualizando horario a:", horario);
+    if (horario !== undefined) {
+      console.log("Actualizando horario a:", horario);
       const asignacion = await db.ASIGNACION_HORARIO_USUARIO.findOne({ where: { id_usuario: id } });
       if (asignacion) {
         await asignacion.update({
-          id_horario,
+          id_horario: horario,
           fecha_asignacion: new Date(),
           activo: true
         });
       } else {
         await db.ASIGNACION_HORARIO_USUARIO.create({
           id_usuario: id,
-          id_horario,
+          id_horario: horario,
           fecha_asignacion: new Date(),
           activo: true
         });
