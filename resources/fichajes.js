@@ -3,8 +3,10 @@
  * Prioriza horas_personalizadas sobre la tarifa de la categoría laboral
  */
 function fichajeResource(f) {
-  const tarifa = f.usuario.categoriaLaboral?.tarifas?.[0];
-  const horasDiarias = f.usuario.horas_personalizadas ?? tarifa?.horas_jornada ?? null;
+
+  const horasDiarias =
+    f.usuario.horas_personalizadas ? f.usuario.horas_personalizadas :
+    f.usuario.categoriaLaboral?.tarifas?.horas_jornada;
 
   return {
     Id: f.Id,
@@ -16,19 +18,18 @@ function fichajeResource(f) {
     Ubicacion_salida: f.Ubicacion_salida,
     Trabajador: f.usuario.nomapes,
     Rol: f.usuario.rol,
-    HorasDiarias: horasDiarias
+    HorasDiarias: horasDiarias,
   };
 }
-  
-  /**
-   * Mapea un array de fichajes
-   */
-  function mapfichajeResource(fichajes) {
-    return fichajes.map(fichajeResource);
-  }
-  
-  module.exports = {
-    fichajeResource,
-    mapfichajeResource
-  };
-  
+
+/**
+ * Mapea un array de fichajes
+ */
+function mapfichajeResource(fichajes) {
+  return fichajes.map(fichajeResource);
+}
+
+module.exports = {
+  fichajeResource,
+  mapfichajeResource
+};

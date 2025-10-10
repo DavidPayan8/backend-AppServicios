@@ -169,8 +169,15 @@ const getDetallesHandler = async (req, res) => {
       return res.status(400).send("Usuario no encontrado");
     }
 
+    // Buscar empleado base
     const empleado = await db.USUARIOS.findByPk(id);
     if (!empleado) return res.status(404).send("Usuario no encontrado");
+
+    // Buscar asignación de horario activa (o la más reciente)
+    const asignacion = await db.ASIGNACION_HORARIO_USUARIO.findOne({
+      where: { id_usuario: id, activo: true },
+      order: [['fecha_asignacion', 'DESC']],
+    });
 
     const empleadoFormateado = {
       id: empleado.id,
@@ -183,6 +190,10 @@ const getDetallesHandler = async (req, res) => {
       telefono: empleado.telefono ?? null,
       rol: empleado.rol,
       sexo: empleado.sexo ?? null,
+      salario: empleado.salario_personalizado ?? null,
+      horas: empleado.horas_personalizadas ?? null,
+      categoriaLaboral: empleado.categoria_laboral_id ?? null,
+      horario: asignacion ? asignacion.id_horario : null,
     };
 
     res.status(200).json(empleadoFormateado);
@@ -194,18 +205,20 @@ const getDetallesHandler = async (req, res) => {
 
 const editarEmpleadoHandler = async (req, res) => {
   try {
-    const { id } = req.params;
     const {
-      username, password, nombreApellidos, dni, seguridadSocial,
+      id, username, password, nombreApellidos, dni, seguridadSocial,
       email, telefono, rol, sexo,
-      id_categoria, id_horario,
+      categoriaLaboral, id_horario,
       salario,
-      horas 
+      horas
     } = req.body;
 
+    console.log(req.body)
+
+    // Campos actualizables
     const camposActualizables = {
       user_name: username,
-      contrasena: password,
+      contrasena: password && password.trim() !== "" ? password : undefined,
       nomapes: nombreApellidos,
       dni,
       num_seguridad_social: seguridadSocial,
@@ -213,18 +226,18 @@ const editarEmpleadoHandler = async (req, res) => {
       telefono,
       rol,
       sexo,
-      id_categoria,
+      categoria_laboral_id: Number(categoriaLaboral),
       salario_personalizado: salario ?? null,
-      horas_personalziadas: horas ?? null
+      horas_personalizadas: horas ?? null
     };
 
     const campos = Object.fromEntries(
       Object.entries(camposActualizables).filter(([_, v]) => v !== undefined)
     );
+
     if (Object.keys(campos).length === 0)
       return res.status(400).json({ message: "No hay campos para actualizar" });
 
-    // Validaciones de DNI y usuario existente
     if (dni && !identidad.esDniValido(dni) && !identidad.esNieValido(dni)) {
       return res.status(400).json({ message: "DNI inválido" });
     }
@@ -239,11 +252,14 @@ const editarEmpleadoHandler = async (req, res) => {
 
     await db.USUARIOS.update(campos, { where: { id } });
 
-    // Actualizar asignación de horario
     if (id_horario !== undefined) {
       const asignacion = await db.ASIGNACION_HORARIO_USUARIO.findOne({ where: { id_usuario: id } });
       if (asignacion) {
-        await asignacion.update({ id_horario, fecha_asignacion: new Date(), activo: true });
+        await asignacion.update({
+          id_horario,
+          fecha_asignacion: new Date(),
+          activo: true
+        });
       } else {
         await db.ASIGNACION_HORARIO_USUARIO.create({
           id_usuario: id,
@@ -255,8 +271,9 @@ const editarEmpleadoHandler = async (req, res) => {
     }
 
     res.status(200).json({ message: "Empleado actualizado con éxito" });
+
   } catch (error) {
-    console.error("Error al editar empleado: ", error);
+    console.error("Error al editar empleado:", error);
     res.status(500).json({ message: "Error del servidor" });
   }
 };

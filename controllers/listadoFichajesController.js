@@ -25,6 +25,8 @@ const obtenerFichajesProyecto = async (req, res) => {
       whereUsuario.rol = { [Op.eq]: rol };
     }
 
+    const hoy = new Date();
+
     const fichajes = await db.CONTROL_ASISTENCIAS.findAll({
       where: whereAsistencia,
       include: [
@@ -32,7 +34,12 @@ const obtenerFichajesProyecto = async (req, res) => {
           model: db.USUARIOS,
           as: "usuario",
           where: whereUsuario,
-          attributes: ["nomapes", "rol", "horas_personalizadas", "categoria_laboral_id"],
+          attributes: [
+            "nomapes",
+            "rol",
+            "horas_personalizadas",
+            "categoria_laboral_id",
+          ],
           include: [
             {
               model: db.CATEGORIA_LABORAL,
@@ -42,27 +49,44 @@ const obtenerFichajesProyecto = async (req, res) => {
                 {
                   model: db.TARIFAS_CATEGORIAS,
                   as: "tarifas",
-                  attributes: ["horas_jornada", "salario_base"]
-                }
-              ]
-            }
-          ]
-        }
+                  attributes: [
+                    "horas_jornada",
+                  ],
+                  where: {
+                    [Op.and]: [
+                      { fecha_inicio: { [Op.lte]: hoy } },
+                      {
+                        [Op.or]: [
+                          { fecha_fin: { [Op.gte]: hoy } },
+                          { fecha_fin: null },
+                        ],
+                      },
+                    ],
+                  },
+                  required: false, // no excluye categorías sin tarifa activa
+                },
+              ],
+            },
+          ],
+        },
       ],
       attributes: [
         ["id", "Id"],
         ["fecha", "Fecha"],
         ["hora_entrada", "Entrada"],
         ["hora_salida", "Salida"],
-        [literal("ROUND(DATEDIFF(MINUTE, hora_entrada, hora_salida), 2)"), "Total"],
+        [
+          literal("ROUND(DATEDIFF(MINUTE, hora_entrada, hora_salida), 2)"),
+          "Total",
+        ],
         ["localizacion_entrada", "Ubicacion_entrada"],
-        ["localizacion_salida", "Ubicacion_salida"]
+        ["localizacion_salida", "Ubicacion_salida"],
       ],
       order: [["hora_entrada", "DESC"]],
+      distinct: true, // evita duplicados
       raw: true,
-      nest: true
+      nest: true,
     });
-
 
     res.status(200).json(mapfichajeResource(fichajes));
   } catch (error) {
