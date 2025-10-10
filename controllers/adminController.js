@@ -5,50 +5,58 @@ const { Op, fn } = require("sequelize");
 
 const darAltaEmpleadoHandler = async (req, res) => {
   try {
+    const { empresa } = req.user;
     const {
-      username,
-      password,
-      nombreApellidos,
-      dni,
-      segSocial,
-      email,
-      telefono,
-      sexo,
-      rol,
+      username, password, nombreApellidos, dni, seguridadSocial,
+      email, telefono, sexo, rol,
+      id_categoria,
+      id_horario,
+      salario, // opcional del formulario
+      horas    // opcional del formulario
     } = req.body;
 
+    // Validación de DNI/NIE
     if (!identidad.esDniValido(dni) && !identidad.esNieValido(dni)) {
       return res.status(400).json({ message: "DNI no válido" });
     }
 
+    // Comprobar si usuario o DNI ya existen
     const existe = await db.USUARIOS.findOne({
-      where: {
-        [Op.or]: [{ user_name: username }, { dni }],
-      },
+      where: { [Op.or]: [{ user_name: username }, { dni }] },
     });
+    if (existe) return res.status(400).json({ message: "Usuario/DNI en uso" });
 
-    if (existe) {
-      return res
-        .status(400)
-        .json({ message: "Nombre de usuario y/o DNI en uso" });
-    }
-
-    await db.USUARIOS.create({
+    // Crear usuario usando salario/horas del formulario si vienen
+    const usuario = await db.USUARIOS.create({
+      id_empresa: empresa,
       user_name: username,
       contrasena: password,
       nomapes: nombreApellidos,
-      dni,
-      num_seguridad_social: segSocial,
+      DNI: dni,
+      num_seguridad_social: seguridadSocial,
       email,
       telefono,
       sexo,
       rol,
+      id_categoria,
+      salario_personalizado: salario ?? null,
+      horas_personalizadas: horas ?? null
     });
 
-    res.status(201).json({ message: "Alta completada" });
+    // Crear asignación de jornada si viene
+    if (id_horario) {
+      await db.ASIGNACION_HORARIO_USUARIO.create({
+        id_usuario: usuario.id,
+        id_horario,
+        fecha_asignacion: new Date(),
+        activo: true
+      });
+    }
+
+    res.status(201).json({ message: "Alta completada", usuarioId: usuario.id });
   } catch (error) {
     console.error("Error al dar de alta empleado: ", error);
-    res.status(500).send("Error del servidor");
+    res.status(500).json({ message: "Error del servidor" });
   }
 };
 
@@ -114,13 +122,17 @@ const getEmpleadosHandler = async (req, res) => {
       };
     }
 
-    if (filtros.rol) {
-      where.rol = {
-        [Op.like]: `%${filtros.rol}%`,
-        [Op.not]: "superadmin",
-      };
-    } else {
-      where.rol = { [Op.not]: "superadmin" };
+    if (req.user.rol !== "superadmin") {
+      if (filtros.rol) {
+        where.rol = {
+          [Op.and]: [
+            { [Op.like]: `%${filtros.rol}%` },
+            { [Op.not]: "superadmin" },
+          ],
+        };
+      } else {
+        where.rol = { [Op.not]: "superadmin" };
+      }
     }
 
     const { count: total, rows } = await db.USUARIOS.findAndCountAll({
@@ -158,11 +170,18 @@ const getDetallesHandler = async (req, res) => {
     const { id } = req.query;
 
     if (!id) {
-      return res.status(400).send("El parámetro 'id' es obligatorio");
+      return res.status(400).send("Usuario no encontrado");
     }
 
+    // Buscar empleado base
     const empleado = await db.USUARIOS.findByPk(id);
-    if (!empleado) return res.status(404).send("Empleado no encontrado");
+    if (!empleado) return res.status(404).send("Usuario no encontrado");
+
+    // Buscar asignación de horario activa (o la más reciente)
+    const asignacion = await db.ASIGNACION_HORARIO_USUARIO.findOne({
+      where: { id_usuario: id, activo: true },
+      order: [['fecha_asignacion', 'DESC']],
+    });
 
     const empleadoFormateado = {
       id: empleado.id,
@@ -175,6 +194,10 @@ const getDetallesHandler = async (req, res) => {
       telefono: empleado.telefono ?? null,
       rol: empleado.rol,
       sexo: empleado.sexo ?? null,
+      salario: empleado.salario_personalizado ?? null,
+      horas: empleado.horas_personalizadas ?? null,
+      categoriaLaboral: empleado.categoria_laboral_id ?? null,
+      horario: asignacion ? asignacion.id_horario : null,
     };
 
     res.status(200).json(empleadoFormateado);
@@ -187,21 +210,17 @@ const getDetallesHandler = async (req, res) => {
 const editarEmpleadoHandler = async (req, res) => {
   try {
     const {
-      id,
-      username,
-      password,
-      nombreApellidos,
-      dni,
-      seguridadSocial,
-      email,
-      telefono,
-      rol,
-      sexo,
+      id, username, password, nombreApellidos, dni, seguridadSocial,
+      email, telefono, rol, sexo,
+      categoriaLaboral, horario,
+      salario,
+      horas
     } = req.body;
 
+    // Campos actualizables
     const camposActualizables = {
       user_name: username,
-      contrasena: password,
+      contrasena: password && password.trim() !== "" ? password : undefined,
       nomapes: nombreApellidos,
       dni,
       num_seguridad_social: seguridadSocial,
@@ -209,41 +228,57 @@ const editarEmpleadoHandler = async (req, res) => {
       telefono,
       rol,
       sexo,
+      categoria_laboral_id: Number(categoriaLaboral),
+      salario_personalizado: salario ?? null,
+      horas_personalizadas: horas ?? null
     };
+
     const campos = Object.fromEntries(
-      Object.entries(camposActualizables).filter(
-        ([, fields]) => fields !== undefined
-      )
+      Object.entries(camposActualizables).filter(([_, v]) => v !== undefined)
     );
 
-    if (Object.keys(campos).length === 0) {
-      return res
-        .status(400)
-        .json({ message: "No se está editando ningúna columna" });
-    }
+    if (Object.keys(campos).length === 0)
+      return res.status(400).json({ message: "No hay campos para actualizar" });
 
     if (dni && !identidad.esDniValido(dni) && !identidad.esNieValido(dni)) {
       return res.status(400).json({ message: "DNI inválido" });
     }
 
-    const empleadoExistente = await db.USUARIOS.findOne({
+    const existe = await db.USUARIOS.findOne({
       where: {
         id: { [Op.ne]: id },
-        [Op.or]: [{ user_name: username }, { dni }],
-      },
+        [Op.or]: [{ user_name: username }, { dni }]
+      }
     });
-
-    if (empleadoExistente) {
-      return res
-        .status(400)
-        .json({ message: "Nombre de usuario y/o DNI en uso" });
-    }
+    if (existe) return res.status(400).json({ message: "Usuario/DNI en uso" });
 
     await db.USUARIOS.update(campos, { where: { id } });
-    res.status(201).json({ message: "Actualizado con exito" });
+
+    console.log("Actualizando horario a:", horario);
+    if (horario !== undefined) {
+      console.log("Actualizando horario a:", horario);
+      const asignacion = await db.ASIGNACION_HORARIO_USUARIO.findOne({ where: { id_usuario: id } });
+      if (asignacion) {
+        await asignacion.update({
+          id_horario: horario,
+          fecha_asignacion: new Date(),
+          activo: true
+        });
+      } else {
+        await db.ASIGNACION_HORARIO_USUARIO.create({
+          id_usuario: id,
+          id_horario: horario,
+          fecha_asignacion: new Date(),
+          activo: true
+        });
+      }
+    }
+
+    res.status(200).json({ message: "Empleado actualizado con éxito" });
+
   } catch (error) {
-    console.error("Error al editar empleado: ", error);
-    res.status(500).send("Error del servidor");
+    console.error("Error al editar empleado:", error);
+    res.status(500).json({ message: "Error del servidor" });
   }
 };
 

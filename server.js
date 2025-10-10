@@ -20,11 +20,14 @@ const estadisticasRoutes = require("./routes/estadisticasRoutes");
 const vacacionesRoutes = require("./routes/vacacionesRoutes");
 const ftpRoutes = require("./routes/ftpRoutes");
 const blobStorageRoutes = require("./routes/blobStorageRoutes");
+const exportRoutes = require("./routes/exportRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const fichajesProyectoRoutes = require("./routes/fichajesProyectoRoutes");
 const geolocationRoutes = require("./routes/geolocationRoutes");
 const empresaRoutes = require("./routes/empresaRoutes");
 const modulosRoutes = require("./routes/modulosRoutes");
+const horariosRoutes = require("./routes/horariosRoutes");
+const catLaboralRoutes = require("./routes/categoriaLaboralRoutes");
 const authenticateToken = require("./middleware/authMiddleware");
 
 const app = express();
@@ -53,7 +56,10 @@ const routes = [
   { path: "modulos", router: modulosRoutes },
   { path: "ftp", router: ftpRoutes },
   { path: "blobStorage", router: blobStorageRoutes },
+  { path: "export", router: exportRoutes },
   { path: "geolocation", router: geolocationRoutes },
+  { path: "horarios", router: horariosRoutes },
+  { path: "categoria-laboral", router: catLaboralRoutes },
 ];
 
 // Middleware para cors
