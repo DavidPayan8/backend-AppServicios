@@ -4,10 +4,8 @@ const {
     listadoArchivosAzure,
     downloadArchivoAzure,
     generarUrlTemporalAzure,
-    obtenerPrimerBlobEmpresa,
     obtenerPrimerArchivo
 } = require("../Model/others/blobStorageModel");
-const { enviarAdjuntosOt } = require('./emailController')
 const db = require("../Model");
 const mime = require("mime-types");
 
@@ -25,7 +23,7 @@ const obtenerListadoAzure = async (req, res) => {
             identification = id;
         }
 
-        const listado = await listadoArchivosAzure(ambito, identification, empresa, tipo);
+        const listado = await listadoArchivosAzure(ambito, null ,identification, empresa, tipo);
         return res.status(200).json(listado);
     } catch (error) {
         console.error("Error al obtener listado FTP:", error);

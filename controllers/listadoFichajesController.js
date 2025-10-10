@@ -33,7 +33,10 @@ const obtenerFichajesProyecto = async (req, res) => {
         {
           model: db.USUARIOS,
           as: "usuario",
-          where: whereUsuario,
+          where: {
+            id_empresa: req.user.empresa,
+            ...whereUsuario
+          },
           attributes: [
             "nomapes",
             "rol",
