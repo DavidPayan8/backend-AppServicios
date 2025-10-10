@@ -122,33 +122,35 @@ async function uploadToAzure(ambito, archivos, id_usuario, id_empresa, tipo) {
                     }
                 }
             } else {
-                const blobPath = createBlobPath(
-                    ambito,
-                    file.filename,
-                    id_usuario,
-                    id_empresa,
-                    tipo
-                );
+                if (ambito === "Personal") {
+                    const blobPath = createBlobPathPersonal(
+                        ambito,
+                        file.filename,
+                        id_usuario,
+                        id_empresa,
+                        tipo
+                    );
+                    await registrarOperacionDocumento(
+                        blobPath,
+                        "crear",
+                        transaction,
+                        id_empresa,
+                        id_usuario,
+                        tipo
+                    );
 
-                await registrarOperacionDocumento(
-                    blobPath,
-                    "crear",
-                    transaction,
-                    id_empresa,
-                    id_usuario,
-                    tipo
-                );
+                    // Detectar el MIME del archivo principal
+                    const contentType =
+                        mime.lookup(file.filename) || "application/octet-stream";
 
-                // Detectar el MIME del archivo principal
-                const contentType =
-                    mime.lookup(file.filename) || "application/octet-stream";
+                    const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
+                    await blockBlobClient.uploadData(file.buffer, {
+                        blobHTTPHeaders: {
+                            blobContentType: contentType
+                        }
+                    });
+                }
 
-                const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
-                await blockBlobClient.uploadData(file.buffer, {
-                    blobHTTPHeaders: {
-                        blobContentType: contentType
-                    }
-                });
             }
         }
 
