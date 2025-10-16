@@ -34,6 +34,7 @@ const app = express();
 
 const port = process.env.PORT;
 
+// Declaro rutas
 const routes = [
   { path: "auth", router: authRoutes, noBase: true },
   { path: "users", router: userRoutes },
@@ -66,17 +67,14 @@ const routes = [
 app.use(cors());
 app.use(morgan("dev"));
 
-// Middleware para JSON y URL-encoded de forma condicional
+// Middleware para multipart/form-data y json
 app.use((req, res, next) => {
-  if (req.is("application/json")) {
-    express.json({ limit: "10mb" })(req, res, next);
-  } else if (req.is("application/x-www-form-urlencoded")) {
+  if (req.is("multipart/form-data")) return next();
+  express.json({ limit: "10mb" })(req, res, err => {
+    if (err) return next(err);
     express.urlencoded({ limit: "10mb", extended: true })(req, res, next);
-  } else {
-    next();
-  }
+  });
 });
-
 // Configurar rutas
 routes.forEach(({ path, router, noBase }) => {
   app.use(noBase ? `/${path}` : `${BASE_API_URL}${path}`, router);

@@ -72,14 +72,17 @@ const getAllProyects = async (req, res) => {
       if (filtroPor === "nombre") {
         where.nombre = { [Op.like]: `%${filtro}%` };
       } else if (filtroPor === "num_ot") {
-        where.num_ot = { [Op.like]: `%${filtro}%` };
+        where.id_origen = db.sequelize.where(
+          db.sequelize.fn('CONVERT', db.sequelize.literal('VARCHAR'), db.sequelize.col('ORDEN_TRABAJO.id_origen')),
+          { [Op.like]: `%${filtro}%` }
+        );
       }
     }
-
 
     const rows = await db.ORDEN_TRABAJO.findAll({
       attributes: [
         "id",
+        "id_origen",
         "num_ot",
         "nombre",
         "observaciones",
@@ -139,6 +142,7 @@ const getAllProyects = async (req, res) => {
       where,
       group: [
         "ORDEN_TRABAJO.id",
+        "ORDEN_TRABAJO.id_origen",
         "ORDEN_TRABAJO.num_ot",
         "ORDEN_TRABAJO.nombre",
         "ORDEN_TRABAJO.observaciones",
@@ -163,6 +167,7 @@ const getAllProyects = async (req, res) => {
       limit,
       offset,
       subQuery: false,
+      log: console.log
     });
 
 
