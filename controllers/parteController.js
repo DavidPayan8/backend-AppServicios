@@ -63,11 +63,16 @@ const crearParteTrabajo = async (req, res) => {
 };
 
 const getPartes = async (req, res) => {
-  const { id_proyecto } = req.query;
+  const { id_proyecto, fecha } = req.query;
   const id_usuario = req.user.id;
 
   const whereClause = { id_usuario };
+
+  if (fecha) whereClause.fecha = fecha;
+
   if (id_proyecto) whereClause.id_proyecto = id_proyecto;
+
+  console.log(whereClause);
 
   try {
     const partes = await db.PARTES_TRABAJO.findAll({

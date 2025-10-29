@@ -634,6 +634,27 @@ const obtenerProyecto = async (req, res) => {
   }
 };
 
+const obtenerOTsConstruccion = async (req, res) => {
+  const { empresa } = req.user;
+
+  try {
+    const otsConstruccion = await db.ORDEN_TRABAJO.findAll({
+      where: {
+        activo: true,
+        id_empresa: empresa,
+        es_ote: false,
+        estado: { [Op.ne]: 'finalizado' }
+      },
+      attributes: ['id', 'nombre', 'estado']
+    });
+
+    res.status(200).json(otsConstruccion);
+  } catch (error) {
+    console.log("Error al obtener OTs de construcción:", error);
+    res.status(500).json({ message: "Error al obtener OTs de construcción" });
+  }
+}
+
 const autoAsignarOrdenTrabajo = async (req, res) => {
   try {
     const { id_ot } = req.body;
@@ -861,5 +882,6 @@ module.exports = {
   reasignarOt,
   getNoAsignados,
   getAllProyects,
-  getByIdLaTorre
+  getByIdLaTorre,
+  obtenerOTsConstruccion
 };

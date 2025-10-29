@@ -34,7 +34,7 @@ const app = express();
 
 const port = process.env.PORT;
 
-// Declaro rutas
+// Declarar rutas
 const routes = [
   { path: "auth", router: authRoutes, noBase: true },
   { path: "users", router: userRoutes },
@@ -93,4 +93,12 @@ app.get("/", (req, res) => {
 // Iniciar el servidor
 app.listen(port, () => {
   console.log(`Servidor Node.js corriendo en puerto ${port}`);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('⚠️ Unhandled Rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('💥 Uncaught Exception:', err);
 });
