@@ -5,6 +5,8 @@ const config = {
   password: process.env.DB_PASSWORD,
   server: process.env.DB_SERVER,
   database: process.env.DB_NAME,
+  dialect: "mssql",
+  timezone: '+00:00',
   options: {
     instanceName: "KONGSERVER",
     encrypt: true,
@@ -33,4 +35,4 @@ const sequelize = new Sequelize(
   }
 );
 
-module.exports = { config,sequelize  };
+module.exports = { config, sequelize };
