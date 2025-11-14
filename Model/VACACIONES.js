@@ -9,9 +9,9 @@ module.exports = function (sequelize, DataTypes) {
         primaryKey: true,
         autoIncrement: true,
       },
-      aceptado: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
+      id_origen: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
       },
       tipo: {
         type: DataTypes.INTEGER,
@@ -21,6 +21,14 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
+      fecha_solicitud: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      notas:{
+        type: DataTypes.TEXT,
+        allowNull: true,
+      }
     },
     {
       sequelize,
