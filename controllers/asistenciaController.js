@@ -1,11 +1,18 @@
 const db = require("../Model");
-const { obtenerDireccionReversa } = require("../models/geolocationModel");
+const { obtenerDireccionReversa } = require("../Model/others/geolocationModel");
 
 // Fichar entrada
 const ficharEntradaHandler = async (req, res) => {
   const userId = req.user.id;
+  const { canClockIn } = req.user;
   const { date } = req.body;
   const fecha = formatFecha(date);
+
+  if (canClockIn === false) {
+    return res
+      .status(403)
+      .json({ message: "Permiso para fichar desactivado." });
+  }
 
   try {
     // Verificar parte abierto
@@ -38,7 +45,14 @@ const ficharEntradaHandler = async (req, res) => {
 // Fichar salida
 const ficharSalidaHandler = async (req, res) => {
   const userId = req.user.id;
+  const { canClockIn } = req.user;
   const { date } = req.body;
+
+  if (canClockIn === false) {
+    return res
+      .status(403)
+      .json({ message: "Permiso para fichar desactivado." });
+  }
 
   try {
     const fecha = formatFecha(date);
@@ -93,7 +107,7 @@ const actualizarLocalizacionEntrada = async (req, res) => {
 
     // Actualizar localización
     await db.CONTROL_ASISTENCIAS.update(
-      { localizacion_entrada: direccionFinal },
+      { localizacion_entrada: direccionFinal.formatted_address || direccionFinal },
       { where: { id: id_parte } }
     );
 
@@ -129,7 +143,7 @@ const actualizarLocalizacionSalida = async (req, res) => {
 
     // Actualizar localización
     await db.CONTROL_ASISTENCIAS.update(
-      { localizacion_salida: direccionFinal },
+      { localizacion_salida: direccionFinal.formatted_address || direccionFinal },
       { where: { id: id_parte } }
     );
 

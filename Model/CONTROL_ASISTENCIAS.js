@@ -14,11 +14,11 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: false,
       },
       hora_entrada: {
-        type: DataTypes.DATE,
+        type: DataTypes.TIME,
         allowNull: true,
       },
       hora_salida: {
-        type: DataTypes.DATE,
+        type: DataTypes.TIME,
         allowNull: true,
       },
       fecha: {

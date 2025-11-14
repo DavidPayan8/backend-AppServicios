@@ -3,6 +3,8 @@ const { mapSolicitudNomalized } = require("../resources/solicitud");
 const { enviarSolicitud } = require('../controllers/emailController');
 const { paginatedResponse } = require('../resources/helpers/paginator');
 const SOLICITUD = db.SOLICITUD;
+const { Op } = require("sequelize");
+
 
 const getAllSolicitudes = async (req, res) => {
     try {
@@ -11,26 +13,85 @@ const getAllSolicitudes = async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const offset = (page - 1) * limit;
 
-        const { rows, count } = await SOLICITUD.findAndCountAll({
-            where: {
-                usuario_id: id,
-                empresa_id: empresa,
+        // Filtros opcionales
+        const { cliente, fechaDesde, fechaHasta, estados } = req.query;
+
+        const where = {
+            usuario_id: id,
+            empresa_id: empresa,
+        };
+
+        // 🔹 Filtrado por rango de fechas
+        if (fechaDesde || fechaHasta) {
+            let fechaInicio;
+            let fechaFin;
+
+            if (fechaDesde) {
+                fechaInicio = new Date(fechaDesde);
+                fechaInicio.setHours(0, 0, 0, 0);
+            }
+
+            if (fechaHasta) {
+                fechaFin = new Date(fechaHasta);
+                fechaFin.setHours(23, 59, 59, 999);
+            }
+
+            if (fechaInicio && fechaFin) {
+                where.fecha_solicitud = { [Op.between]: [fechaInicio, fechaFin] };
+            } else if (fechaInicio) {
+                where.fecha_solicitud = { [Op.gte]: fechaInicio };
+            } else if (fechaFin) {
+                where.fecha_solicitud = { [Op.lte]: fechaFin };
+            }
+        }
+
+        // 🔹 Filtrado por estados
+        if (estados) {
+            const estadosArray = Array.isArray(estados)
+                ? estados
+                : (estados).split(',').map(s => s.trim());
+
+            const estadosNumericos = estadosArray.map(e => {
+                switch (e.toLowerCase()) {
+                    case 'pendiente': return 0;
+                    case 'ofertado': return 1;
+                    case 'rechazado': return 2;
+                    default: return null;
+                }
+            }).filter(e => e !== null);
+
+            if (estadosNumericos.length > 0) {
+                where.estado = { [Op.in]: estadosNumericos };
+            }
+        }
+
+        const include = [
+            { model: db.PETICIONARIO, as: "solicitud_peticionario" },
+            {
+                model: db.CLIENTES,
+                as: "solicitud_cliente",
+                ...(cliente && {
+                    where: {
+                        nombre: { [Op.like]: `%${cliente}%` },
+                    },
+                }),
             },
-            include: [
-                { model: db.PETICIONARIO, as: 'solicitud_peticionario' },
-                { model: db.CLIENTES, as: 'solicitud_cliente' }
-            ],
+        ];
+
+        const { rows, count } = await SOLICITUD.findAndCountAll({
+            where,
+            include,
             limit,
             offset,
-            order: [['fecha_solicitud', 'DESC']]
+            order: [["fecha_solicitud", "DESC"]],
+            distinct: true, // Necesario por los include
         });
 
         const data = rows.map(mapSolicitudNomalized);
 
         res.status(200).json(paginatedResponse(data, count, page, limit));
-
     } catch (error) {
-        console.log(error)
+        console.log(error);
         res.status(500).json({ message: "Error al obtener solicitudes", error });
     }
 };
@@ -68,7 +129,8 @@ const create = async (req, res) => {
     try {
         const { empresa, id } = req.user;
         const {
-            fecha_solicitud,
+            nombre,
+            fecha_limite,
             cliente_id,
             peticionario_id,
             nota,
@@ -80,8 +142,9 @@ const create = async (req, res) => {
 
         const nuevaSolicitud = await db.SOLICITUD.create({
             usuario_id: id,
+            nombre,
+            fecha_limite: fecha_limite || null,
             cliente_id,
-            fecha_solicitud,
             empresa_id: empresa,
             peticionario_id,
             nota,
@@ -106,6 +169,8 @@ const create = async (req, res) => {
             solicitud_id: nuevaSolicitud.id,
             empresaId: empresa,
             archivos,
+            user: id,
+            accion: 'create'
         });
 
         await t.commit();
@@ -125,6 +190,7 @@ const update = async (req, res) => {
 
         const { id } = req.params;
         const { empresa } = req.user;
+        const user_id = req.user.id;
         const {
             peticionario_id,
             nota,
@@ -143,6 +209,11 @@ const update = async (req, res) => {
         if (!solicitud) {
             await t.rollback();
             return res.status(404).json({ message: "Solicitud no encontrada" });
+        }
+
+        if (solicitud.estado > 0) {
+            await t.rollback();
+            return res.status(400).json({ message: "No se puede actualizar una solicitud que ya ha sido procesada" });
         }
 
         // Actualizar la solicitud
@@ -170,6 +241,8 @@ const update = async (req, res) => {
             solicitud_id: solicitud.id,
             empresaId: empresa,
             archivos,
+            user: user_id,
+            accion: 'update'
         });
 
         await t.commit();

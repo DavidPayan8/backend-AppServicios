@@ -6,6 +6,7 @@ const config = {
   server: process.env.DB_SERVER,
   database: process.env.DB_NAME,
   options: {
+    instanceName: "KONGSERVER",
     encrypt: true,
     enableArithAbort: true,
     trustServerCertificate: true,
@@ -22,7 +23,8 @@ const sequelize = new Sequelize(
     timezone: '+00:00',
     dialectOptions: {
       options: {
-        encrypt: true,
+        instanceName: "KONGSERVER",
+        encrypt: false,
         enableArithAbort: true,
         trustServerCertificate: true,
       },
@@ -31,4 +33,4 @@ const sequelize = new Sequelize(
   }
 );
 
-module.exports = { config, sequelize };
+module.exports = { config,sequelize  };

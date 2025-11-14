@@ -71,7 +71,20 @@ module.exports = function (sequelize, DataTypes) {
       ext_anverso: {
         type: DataTypes.STRING(20),
         allowNull: true
-      }
+      },
+      fichaje_activo: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
+      salario_personalizado: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+      },
+      horas_personalizadas: {
+        type: DataTypes.DECIMAL(5, 2),
+        allowNull: true,
+      },
     },
     {
       sequelize,
@@ -145,7 +158,12 @@ module.exports = function (sequelize, DataTypes) {
 
     USUARIOS.hasMany(models.SOLICITUD, {
       foreignKey: "usuario_id",
-      as: "",
+      as: "solicitud",
+    });
+
+    USUARIOS.hasMany(models.ASIGNACION_HORARIO_USUARIO, {
+      foreignKey: "id_usuario",
+      as: "asignaciones_horario",
     });
   };
 

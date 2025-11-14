@@ -147,6 +147,21 @@ module.exports = function (sequelize, DataTypes) {
       foreignKey: "empresa_id",
       as: "solicitud",
     });
+
+    EMPRESA.hasMany(models.PETICIONARIO, {
+      foreignKey: "id_empresa",
+      as: "peticionario",
+    });
+
+    EMPRESA.hasMany(models.TARIFAS_CATEGORIAS, {
+      foreignKey: "id_empresa",
+      as: "tarifas",
+    });
+    
+    EMPRESA.hasMany(models.HORARIOS_PLANTILLA, {
+      foreignKey: "id_empresa",
+      as: "horarios",
+    });
   };
 
   return EMPRESA;

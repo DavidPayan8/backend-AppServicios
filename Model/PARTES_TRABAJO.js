@@ -65,6 +65,11 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.STRING(255),
         allowNull: true,
       },
+      desplazamientos_count: {
+        type: DataTypes.TINYINT,
+        allowNull: false,
+        defaultValue: 0,
+      }
     },
     {
       sequelize,

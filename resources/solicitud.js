@@ -1,3 +1,6 @@
+
+const estados = ['Pendiente', 'Ofertado', 'Rechazado'];
+
 /**
  * Mapea una solicitud de la base de datos para normalizarlo
  * @param {Object} solicitud - Objeto solicitud desde la base de datos
@@ -8,6 +11,7 @@ function mapSolicitudNomalized(solicitud) {
         id: solicitud.id,
         fecha_solicitud: solicitud.fecha_solicitud,
         nota: solicitud.nota,
+        estado: estados[solicitud.estado] || 'Desconocido',
         peticionario: solicitud.solicitud_peticionario
             ? {
                 id: solicitud.solicitud_peticionario.id,

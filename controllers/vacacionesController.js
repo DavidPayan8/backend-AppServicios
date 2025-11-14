@@ -298,7 +298,6 @@ const solicitarVacacionesHandler = async (req, res) => {
     const vacation = await db.VACACIONES.create({
       tipo,
       id_usuario,
-      aceptado: false,
     });
 
     const diasRows = dias.map((diaStr) => {
@@ -312,7 +311,7 @@ const solicitarVacacionesHandler = async (req, res) => {
       .status(201)
       .json({ message: "Vacaciones solicitadas con exito" });
   } catch (error) {
-    console.error("Error al solicitar vacaciones:", error.message);
+    console.log("Error al solicitar vacaciones:", error);
     return res.status(500).json({ error: "Error al solicitar vacaciones" });
   }
 };

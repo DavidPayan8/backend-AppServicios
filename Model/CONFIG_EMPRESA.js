@@ -52,6 +52,11 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: true,
         defaultValue: true,
       },
+      isLaTorre: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
     },
     {
       sequelize,

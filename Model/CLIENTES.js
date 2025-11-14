@@ -17,10 +17,6 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.STRING(50),
         allowNull: true,
       },
-      apellidos: {
-        type: DataTypes.STRING(50),
-        allowNull: true,
-      },
       nombre_empresa: {
         type: DataTypes.STRING(255),
         allowNull: true,

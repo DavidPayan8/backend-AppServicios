@@ -6,20 +6,23 @@
  * @param {number} limit - Número de elementos por página
  * @returns {Object} Respuesta paginada formateada
  */
-function paginatedResponse(data, total, page, limit) {
-    const totalPages = Math.ceil(total / limit);
-  
-    return {
-      data,
-      meta: {
-        totalItems: total,
-        currentPage: page,
-        totalPages,
-        itemsPerPage: limit,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1
-      }
-    };
-  }
-  
-  module.exports = { paginatedResponse };
+function paginatedResponse(data, total, page, limit, totalStats = {}) {
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    data,
+    meta: {
+      totalItems: total,
+      currentPage: page,
+      totalPages,
+      itemsPerPage: limit,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1
+    },
+    stats: {
+      total: totalStats || null
+    }
+  };
+}
+
+module.exports = { paginatedResponse };

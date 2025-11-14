@@ -1,5 +1,5 @@
 const db = require("../Model");
-const { obtenerDireccionReversa } = require("../models/geolocationModel");
+const { obtenerDireccionReversa } = require("../Model/others/geolocationModel");
 
 const checkParteAbierto = async (req, res) => {
   const { id_proyecto } = req.query;
@@ -34,6 +34,7 @@ const crearParteTrabajo = async (req, res) => {
     horas_extra,
     horas_festivo,
     observaciones,
+    desplazamientos,
   } = req.body;
   const id_usuario = req.user.id;
 
@@ -49,6 +50,7 @@ const crearParteTrabajo = async (req, res) => {
       horas_extra,
       horas_festivo,
       observaciones,
+      desplazamientos_count: desplazamientos,
     });
 
     res.status(201).json({ id: nuevoParte.id });
@@ -61,11 +63,16 @@ const crearParteTrabajo = async (req, res) => {
 };
 
 const getPartes = async (req, res) => {
-  const { id_proyecto } = req.query;
+  const { id_proyecto, fecha } = req.query;
   const id_usuario = req.user.id;
 
   const whereClause = { id_usuario };
+
+  if (fecha) whereClause.fecha = fecha;
+
   if (id_proyecto) whereClause.id_proyecto = id_proyecto;
+
+  console.log(whereClause);
 
   try {
     const partes = await db.PARTES_TRABAJO.findAll({
@@ -107,6 +114,8 @@ const actualizarParteTrabajo = async (req, res) => {
     hora_salida,
     horas_festivo,
     horas_extra,
+    observaciones,
+    desplazamientos
   } = req.body;
 
   try {
@@ -118,6 +127,8 @@ const actualizarParteTrabajo = async (req, res) => {
         hora_salida,
         horas_festivo,
         horas_extra,
+        observaciones,
+        desplazamientos_count: desplazamientos || 0,
       },
       {
         where: { id },

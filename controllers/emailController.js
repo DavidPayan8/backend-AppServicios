@@ -59,16 +59,7 @@ const enviarEmails = async (req, res) => {
  * @param {number} params.empresaId - ID de empresa
  * @param {Array} params.archivos - Archivos adjuntos
  */
-const enviarSolicitud = async ({ solicitud_id, empresaId, archivos }) => {
-  /*   // Preparar HTML
-    const html = `
-        <p id="solicitud_id">${solicitud.id}</p>
-        <p id="fecha_solicitud"> ${solicitud.fecha_solicitud}</p>
-        <p id="cliente_id">
-        <p id="peticionario_id"> ${solicitud.peticionario_id}<</p>
-        <p id="notas">${solicitud.nota}</p>
-    `; */
-
+const enviarSolicitud = async ({ solicitud_id, empresaId, archivos, user, accion }) => {
 
   const configRaw = await db.CONFIG_EMPRESA.findOne({
     where: { id_empresa: empresaId },
@@ -81,13 +72,15 @@ const enviarSolicitud = async ({ solicitud_id, empresaId, archivos }) => {
 
   const config = configRaw.get({ plain: true });
 
+  const textData = await createPlainText('Solicitud', solicitud_id, accion, user);
+
   const info = await sendEmail(
     config,
     {
       from: config.smtp_user,
-      to: 'davidpayanalvarado@gmail.com',
-      subject: `Solicitud Presupuesto #${solicitud_id}`,
-      html: '',
+      to: config.smtp_user,
+      subject: process.env.SUBJECT_MAIL_REQUEST,
+      text: textData,
       attachments: archivos.map((archivo) => ({
         filename: archivo.filename,
         content: archivo.buffer,
@@ -99,7 +92,63 @@ const enviarSolicitud = async ({ solicitud_id, empresaId, archivos }) => {
 };
 
 
+/**
+ * Envía un correo con los adjuntos de la OT
+ * @param {Object} params
+ * @param {number} params.ot_id - ID de orden trabajo creada
+ * @param {number} params.empresaId - ID de empresa
+ * @param {Array} params.archivos - Archivos adjuntos
+ */
+const enviarAdjuntosOt = async ({ identify, empresa, archivos, accion, user }) => {
+
+  const configRaw = await db.CONFIG_EMPRESA.findOne({
+    where: { id_empresa: empresa },
+    attributes: ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass'],
+  });
+
+  if (!configRaw) {
+    throw new Error('La empresa no tiene configuración de correo');
+  }
+
+  const config = configRaw.get({ plain: true });
+
+  const textData = await createPlainText('OT', identify, accion, user);
+
+  const attachments = accion === 'delete' ? [] : archivos?.map((archivo) => ({
+    filename: archivo.filename,
+    content: archivo.buffer,
+    contentType: archivo.mimetype || 'application/octet-stream',
+  }));
+
+  const info = await sendEmail(
+    config,
+    {
+      from: config.smtp_user,
+      to: 'davidpayanalvarado@gmail.com',
+      subject: `OT`,
+      text: textData,
+      attachments
+    }
+  );
+  return info
+};
+
+async function createPlainText(tipo, id, accion, user) {
+  const now = new Date().toISOString();
+
+  return (
+    `Entity:"${tipo}"\n` +
+    `Action:"${accion}"\n` +
+    `Id:"${id}"\n` +
+    `User:"${user}"\n` +
+    `Version:"1.0"\n` +
+    `Date:"${now}"`
+  );
+}
+
+
 module.exports = {
   enviarEmails,
-  enviarSolicitud
+  enviarSolicitud,
+  enviarAdjuntosOt
 };
