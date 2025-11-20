@@ -72,8 +72,6 @@ const getPartes = async (req, res) => {
 
   if (id_proyecto) whereClause.id_proyecto = id_proyecto;
 
-  console.log(whereClause);
-
   try {
     const partes = await db.PARTES_TRABAJO.findAll({
       where: whereClause,

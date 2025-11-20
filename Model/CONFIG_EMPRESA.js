@@ -57,6 +57,10 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: false,
         defaultValue: false,
       },
+      limite_usuarios: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
     },
     {
       sequelize,
