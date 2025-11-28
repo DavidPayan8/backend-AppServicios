@@ -31,7 +31,6 @@ router.post("/completa", authorizeRol("superadmin"), createEmpresaCompleta);
 router.put("/completa", authorizeRol("superadmin"), updateEmpresaCompleta);
 
 router.post("/superadmin/verify-code", verifyAccess, (req, res) => {
-  console.log("hola");
   res.status(200).json({ message: "Acceso concedido" });
 })
 

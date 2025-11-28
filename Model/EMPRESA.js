@@ -19,7 +19,8 @@ module.exports = function (sequelize, DataTypes) {
       },
       cif: {
         type: DataTypes.STRING(50),
-        allowNull: true,
+        allowNull: false,
+        unique: true,
       },
       razon_social: {
         type: DataTypes.STRING(255),
@@ -157,7 +158,7 @@ module.exports = function (sequelize, DataTypes) {
       foreignKey: "id_empresa",
       as: "tarifas",
     });
-    
+
     EMPRESA.hasMany(models.HORARIOS_PLANTILLA, {
       foreignKey: "id_empresa",
       as: "horarios",

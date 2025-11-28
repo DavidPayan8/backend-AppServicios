@@ -99,7 +99,7 @@ const getEmpresa = async (req, res) => {
 };
 
 const createEmpresaCompleta = async (req, res) => {
-  const { nombre, cif, razonSocial, direccion, telefono, configuracion, modulos } = req.body;
+  const { nombre, cif, razonSocial, direccion, telefono, configuracion, modulos, usuarioAdmin } = req.body;
   const t = await db.sequelize.transaction();
 
   try {
@@ -109,7 +109,7 @@ const createEmpresaCompleta = async (req, res) => {
       return res.status(400).json({ message: "Nombre y CIF son obligatorios." });
     }
 
-    if (!await validateCIFUnique(cif)) {
+    if (!await validateCIFUnique(cif, 0)) {
       await t.rollback();
       return res.status(400).json({ message: "Este CIF esta en uso." });
     }
@@ -117,6 +117,19 @@ const createEmpresaCompleta = async (req, res) => {
     if (!validateCIFFormat(cif)) {
       await t.rollback();
       return res.status(400).json({ message: "El CIF no es válido." });
+    }
+
+    if (usuarioAdmin) {
+      if (!usuarioAdmin.username || !usuarioAdmin.password) {
+        console.log(req.body)
+        await t.rollback();
+        return res.status(400).json({ message: "Usuario y contraseña son obligatorios para el administrador." });
+      }
+      const existingUser = await db.USUARIOS.findOne({ where: { user_name: usuarioAdmin.username } });
+      if (existingUser) {
+        await t.rollback();
+        return res.status(400).json({ message: "El nombre de usuario ya está en uso." });
+      }
     }
 
     // 1) Crear empresa base
@@ -181,7 +194,22 @@ const createEmpresaCompleta = async (req, res) => {
       }
     }
 
-    // 4) Confirmar transacción
+    // 4) Crear usuario admin
+    if (usuarioAdmin) {
+      await db.USUARIOS.create(
+        {
+          user_name: usuarioAdmin.username,
+          contrasena: usuarioAdmin.password,
+          id_empresa,
+          rol: "admin",
+          fichaje_activo: true,
+          primer_inicio: false,
+        },
+        { transaction: t }
+      );
+    }
+
+    // 5) Confirmar transacción
     await t.commit();
     res.status(201).json({ success: true, message: "Empresa creada correctamente", id_empresa });
 
@@ -338,7 +366,6 @@ const updateEmpresaCompleta = async (req, res) => {
 
 
     if (Object.keys(updateData).length > 0) {
-      console.log("Dentro", updateData)
       await db.CONFIG_EMPRESA.update(updateData, {
         where: { id_empresa: empresa.id_empresa },
         transaction: t,
