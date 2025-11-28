@@ -27,6 +27,7 @@ const geolocationRoutes = require("./routes/geolocationRoutes");
 const empresaRoutes = require("./routes/empresaRoutes");
 const modulosRoutes = require("./routes/modulosRoutes");
 const horariosRoutes = require("./routes/horariosRoutes");
+const notaGastoRoutes = require("./routes/notaGastoRoutes");
 const catLaboralRoutes = require("./routes/categoriaLaboralRoutes");
 const authenticateToken = require("./middleware/authMiddleware");
 
@@ -61,6 +62,7 @@ const routes = [
   { path: "geolocation", router: geolocationRoutes },
   { path: "horarios", router: horariosRoutes },
   { path: "categoria-laboral", router: catLaboralRoutes },
+  { path: "nota-gasto", router: notaGastoRoutes}
 ];
 
 // Middleware para cors

@@ -2,6 +2,7 @@ const identidad = require("../shared/identidad");
 const { getVacaciones } = require("../Model/others/admiModel");
 const db = require("../Model");
 const { Op, fn } = require("sequelize");
+const { verificarLimiteUsuarios } = require("../utils/empresaValidations");
 
 const darAltaEmpleadoHandler = async (req, res) => {
   try {
@@ -9,11 +10,15 @@ const darAltaEmpleadoHandler = async (req, res) => {
     const {
       username, password, nombreApellidos, dni, seguridadSocial,
       email, telefono, sexo, rol,
-      id_categoria,
-      id_horario,
-      salario, // opcional del formulario
-      horas    // opcional del formulario
+      id_categoria, id_horario,
+      salario, horas
     } = req.body;
+
+    // Verificar límite de usuarios
+    const limiteUsuarios = await verificarLimiteUsuarios(empresa);
+    if (!limiteUsuarios.permitido) {
+      return res.status(403).json({ message: limiteUsuarios.message });
+    }
 
     // Validación de DNI/NIE
     if (!identidad.esDniValido(dni) && !identidad.esNieValido(dni)) {
@@ -26,13 +31,16 @@ const darAltaEmpleadoHandler = async (req, res) => {
     });
     if (existe) return res.status(400).json({ message: "Usuario/DNI en uso" });
 
-    // Crear usuario usando salario/horas del formulario si vienen
+    const configEmpresa = await db.CONFIG_EMPRESA.findOne({ where: { id_empresa: empresa } });
+    const primerInicio = configEmpresa?.hay_primer_inicio ?? 0;
+
+    // Crear usuario usando primer_inicio configurable
     const usuario = await db.USUARIOS.create({
       id_empresa: empresa,
       user_name: username,
       contrasena: password,
       nomapes: nombreApellidos,
-      DNI: dni,
+      dni,
       num_seguridad_social: seguridadSocial,
       email,
       telefono,
@@ -40,7 +48,8 @@ const darAltaEmpleadoHandler = async (req, res) => {
       rol,
       id_categoria,
       salario_personalizado: salario ?? null,
-      horas_personalizadas: horas ?? null
+      horas_personalizadas: horas ?? null,
+      primer_inicio: primerInicio
     });
 
     // Crear asignación de jornada si viene
@@ -55,7 +64,7 @@ const darAltaEmpleadoHandler = async (req, res) => {
 
     res.status(201).json({ message: "Alta completada", usuarioId: usuario.id });
   } catch (error) {
-    console.error("Error al dar de alta empleado: ", error);
+    console.error("Error al dar de alta empleado:", error);
     res.status(500).json({ message: "Error del servidor" });
   }
 };
