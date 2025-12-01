@@ -35,7 +35,8 @@ const getEmpresas = async (req, res) => {
               hayPrimerInicio: e.config.hay_primer_inicio,
               colorPrimario: e.config.color_primario,
               esTipoObra: e.config.es_tipo_obra,
-              isLaTorre: e.config.isLaTorre
+              isLaTorre: e.config.isLaTorre,
+              parteAuto: e.config.parte_auto
             },
             email: {
               email: e.config.email_entrante,
@@ -82,6 +83,7 @@ const getEmpresa = async (req, res) => {
           hayPrimerInicio: config?.hay_primer_inicio,
           colorPrimario: config?.color_primario,
           esTipoObra: config?.es_tipo_obra,
+          parteAuto: config?.parte_auto,
         },
         email: {
           email: config?.email_entrante,
@@ -161,6 +163,7 @@ const createEmpresaCompleta = async (req, res) => {
           hay_primer_inicio: configuracion?.app?.hayPrimerInicio ?? false,
           es_tipo_obra: configuracion?.app?.esTipoObra ?? false,
           isLaTorre: configuracion?.app?.isLaTorre ?? false,
+          parte_auto: configuracion?.app?.parteAuto ?? false,
           limite_usuarios: configuracion?.limiteUsuarios ?? null,
         },
         { transaction: t }
@@ -232,6 +235,7 @@ const getConfigEmpresa = async (req, res) => {
         "smtp_user",
         "color_principal",
         "isLaTorre",
+        "parte_auto"
       ],
       include: [
         {
@@ -248,7 +252,10 @@ const getConfigEmpresa = async (req, res) => {
       return res.status(404).send("Configuración no encontrada");
     }
 
+
+    console.log("Antes de resource", config);
     const response = configEmpresaResource(config);
+    console.log("Después de resource", response);
 
     res.status(200).json(response);
   } catch (error) {
@@ -358,6 +365,7 @@ const updateEmpresaCompleta = async (req, res) => {
     if (app.hayPrimerInicio !== undefined) updateData.hay_primer_inicio = app.hayPrimerInicio;
     if (app.esTipoObra !== undefined) updateData.es_tipo_obra = app.esTipoObra;
     if (app.isLaTorre !== undefined) updateData.isLaTorre = app.isLaTorre;
+    if (app.parteAuto !== undefined) updateData.parte_auto = app.parteAuto;
 
     // Limite usuarios
     if (empresa.limiteUsuarios !== undefined) {

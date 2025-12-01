@@ -2,10 +2,20 @@ const db = require("../Model");
 const { obtenerDireccionReversa } = require("../Model/others/geolocationModel");
 
 // Fichar entrada
+// Helper para verificar parte_auto
+const checkParteAuto = async (empresaId) => {
+  const configEmpresa = await db.CONFIG_EMPRESA.findOne({
+    where: { id_empresa: empresaId },
+    attributes: ["parte_auto"],
+  });
+  return configEmpresa?.parte_auto || false;
+};
+
+// Fichar entrada
 const ficharEntradaHandler = async (req, res) => {
   const userId = req.user.id;
-  const { canClockIn } = req.user;
-  const { date } = req.body;
+  const { canClockIn, empresa: empresaId } = req.user;
+  const { date, proyectoId } = req.body;
   const fecha = formatFecha(date);
 
   if (canClockIn === false) {
@@ -14,38 +24,71 @@ const ficharEntradaHandler = async (req, res) => {
       .json({ message: "Permiso para fichar desactivado." });
   }
 
+  const t = await db.sequelize.transaction();
+
   try {
     // Verificar parte abierto
     const parteAbierto = await db.CONTROL_ASISTENCIAS.findOne({
       where: { id_usuario: userId, fecha, hora_salida: null },
+      transaction: t,
     });
 
     if (parteAbierto) {
+      await t.rollback();
       return res.status(400).json({
         message:
           "Ya tienes un parte abierto para esta fecha. Debes fichar salida.",
       });
     }
 
-    // Crear parte sin localización (se actualiza luego)
-    const fichaje = await db.CONTROL_ASISTENCIAS.create({
-      id_usuario: userId,
-      fecha,
-      hora_entrada: db.Sequelize.literal("GETDATE()"),
-    });
+    // Verificar si la empresa tiene activado el parte automático
+    const isParteAuto = await checkParteAuto(empresaId);
 
+    // Validar que se haya seleccionado un proyecto si parte_auto está activado
+    if (isParteAuto && !proyectoId) {
+      await t.rollback();
+      return res.status(400).json({
+        message: "Debes seleccionar un proyecto.",
+      });
+    }
+
+    // Crear parte sin localización (se actualiza luego)
+    const fichaje = await db.CONTROL_ASISTENCIAS.create(
+      {
+        id_usuario: userId,
+        fecha,
+        hora_entrada: db.Sequelize.literal("GETDATE()"),
+      },
+      { transaction: t }
+    );
+
+    if (isParteAuto && proyectoId) {
+      await db.PARTES_TRABAJO.create(
+        {
+          id_usuario: userId,
+          id_proyecto: proyectoId,
+          fecha,
+          hora_entrada: db.Sequelize.literal("GETDATE()"),
+        },
+        { transaction: t }
+      )
+    }
+
+    await t.commit();
     // Responder inmediatamente con el ID del fichaje
     res.status(201).json({ id: fichaje.id });
   } catch (error) {
+    await t.rollback();
     console.error("Error al fichar entrada:", error);
     res.status(500).json({ message: "Error del servidor." });
   }
 };
 
 // Fichar salida
+// Fichar salida
 const ficharSalidaHandler = async (req, res) => {
   const userId = req.user.id;
-  const { canClockIn } = req.user;
+  const { canClockIn, empresa: empresaId } = req.user;
   const { date } = req.body;
 
   if (canClockIn === false) {
@@ -53,6 +96,8 @@ const ficharSalidaHandler = async (req, res) => {
       .status(403)
       .json({ message: "Permiso para fichar desactivado." });
   }
+
+  const t = await db.sequelize.transaction();
 
   try {
     const fecha = formatFecha(date);
@@ -63,9 +108,11 @@ const ficharSalidaHandler = async (req, res) => {
         fecha: fecha,
         hora_salida: null,
       },
+      transaction: t,
     });
 
     if (!parteAbierto) {
+      await t.rollback();
       return res.status(400).json({
         message:
           "No tienes un parte abierto para fecha. Debes fichar entrada primero.",
@@ -74,10 +121,31 @@ const ficharSalidaHandler = async (req, res) => {
 
     // Actualizar parte con hora de salida
     parteAbierto.hora_salida = db.Sequelize.literal("GETDATE()");
-    await parteAbierto.save();
+    await parteAbierto.save({ transaction: t });
 
+    // Verificar si la empresa tiene activado el parte automático
+    const isParteAuto = await checkParteAuto(empresaId);
+
+    if (isParteAuto) {
+      const parteTrabajoAbierto = await db.PARTES_TRABAJO.findOne({
+        where: {
+          id_usuario: userId,
+          fecha,
+          hora_salida: null,
+        },
+        transaction: t,
+      });
+
+      if (parteTrabajoAbierto) {
+        parteTrabajoAbierto.hora_salida = db.Sequelize.literal("GETDATE()");
+        await parteTrabajoAbierto.save({ transaction: t });
+      }
+    }
+
+    await t.commit();
     res.status(200).json({ id: parteAbierto.id });
   } catch (error) {
+    await t.rollback();
     console.error("Error al fichar salida:", error);
     res.status(500).json({ message: "Error del servidor." });
   }
@@ -253,7 +321,6 @@ const cerrarParteAbierto = async (req, res) => {
   }
 };
 
-// Función para formatear la fecha en 'YYYY-MM-DD', recibiendo dd/mm/yyyy
 const formatFecha = (fecha) => {
   const [dia, mes, anio] = fecha.split("/");
   return `${anio}-${mes}-${dia}`;
