@@ -8,6 +8,7 @@ const {
 } = require("../Model/others/blobStorageModel");
 const db = require("../Model");
 const mime = require("mime-types");
+const crypto = require("crypto");
 
 const obtenerListadoAzure = async (req, res) => {
     const { id, empresa } = req.user;
@@ -283,6 +284,46 @@ const visualizarImagenOT = async (req, res) => {
 };
 
 
+
+const subirTicketGasto = async (req, res) => {
+    const { empresa, id } = req.user;
+    const ambito = 'Personal';
+    const tipo = `NotaGasto`;
+    const dbName = process.env.DB_NAME;
+
+    try {
+        const archivos = req.files;
+        if (!archivos || Object.keys(archivos).length === 0) {
+            return res.status(400).json({ error: 'No se recibió ningún archivo.' });
+        }
+
+        const filesToUpload = Object.values(archivos)
+            .flatMap(fileArray => Array.isArray(fileArray) ? fileArray : [fileArray]);
+
+        const uploadedPaths = [];
+
+        // Renombrar con UUID
+        filesToUpload.forEach(file => {
+            const ext = file.filename.substring(file.filename.lastIndexOf('.'));
+            const uuid = crypto.randomUUID();
+            file.filename = `${uuid}${ext}`;
+            
+            const fullPath = `${dbName}/${empresa}/${ambito}/${id}/${tipo}/${file.filename}`;
+            uploadedPaths.push(fullPath);
+        });
+
+        await uploadToAzure(ambito, filesToUpload, id, empresa, tipo);
+
+        res.status(201).json({ 
+            message: "Ticket subido correctamente.",
+            url: uploadedPaths
+        });
+    } catch (error) {
+        console.error("Fallo al subir ticket de gasto:", error.message);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 module.exports = {
     obtenerListadoAzure,
     subirArchivoAzure,
@@ -291,5 +332,6 @@ module.exports = {
     subirTarjetaContacto,
     descargarArchivoAzure,
     visualizarTarjetaContacto,
-    visualizarImagenOT
+    visualizarImagenOT,
+    subirTicketGasto
 };

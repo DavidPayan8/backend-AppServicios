@@ -1,5 +1,4 @@
 async function obtenerDireccionReversa(lat, lng) {
-  console.log(lat, lng);
   const API_KEY = process.env.API_KEY_MAPS;
   const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${API_KEY}`;
 

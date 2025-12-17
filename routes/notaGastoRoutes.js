@@ -82,6 +82,8 @@ router.delete('/:id', notaGastoController.eliminarNotaGasto);
  * @access  Private
  * @body    FormData con el archivo
  */
+router.post('/eliminar-ticket-gasto', notaGastoController.eliminarTicketGasto);
+
 router.post('/upload-ticket', uploadMiddleware, notaGastoController.subirTicket);
 
 module.exports = router;

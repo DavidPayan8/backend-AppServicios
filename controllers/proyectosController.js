@@ -134,7 +134,7 @@ const getAllProyects = async (req, res) => {
                 db.sequelize.col("partes_trabajo.fecha")
               ),
               "=",
-              db.sequelize.fn("CONVERT", db.sequelize.literal("date"), db.sequelize.fn("GETDATE"))
+              db.sequelize.literal("CONVERT(date, GETDATE())")
             )
           }
         },
@@ -167,10 +167,8 @@ const getAllProyects = async (req, res) => {
       limit,
       offset,
       subQuery: false,
-      log: console.log
+      logging: console.log
     });
-
-
 
     const plainRows = rows.map(r => r.get({ plain: true }));
 
@@ -203,6 +201,8 @@ const getAllProyects = async (req, res) => {
       raw: true,
       plain: true,
     });
+
+    console.log(plainRows)
 
     const data = mapformatOrdenesTrabajo(plainRows);
 
