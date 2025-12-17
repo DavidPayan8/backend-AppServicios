@@ -1,6 +1,15 @@
 const db = require("../Model");
 const { obtenerDireccionReversa } = require("../Model/others/geolocationModel");
 
+// Helper para verificar parte_auto
+const checkParteAuto = async (empresaId) => {
+  const configEmpresa = await db.CONFIG_EMPRESA.findOne({
+    where: { id_empresa: empresaId },
+    attributes: ["parte_auto"],
+  });
+  return configEmpresa?.parte_auto || false;
+};
+
 const checkParteAbierto = async (req, res) => {
   const { id_proyecto } = req.query;
   const id_usuario = req.user.id;
@@ -37,14 +46,23 @@ const crearParteTrabajo = async (req, res) => {
     desplazamientos,
   } = req.body;
   const id_usuario = req.user.id;
+  const { empresa: empresaId } = req.user;
 
   try {
+    // Verificar si la empresa tiene activado el parte automático
+    const isParteAuto = await checkParteAuto(empresaId);
+
+    // Si parte_auto está activado, usar la hora actual; si no, usar la hora del request
+    const horaEntrada = isParteAuto
+      ? db.Sequelize.literal("GETDATE()")
+      : hora_entrada;
+
     const nuevoParte = await db.PARTES_TRABAJO.create({
       id_usuario,
       id_capitulo,
       id_partida,
       id_proyecto,
-      hora_entrada,
+      hora_entrada: horaEntrada,
       hora_salida,
       fecha,
       horas_extra,
