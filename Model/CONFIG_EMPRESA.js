@@ -57,6 +57,15 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: false,
         defaultValue: false,
       },
+      limite_usuarios: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      parte_auto: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
     },
     {
       sequelize,

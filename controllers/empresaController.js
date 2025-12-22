@@ -5,7 +5,20 @@ const { configEmpresaResource } = require("../resources/empresa")
 const getEmpresas = async (req, res) => {
   try {
     const empresas = await db.EMPRESA.findAll({
-      attributes: ["id_empresa", "nombre", "cif", "razon_social"],
+      include: [
+        {
+          model: db.CONFIG_EMPRESA,
+          as: "config"
+        }
+      ],
+      attributes: [
+        "id_empresa",
+        "nombre",
+        "cif",
+        "razon_social",
+        "direccion",
+        "telefono",
+      ]
     });
 
     res.json(
@@ -13,7 +26,28 @@ const getEmpresas = async (req, res) => {
         id: e.id_empresa,
         nombre: e.nombre,
         cif: e.cif,
-        razon_social: e.razon_social,
+        razonSocial: e.razon_social,
+        direccion: e.direccion,
+        telefono: e.telefono,
+        configuracion: e.config
+          ? {
+            app: {
+              hayPrimerInicio: e.config.hay_primer_inicio,
+              colorPrimario: e.config.color_primario,
+              esTipoObra: e.config.es_tipo_obra,
+              isLaTorre: e.config.isLaTorre,
+              parteAuto: e.config.parte_auto
+            },
+            email: {
+              email: e.config.email_entrante,
+              smtp_host: e.config.smtp_host,
+              smtp_port: e.config.smtp_port,
+              smtp_user: e.config.smtp_user,
+              smtp_pass: e.config.smtp_pass
+            },
+            limiteUsuarios: e.config.limite_usuarios
+          }
+          : null
       }))
     );
   } catch (error) {
@@ -49,6 +83,7 @@ const getEmpresa = async (req, res) => {
           hayPrimerInicio: config?.hay_primer_inicio,
           colorPrimario: config?.color_primario,
           esTipoObra: config?.es_tipo_obra,
+          parteAuto: config?.parte_auto,
         },
         email: {
           email: config?.email_entrante,
@@ -65,6 +100,129 @@ const getEmpresa = async (req, res) => {
   }
 };
 
+const createEmpresaCompleta = async (req, res) => {
+  const { nombre, cif, razonSocial, direccion, telefono, configuracion, modulos, usuarioAdmin } = req.body;
+  const t = await db.sequelize.transaction();
+
+  try {
+    // Validaciones
+    if (!nombre || !cif) {
+      await t.rollback();
+      return res.status(400).json({ message: "Nombre y CIF son obligatorios." });
+    }
+
+    if (!await validateCIFUnique(cif, 0)) {
+      await t.rollback();
+      return res.status(400).json({ message: "Este CIF esta en uso." });
+    }
+
+    if (!validateCIFFormat(cif)) {
+      await t.rollback();
+      return res.status(400).json({ message: "El CIF no es válido." });
+    }
+
+    if (usuarioAdmin) {
+      if (!usuarioAdmin.username || !usuarioAdmin.password) {
+        console.log(req.body)
+        await t.rollback();
+        return res.status(400).json({ message: "Usuario y contraseña son obligatorios para el administrador." });
+      }
+      const existingUser = await db.USUARIOS.findOne({ where: { user_name: usuarioAdmin.username } });
+      if (existingUser) {
+        await t.rollback();
+        return res.status(400).json({ message: "El nombre de usuario ya está en uso." });
+      }
+    }
+
+    // 1) Crear empresa base
+    const nuevaEmpresa = await db.EMPRESA.create(
+      {
+        nombre,
+        cif,
+        razon_social: razonSocial ?? null,
+        direccion: direccion ?? null,
+        telefono: telefono ?? null,
+      },
+      { transaction: t }
+    );
+
+    // Obtener id generado
+    const id_empresa = nuevaEmpresa.id_empresa;
+
+    // 2) Crear configuración inicial
+    if (configuracion) {
+      await db.CONFIG_EMPRESA.create(
+        {
+          id_empresa,
+          email_entrante: configuracion?.email?.email ?? null,
+          smtp_host: configuracion?.email?.smtp_host ?? null,
+          smtp_user: configuracion?.email?.smtp_user ?? null,
+          smtp_port: configuracion?.email?.smtp_port ?? null,
+          smtp_pass: configuracion?.email?.smtp_pass ?? null,
+          color_primario: configuracion?.app?.colorPrimario ?? "#2c3e50",
+          hay_primer_inicio: configuracion?.app?.hayPrimerInicio ?? false,
+          es_tipo_obra: configuracion?.app?.esTipoObra ?? false,
+          isLaTorre: configuracion?.app?.isLaTorre ?? false,
+          parte_auto: configuracion?.app?.parteAuto ?? false,
+          limite_usuarios: configuracion?.limiteUsuarios ?? null,
+        },
+        { transaction: t }
+      );
+    }
+
+    // 3) Crear módulos y submódulos
+    if (modulos && Array.isArray(modulos)) {
+      for (const modulo of modulos) {
+        await db.EMPRESAS_MODULOS.create(
+          {
+            id_empresa,
+            id_modulo: modulo.id,
+            habilitado: modulo.habilitado ?? false,
+          },
+          { transaction: t }
+        );
+
+        if (modulo.submodulos && Array.isArray(modulo.submodulos)) {
+          for (const sub of modulo.submodulos) {
+            await db.EMPRESAS_SUBMODULOS.create(
+              {
+                id_empresa,
+                id_submodulo: sub.id,
+                habilitado: sub.habilitado ?? false,
+              },
+              { transaction: t }
+            );
+          }
+        }
+      }
+    }
+
+    // 4) Crear usuario admin
+    if (usuarioAdmin) {
+      await db.USUARIOS.create(
+        {
+          user_name: usuarioAdmin.username,
+          contrasena: usuarioAdmin.password,
+          id_empresa,
+          rol: "admin",
+          fichaje_activo: true,
+          primer_inicio: false,
+        },
+        { transaction: t }
+      );
+    }
+
+    // 5) Confirmar transacción
+    await t.commit();
+    res.status(201).json({ success: true, message: "Empresa creada correctamente", id_empresa });
+
+  } catch (error) {
+    await t.rollback();
+    console.error("Error al crear empresa:", error);
+    res.status(500).json({ message: "Error del servidor" });
+  }
+};
+
 const getConfigEmpresa = async (req, res) => {
   try {
     const { empresa } = req.user;
@@ -77,6 +235,7 @@ const getConfigEmpresa = async (req, res) => {
         "smtp_user",
         "color_principal",
         "isLaTorre",
+        "parte_auto"
       ],
       include: [
         {
@@ -93,8 +252,11 @@ const getConfigEmpresa = async (req, res) => {
       return res.status(404).send("Configuración no encontrada");
     }
 
+
+    console.log("Antes de resource", config);
     const response = configEmpresaResource(config);
-    
+    console.log("Después de resource", response);
+
     res.status(200).json(response);
   } catch (error) {
     console.error("Error al obtener configuración y teléfono:", error);
@@ -181,10 +343,75 @@ const updateConfigEmpresa = async (req, res) => {
   }
 };
 
+const updateEmpresaCompleta = async (req, res) => {
+  const t = await db.sequelize.transaction();
+
+  try {
+    const empresa = req.body || {};
+    const app = empresa.app || {};
+    const email = empresa.email || {};
+
+    const updateData = {};
+
+    // Email config
+    if (email.email !== undefined) updateData.email_entrante = email.email;
+    if (email.smtp_host !== undefined) updateData.smtp_host = email.smtp_host;
+    if (email.smtp_user !== undefined) updateData.smtp_user = email.smtp_user;
+    if (email.smtp_port !== undefined) updateData.smtp_port = email.smtp_port;
+    if (email.smtp_pass !== undefined) updateData.smtp_pass = email.smtp_pass;
+
+    // App config
+    if (app.colorPrimario !== undefined) updateData.color_primario = app.colorPrimario;
+    if (app.hayPrimerInicio !== undefined) updateData.hay_primer_inicio = app.hayPrimerInicio;
+    if (app.esTipoObra !== undefined) updateData.es_tipo_obra = app.esTipoObra;
+    if (app.isLaTorre !== undefined) updateData.isLaTorre = app.isLaTorre;
+    if (app.parteAuto !== undefined) updateData.parte_auto = app.parteAuto;
+
+    // Limite usuarios
+    if (empresa.limiteUsuarios !== undefined) {
+      updateData.limite_usuarios = empresa.limiteUsuarios;
+    }
+
+
+    if (Object.keys(updateData).length > 0) {
+      await db.CONFIG_EMPRESA.update(updateData, {
+        where: { id_empresa: empresa.id_empresa },
+        transaction: t,
+      });
+    }
+
+    await t.commit();
+    res.status(200).json({ success: true });
+
+  } catch (error) {
+    await t.rollback();
+    console.error("Error al actualizar empresa:", error);
+    res.status(500).send("Error del servidor");
+  }
+};
+
+const getCountUsersByEmpresa = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const users = await db.USUARIOS.findAll({
+      where: { id_empresa: id, rol: { [db.Sequelize.Op.ne]: "superadmin" } },
+    });
+
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("Error al contar usuarios por empresa:", error);
+    res.status(500).send("Error del servidor");
+  }
+}
+
 module.exports = {
   getEmpresas,
   getEmpresa,
   updateEmpresa,
   updateConfigEmpresa,
   getConfigEmpresa,
+  getCountUsersByEmpresa,
+  updateEmpresaCompleta,
+  createEmpresaCompleta,
 };

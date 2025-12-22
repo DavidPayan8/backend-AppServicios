@@ -279,6 +279,32 @@ async function generarUrlTemporalAzure(
 }
 
 /**
+ * Genera un URL temporal (SAS) a partir de la ruta del blob (path relativo al contenedor)
+ */
+async function generarUrlTemporalAzureByPath(blobPath, expiracionEnMinutos = 60) {
+    const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME);
+    const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
+    const nombreArchivo = path.basename(blobPath);
+
+    const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME;
+    const accountKey = process.env.AZURE_STORAGE_ACCOUNT_KEY;
+    const sharedKeyCredential = new StorageSharedKeyCredential(accountName, accountKey);
+
+    const sasOptions = {
+        containerName: CONTAINER_NAME,
+        blobName: blobPath,
+        permissions: BlobSASPermissions.parse("r"),
+        startsOn: new Date((new Date).getTime() - 5 * 60 * 1000),
+        expiresOn: new Date(Date.now() + expiracionEnMinutos * 60 * 1000),
+        contentDisposition: "inline",
+        contentType: mime.lookup(nombreArchivo) || "application/octet-stream"
+    };
+
+    const sasToken = generateBlobSASQueryParameters(sasOptions, sharedKeyCredential).toString();
+    return `${blockBlobClient.url}?${sasToken}`;
+}
+
+/**
  * Inserta o actualiza registro en Indice_Documento (igual que antes)
  */
 async function registrarOperacionDocumento(ruta, operacion, transaction, empresa, user_id, ambito) {
@@ -306,6 +332,24 @@ async function registrarOperacionDocumento(ruta, operacion, transaction, empresa
     } catch (error) {
         console.error(`Error registrando operación (${operacion}):`, error);
         throw error;
+    }
+}
+
+/**
+ * Eliminar archivo de Azure usando la ruta completa (relativa al contenedor)
+ */
+async function eliminarArchivoAzureByPath(blobPath) {
+    if (!blobPath) throw new Error("Se requiere blobPath");
+
+    const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME);
+    const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
+    
+    try {
+        await blockBlobClient.deleteIfExists();
+        return true;
+    } catch (err) {
+        console.error(`Error eliminando archivo en Azure por path (${blobPath}):`, err);
+        throw err;
     }
 }
 
@@ -356,5 +400,7 @@ module.exports = {
     downloadArchivoAzure,
     generarUrlTemporalAzure,
     obtenerPrimerBlobEmpresa,
-    obtenerPrimerArchivo
+    obtenerPrimerArchivo,
+    generarUrlTemporalAzureByPath,
+    eliminarArchivoAzureByPath
 };
