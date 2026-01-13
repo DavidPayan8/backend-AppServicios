@@ -11,6 +11,42 @@ const checkParteAuto = async (empresaId) => {
   return configEmpresa?.parte_auto || false;
 };
 
+// Verificar tiempo mínimo entre fichajes (debounce)
+const checkMinTimeFichaje = async (userId) => {
+  try {
+    // Verificamos solo registros del mismo día para evitar bloqueo si se ficha a la misma hora en días distintos
+    const lastFichaje = await db.sequelize.query(
+      `SELECT TOP 1 
+        fecha,
+        CASE 
+          WHEN hora_salida IS NOT NULL THEN DATEDIFF(SECOND, CAST(hora_salida AS TIME), CAST(GETDATE() AS TIME))
+          ELSE DATEDIFF(SECOND, CAST(hora_entrada AS TIME), CAST(GETDATE() AS TIME))
+        END as seconds_diff
+       FROM CONTROL_ASISTENCIAS 
+       WHERE id_usuario = :userId 
+       AND fecha = CONVERT(date, GETDATE())
+       ORDER BY id DESC`,
+      {
+        replacements: { userId },
+        type: db.Sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    if (lastFichaje && lastFichaje.length > 0) {
+      const { seconds_diff } = lastFichaje[0];
+
+      if (seconds_diff >= 0 && seconds_diff < 10) {
+        return false;
+      }
+    }
+    return true;
+  } catch (error) {
+    console.error("Error al verificar tiempo mínimo:", error);
+    // En caso de error, permitimos fichar para no bloquear, o registramos
+    return true;
+  }
+};
+
 // Fichar entrada
 const ficharEntradaHandler = async (req, res) => {
   const userId = req.user.id;
@@ -22,6 +58,14 @@ const ficharEntradaHandler = async (req, res) => {
     return res
       .status(403)
       .json({ message: "Permiso para fichar desactivado." });
+  }
+
+  // Verificar tiempo mínimo (anti-doble click)
+  const isTimeValid = await checkMinTimeFichaje(userId);
+  if (!isTimeValid) {
+    return res.status(429).json({
+      message: "Por favor, espera unos segundos antes de volver a fichar.",
+    });
   }
 
   const t = await db.sequelize.transaction();
@@ -71,7 +115,7 @@ const ficharEntradaHandler = async (req, res) => {
           hora_entrada: db.Sequelize.literal("GETDATE()"),
         },
         { transaction: t }
-      )
+      );
     }
 
     await t.commit();
@@ -95,6 +139,14 @@ const ficharSalidaHandler = async (req, res) => {
     return res
       .status(403)
       .json({ message: "Permiso para fichar desactivado." });
+  }
+
+  // Verificar tiempo mínimo (anti-doble click)
+  const isTimeValid = await checkMinTimeFichaje(userId);
+  if (!isTimeValid) {
+    return res.status(429).json({
+      message: "Por favor, espera unos segundos antes de volver a fichar.",
+    });
   }
 
   const t = await db.sequelize.transaction();
@@ -175,7 +227,10 @@ const actualizarLocalizacionEntrada = async (req, res) => {
 
     // Actualizar localización
     await db.CONTROL_ASISTENCIAS.update(
-      { localizacion_entrada: direccionFinal.formatted_address || direccionFinal },
+      {
+        localizacion_entrada:
+          direccionFinal.formatted_address || direccionFinal,
+      },
       { where: { id: id_parte } }
     );
 
@@ -211,7 +266,9 @@ const actualizarLocalizacionSalida = async (req, res) => {
 
     // Actualizar localización
     await db.CONTROL_ASISTENCIAS.update(
-      { localizacion_salida: direccionFinal.formatted_address || direccionFinal },
+      {
+        localizacion_salida: direccionFinal.formatted_address || direccionFinal,
+      },
       { where: { id: id_parte } }
     );
 

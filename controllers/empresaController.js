@@ -1,6 +1,6 @@
 const db = require("../Model");
 const { validateCIFFormat, validateCIFUnique } = require("../shared/validator");
-const { configEmpresaResource } = require("../resources/empresa")
+const { configEmpresaResource } = require("../resources/empresa");
 
 const getEmpresas = async (req, res) => {
   try {
@@ -8,8 +8,8 @@ const getEmpresas = async (req, res) => {
       include: [
         {
           model: db.CONFIG_EMPRESA,
-          as: "config"
-        }
+          as: "config",
+        },
       ],
       attributes: [
         "id_empresa",
@@ -18,7 +18,7 @@ const getEmpresas = async (req, res) => {
         "razon_social",
         "direccion",
         "telefono",
-      ]
+      ],
     });
 
     res.json(
@@ -31,23 +31,23 @@ const getEmpresas = async (req, res) => {
         telefono: e.telefono,
         configuracion: e.config
           ? {
-            app: {
-              hayPrimerInicio: e.config.hay_primer_inicio,
-              colorPrimario: e.config.color_primario,
-              esTipoObra: e.config.es_tipo_obra,
-              isLaTorre: e.config.isLaTorre,
-              parteAuto: e.config.parte_auto
-            },
-            email: {
-              email: e.config.email_entrante,
-              smtp_host: e.config.smtp_host,
-              smtp_port: e.config.smtp_port,
-              smtp_user: e.config.smtp_user,
-              smtp_pass: e.config.smtp_pass
-            },
-            limiteUsuarios: e.config.limite_usuarios
-          }
-          : null
+              app: {
+                hayPrimerInicio: e.config.hay_primer_inicio,
+                colorPrimario: e.config.color_primario,
+                esTipoObra: e.config.es_tipo_obra,
+                isLaTorre: e.config.isLaTorre,
+                parteAuto: e.config.parte_auto,
+              },
+              email: {
+                email: e.config.email_entrante,
+                smtp_host: e.config.smtp_host,
+                smtp_port: e.config.smtp_port,
+                smtp_user: e.config.smtp_user,
+                smtp_pass: e.config.smtp_pass,
+              },
+              limiteUsuarios: e.config.limite_usuarios,
+            }
+          : null,
       }))
     );
   } catch (error) {
@@ -101,17 +101,28 @@ const getEmpresa = async (req, res) => {
 };
 
 const createEmpresaCompleta = async (req, res) => {
-  const { nombre, cif, razonSocial, direccion, telefono, configuracion, modulos, usuarioAdmin } = req.body;
+  const {
+    nombre,
+    cif,
+    razonSocial,
+    direccion,
+    telefono,
+    configuracion,
+    modulos,
+    usuarioAdmin,
+  } = req.body;
   const t = await db.sequelize.transaction();
 
   try {
     // Validaciones
     if (!nombre || !cif) {
       await t.rollback();
-      return res.status(400).json({ message: "Nombre y CIF son obligatorios." });
+      return res
+        .status(400)
+        .json({ message: "Nombre y CIF son obligatorios." });
     }
 
-    if (!await validateCIFUnique(cif, 0)) {
+    if (!(await validateCIFUnique(cif, 0))) {
       await t.rollback();
       return res.status(400).json({ message: "Este CIF esta en uso." });
     }
@@ -123,14 +134,21 @@ const createEmpresaCompleta = async (req, res) => {
 
     if (usuarioAdmin) {
       if (!usuarioAdmin.username || !usuarioAdmin.password) {
-        console.log(req.body)
+        console.log(req.body);
         await t.rollback();
-        return res.status(400).json({ message: "Usuario y contraseña son obligatorios para el administrador." });
+        return res.status(400).json({
+          message:
+            "Usuario y contraseña son obligatorios para el administrador.",
+        });
       }
-      const existingUser = await db.USUARIOS.findOne({ where: { user_name: usuarioAdmin.username } });
+      const existingUser = await db.USUARIOS.findOne({
+        where: { user_name: usuarioAdmin.username },
+      });
       if (existingUser) {
         await t.rollback();
-        return res.status(400).json({ message: "El nombre de usuario ya está en uso." });
+        return res
+          .status(400)
+          .json({ message: "El nombre de usuario ya está en uso." });
       }
     }
 
@@ -214,8 +232,11 @@ const createEmpresaCompleta = async (req, res) => {
 
     // 5) Confirmar transacción
     await t.commit();
-    res.status(201).json({ success: true, message: "Empresa creada correctamente", id_empresa });
-
+    res.status(201).json({
+      success: true,
+      message: "Empresa creada correctamente",
+      id_empresa,
+    });
   } catch (error) {
     await t.rollback();
     console.error("Error al crear empresa:", error);
@@ -235,7 +256,7 @@ const getConfigEmpresa = async (req, res) => {
         "smtp_user",
         "color_principal",
         "isLaTorre",
-        "parte_auto"
+        "parte_auto",
       ],
       include: [
         {
@@ -252,10 +273,7 @@ const getConfigEmpresa = async (req, res) => {
       return res.status(404).send("Configuración no encontrada");
     }
 
-
-    console.log("Antes de resource", config);
     const response = configEmpresaResource(config);
-    console.log("Después de resource", response);
 
     res.status(200).json(response);
   } catch (error) {
@@ -361,8 +379,10 @@ const updateEmpresaCompleta = async (req, res) => {
     if (email.smtp_pass !== undefined) updateData.smtp_pass = email.smtp_pass;
 
     // App config
-    if (app.colorPrimario !== undefined) updateData.color_primario = app.colorPrimario;
-    if (app.hayPrimerInicio !== undefined) updateData.hay_primer_inicio = app.hayPrimerInicio;
+    if (app.colorPrimario !== undefined)
+      updateData.color_primario = app.colorPrimario;
+    if (app.hayPrimerInicio !== undefined)
+      updateData.hay_primer_inicio = app.hayPrimerInicio;
     if (app.esTipoObra !== undefined) updateData.es_tipo_obra = app.esTipoObra;
     if (app.isLaTorre !== undefined) updateData.isLaTorre = app.isLaTorre;
     if (app.parteAuto !== undefined) updateData.parte_auto = app.parteAuto;
@@ -371,7 +391,6 @@ const updateEmpresaCompleta = async (req, res) => {
     if (empresa.limiteUsuarios !== undefined) {
       updateData.limite_usuarios = empresa.limiteUsuarios;
     }
-
 
     if (Object.keys(updateData).length > 0) {
       await db.CONFIG_EMPRESA.update(updateData, {
@@ -382,7 +401,6 @@ const updateEmpresaCompleta = async (req, res) => {
 
     await t.commit();
     res.status(200).json({ success: true });
-
   } catch (error) {
     await t.rollback();
     console.error("Error al actualizar empresa:", error);
@@ -403,7 +421,7 @@ const getCountUsersByEmpresa = async (req, res) => {
     console.error("Error al contar usuarios por empresa:", error);
     res.status(500).send("Error del servidor");
   }
-}
+};
 
 module.exports = {
   getEmpresas,

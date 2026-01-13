@@ -170,9 +170,45 @@ const crearNotificacionHandler = async (req, res) => {
   }
 };
 
+const eliminarNotificaciones = async (req, res) => {
+  const id_usuario = req.user.id;
+  const { ids } = req.body;
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({
+      message: "Debe proporcionar un array de IDs de notificaciones",
+    });
+  }
+
+  try {
+    const rowsDeleted = await db.NOTIFICACIONES_USUARIOS.destroy({
+      where: {
+        id_notificacion: ids,
+        id_usuario,
+      },
+    });
+
+    if (rowsDeleted === 0) {
+      return res.status(404).json({
+        message: "No se encontraron notificaciones para eliminar",
+      });
+    }
+
+    res.status(200).json({
+      message: `${rowsDeleted} notificación(es) eliminada(s) correctamente`,
+    });
+  } catch (error) {
+    console.error("Error al eliminar notificaciones:", error);
+    res.status(500).json({
+      message: "Error al eliminar las notificaciones",
+    });
+  }
+};
+
 module.exports = {
   obtenerNotificaciones: obtenerNotificacionesModel,
   obtenerArchivadas,
   marcarLeida,
   crearNotificacion: crearNotificacionHandler,
+  eliminarNotificaciones,
 };

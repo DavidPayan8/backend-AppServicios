@@ -66,6 +66,11 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: false,
         defaultValue: false,
       },
+      proyectos_autorizacion: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+        defaultValue: false,
+      },
     },
     {
       sequelize,
