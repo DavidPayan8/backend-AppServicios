@@ -1,7 +1,10 @@
 const db = require("../Model");
 const { Op, fn, col, literal } = require("sequelize");
-const { mapformatOrdenesTrabajo, formatOrdenTrabajo } = require("../resources/proyectos");
-const { paginatedResponse } = require('../resources/helpers/paginator');
+const {
+  mapformatOrdenesTrabajo,
+  formatOrdenTrabajo,
+} = require("../resources/proyectos");
+const { paginatedResponse } = require("../resources/helpers/paginator");
 
 const getActividades = async (req, res) => {
   const id_usuario = req.user.id;
@@ -64,7 +67,7 @@ const getAllProyects = async (req, res) => {
       id_empresa: empresa,
       activo: true,
       es_ote: false,
-      estado: 'en curso'
+      estado: "en curso",
     };
 
     // Aplicar filtro si viene
@@ -73,7 +76,11 @@ const getAllProyects = async (req, res) => {
         where.nombre = { [Op.like]: `%${filtro}%` };
       } else if (filtroPor === "num_ot") {
         where.id_origen = db.sequelize.where(
-          db.sequelize.fn('CONVERT', db.sequelize.literal('VARCHAR'), db.sequelize.col('ORDEN_TRABAJO.id_origen')),
+          db.sequelize.fn(
+            "CONVERT",
+            db.sequelize.literal("VARCHAR"),
+            db.sequelize.col("ORDEN_TRABAJO.id_origen")
+          ),
           { [Op.like]: `%${filtro}%` }
         );
       }
@@ -99,7 +106,7 @@ const getAllProyects = async (req, res) => {
           db.sequelize.literal(
             "COALESCE(SUM(DATEDIFF(SECOND, [partes_trabajo].[hora_entrada], [partes_trabajo].[hora_salida])), 0) / 3600.0"
           ),
-          "sumHorasHoy"
+          "sumHorasHoy",
         ],
         // Primera hora_entrada de hoy para ordenar
         [
@@ -110,8 +117,8 @@ const getAllProyects = async (req, res) => {
               AND pt.hora_salida IS NOT NULL
               AND CONVERT(date, pt.fecha) = CONVERT(date, GETDATE())
           )`),
-          "primeraHoraHoy"
-        ]
+          "primeraHoraHoy",
+        ],
       ],
       include: [
         {
@@ -135,8 +142,8 @@ const getAllProyects = async (req, res) => {
               ),
               "=",
               db.sequelize.literal("CONVERT(date, GETDATE())")
-            )
-          }
+            ),
+          },
         },
       ],
       where,
@@ -161,16 +168,14 @@ const getAllProyects = async (req, res) => {
         "cliente_ot.nombre_empresa",
         "cliente_ot.direccion",
       ],
-      order: [
-        [db.sequelize.literal("primeraHoraHoy"), "DESC"]
-      ],
+      order: [[db.sequelize.literal("primeraHoraHoy"), "DESC"]],
       limit,
       offset,
       subQuery: false,
-      logging: console.log
+      logging: console.log,
     });
 
-    const plainRows = rows.map(r => r.get({ plain: true }));
+    const plainRows = rows.map((r) => r.get({ plain: true }));
 
     const count = await db.ORDEN_TRABAJO.count({
       where,
@@ -183,7 +188,9 @@ const getAllProyects = async (req, res) => {
         [
           db.sequelize.fn(
             "SUM",
-            db.sequelize.literal("DATEDIFF(SECOND, hora_entrada, hora_salida) / 3600.0")
+            db.sequelize.literal(
+              "DATEDIFF(SECOND, hora_entrada, hora_salida) / 3600.0"
+            )
           ),
           "totalHorasHoy",
         ],
@@ -193,20 +200,30 @@ const getAllProyects = async (req, res) => {
         hora_entrada: { [Op.ne]: null },
         hora_salida: { [Op.ne]: null },
         fecha: db.sequelize.where(
-          db.sequelize.fn("CONVERT", db.sequelize.literal("date"), db.sequelize.fn("GETDATE")),
+          db.sequelize.fn(
+            "CONVERT",
+            db.sequelize.literal("date"),
+            db.sequelize.fn("GETDATE")
+          ),
           "=",
-          db.sequelize.fn("CONVERT", db.sequelize.literal("date"), db.sequelize.col("fecha"))
+          db.sequelize.fn(
+            "CONVERT",
+            db.sequelize.literal("date"),
+            db.sequelize.col("fecha")
+          )
         ),
       },
       raw: true,
       plain: true,
     });
 
-    console.log(plainRows)
+    console.log(plainRows);
 
     const data = mapformatOrdenesTrabajo(plainRows);
 
-    res.status(200).json(paginatedResponse(data, count, page, limit, totalHorasHoy));
+    res
+      .status(200)
+      .json(paginatedResponse(data, count, page, limit, totalHorasHoy));
   } catch (error) {
     console.error("Error al obtener órdenes de trabajo:", error);
     res.status(500).json({ message: "Error al obtener órdenes de trabajo" });
@@ -234,7 +251,7 @@ const getByIdLaTorre = async (req, res) => {
         "transporte",
         "peticionario",
         "id_servicio_origen",
-        "seccion_id_origen"
+        "seccion_id_origen",
       ],
       include: [
         {
@@ -273,9 +290,8 @@ const getByIdLaTorre = async (req, res) => {
       subQuery: false,
     });
 
-
-    const prueba = formatOrdenTrabajo(result)
-    console.log(prueba)
+    const prueba = formatOrdenTrabajo(result);
+    console.log(prueba);
 
     res.status(200).json(prueba);
   } catch (error) {
@@ -286,10 +302,31 @@ const getByIdLaTorre = async (req, res) => {
 
 const getObras = async (req, res) => {
   const { empresa } = req.user;
+  const id_usuario = req.user.id;
   const { tipo } = req.query;
   try {
+    const configEmpresa = await db.CONFIG_EMPRESA.findOne({
+      where: { id_empresa: empresa },
+    });
+
+    const whereClause = { id_empresa: empresa, tipo };
+
+    if (configEmpresa && configEmpresa.proyectos_autorizacion) {
+      const proyectosAutorizados = await db.PersonalAutorizadoProyecto.findAll({
+        where: {
+          Personal_Id: id_usuario,
+          Activo: true,
+        },
+        attributes: ["Proyecto_Id"],
+      });
+
+      const idsProyectos = proyectosAutorizados.map((p) => p.Proyecto_Id);
+
+      whereClause.id = { [Op.in]: idsProyectos };
+    }
+
     const obras = await db.PROYECTOS.findAll({
-      where: { id_empresa: empresa, tipo },
+      where: whereClause,
       raw: true,
     });
 
@@ -643,9 +680,9 @@ const obtenerOTsConstruccion = async (req, res) => {
         activo: true,
         id_empresa: empresa,
         es_ote: false,
-        estado: { [Op.ne]: 'finalizado' }
+        estado: { [Op.ne]: "finalizado" },
       },
-      attributes: ['id', 'nombre', 'estado']
+      attributes: ["id", "nombre", "estado"],
     });
 
     res.status(200).json(otsConstruccion);
@@ -653,7 +690,7 @@ const obtenerOTsConstruccion = async (req, res) => {
     console.log("Error al obtener OTs de construcción:", error);
     res.status(500).json({ message: "Error al obtener OTs de construcción" });
   }
-}
+};
 
 const autoAsignarOrdenTrabajo = async (req, res) => {
   try {
@@ -883,5 +920,5 @@ module.exports = {
   getNoAsignados,
   getAllProyects,
   getByIdLaTorre,
-  obtenerOTsConstruccion
+  obtenerOTsConstruccion,
 };
