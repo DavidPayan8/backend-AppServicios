@@ -129,7 +129,6 @@ const ficharEntradaHandler = async (req, res) => {
 };
 
 // Fichar salida
-// Fichar salida
 const ficharSalidaHandler = async (req, res) => {
   const userId = req.user.id;
   const { canClockIn, empresa: empresaId } = req.user;
@@ -141,7 +140,7 @@ const ficharSalidaHandler = async (req, res) => {
       .json({ message: "Permiso para fichar desactivado." });
   }
 
-  // Verificar tiempo mínimo (anti-doble click)
+  // Verificar tiempo mínimo
   const isTimeValid = await checkMinTimeFichaje(userId);
   if (!isTimeValid) {
     return res.status(429).json({

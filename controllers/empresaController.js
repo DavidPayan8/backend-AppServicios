@@ -37,6 +37,7 @@ const getEmpresas = async (req, res) => {
                 esTipoObra: e.config.es_tipo_obra,
                 isLaTorre: e.config.isLaTorre,
                 parteAuto: e.config.parte_auto,
+                proyectosAutorizacion: e.config.proyectos_autorizacion,
               },
               email: {
                 email: e.config.email_entrante,
@@ -84,6 +85,7 @@ const getEmpresa = async (req, res) => {
           colorPrimario: config?.color_primario,
           esTipoObra: config?.es_tipo_obra,
           parteAuto: config?.parte_auto,
+          proyectosAutorizacion: config?.proyectos_autorizacion,
         },
         email: {
           email: config?.email_entrante,
@@ -182,6 +184,8 @@ const createEmpresaCompleta = async (req, res) => {
           es_tipo_obra: configuracion?.app?.esTipoObra ?? false,
           isLaTorre: configuracion?.app?.isLaTorre ?? false,
           parte_auto: configuracion?.app?.parteAuto ?? false,
+          proyectos_autorizacion:
+            configuracion?.app?.proyectosAutorizacion ?? false,
           limite_usuarios: configuracion?.limiteUsuarios ?? null,
         },
         { transaction: t }
@@ -257,6 +261,7 @@ const getConfigEmpresa = async (req, res) => {
         "color_principal",
         "isLaTorre",
         "parte_auto",
+        "proyectos_autorizacion",
       ],
       include: [
         {
@@ -348,6 +353,9 @@ const updateConfigEmpresa = async (req, res) => {
         color_primario: empresa.configuracion.app.colorPrimario,
         hay_primer_inicio: empresa.configuracion.app.hayPrimerInicio,
         es_tipo_obra: empresa.configuracion.app.esTipoObra,
+        isLaTorre: empresa.configuracion.app.isLaTorre,
+        parte_auto: empresa.configuracion.app.parteAuto,
+        proyectos_autorizacion: empresa.configuracion.app.proyectosAutorizacion,
       },
       {
         where: { id_empresa: empresa.id },
@@ -386,6 +394,8 @@ const updateEmpresaCompleta = async (req, res) => {
     if (app.esTipoObra !== undefined) updateData.es_tipo_obra = app.esTipoObra;
     if (app.isLaTorre !== undefined) updateData.isLaTorre = app.isLaTorre;
     if (app.parteAuto !== undefined) updateData.parte_auto = app.parteAuto;
+    if (app.proyectosAutorizacion !== undefined)
+      updateData.proyectos_autorizacion = app.proyectosAutorizacion;
 
     // Limite usuarios
     if (empresa.limiteUsuarios !== undefined) {

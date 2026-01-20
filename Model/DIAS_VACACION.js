@@ -6,11 +6,16 @@ module.exports = function (sequelize, DataTypes) {
       id_vacacion: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        primaryKey: true,
       },
       dia: {
         type: DataTypes.DATEONLY,
         allowNull: false,
+        primaryKey: true,
+      },
+      estado: {
+        type: DataTypes.STRING(20),
+        allowNull: false,
+        defaultValue: "solicitado",
       },
     },
     {

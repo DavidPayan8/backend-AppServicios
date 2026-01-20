@@ -673,15 +673,36 @@ const obtenerProyecto = async (req, res) => {
 
 const obtenerOTsConstruccion = async (req, res) => {
   const { empresa } = req.user;
+  const id_usuario = req.user.id;
 
   try {
+    const configEmpresa = await db.CONFIG_EMPRESA.findOne({
+      where: { id_empresa: empresa },
+    });
+
+    const whereClause = {
+      activo: true,
+      id_empresa: empresa,
+      es_ote: false,
+      estado: { [Op.ne]: "finalizado" },
+    };
+
+    if (configEmpresa && configEmpresa.proyectos_autorizacion) {
+      const proyectosAutorizados = await db.PersonalAutorizadoProyecto.findAll({
+        where: {
+          Personal_Id: id_usuario,
+          Activo: true,
+        },
+        attributes: ["Proyecto_Id"],
+      });
+
+      const idsProyectos = proyectosAutorizados.map((p) => p.Proyecto_Id);
+
+      whereClause.id_servicio_origen = { [Op.in]: idsProyectos };
+    }
+
     const otsConstruccion = await db.ORDEN_TRABAJO.findAll({
-      where: {
-        activo: true,
-        id_empresa: empresa,
-        es_ote: false,
-        estado: { [Op.ne]: "finalizado" },
-      },
+      where: whereClause,
       attributes: ["id", "nombre", "estado"],
     });
 
