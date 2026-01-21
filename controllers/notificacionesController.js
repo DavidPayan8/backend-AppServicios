@@ -160,6 +160,10 @@ const crearNotificacionHandler = async (req, res) => {
 
     await t.commit();
 
+    // Enviar notificación Push (fuera de la transacción para no bloquear)
+    const pushBrowserController = require("./pushBrowserController");
+    pushBrowserController.sendPushToUsers(destino, asunto, cuerpo);
+
     res.status(201).json({ message: "Notificación enviada correctamente" });
   } catch (error) {
     console.error("Error en crearNotificacion:", error);
