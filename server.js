@@ -29,6 +29,8 @@ const modulosRoutes = require("./routes/modulosRoutes");
 const horariosRoutes = require("./routes/horariosRoutes");
 const notaGastoRoutes = require("./routes/notaGastoRoutes");
 const catLaboralRoutes = require("./routes/categoriaLaboralRoutes");
+const pushBrowserRoutes = require("./routes/pushBrowserRoutes");
+
 const authenticateToken = require("./middleware/authMiddleware");
 
 const app = express();
@@ -62,7 +64,8 @@ const routes = [
   { path: "geolocation", router: geolocationRoutes },
   { path: "horarios", router: horariosRoutes },
   { path: "categoria-laboral", router: catLaboralRoutes },
-  { path: "nota-gasto", router: notaGastoRoutes}
+  { path: "nota-gasto", router: notaGastoRoutes },
+  { path: "push-browser", router: pushBrowserRoutes },
 ];
 
 // Middleware para cors
@@ -72,7 +75,7 @@ app.use(morgan("dev"));
 // Middleware para multipart/form-data y json
 app.use((req, res, next) => {
   if (req.is("multipart/form-data")) return next();
-  express.json({ limit: "10mb" })(req, res, err => {
+  express.json({ limit: "10mb" })(req, res, (err) => {
     if (err) return next(err);
     express.urlencoded({ limit: "10mb", extended: true })(req, res, next);
   });
@@ -97,10 +100,10 @@ app.listen(port, () => {
   console.log(`Servidor Node.js corriendo en puerto ${port}`);
 });
 
-process.on('unhandledRejection', (reason) => {
-  console.error('⚠️ Unhandled Rejection:', reason);
+process.on("unhandledRejection", (reason) => {
+  console.error("⚠️ Unhandled Rejection:", reason);
 });
 
-process.on('uncaughtException', (err) => {
-  console.error('💥 Uncaught Exception:', err);
+process.on("uncaughtException", (err) => {
+  console.error("💥 Uncaught Exception:", err);
 });

@@ -22,13 +22,13 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: false,
       },
       fecha_solicitud: {
-        type: DataTypes.DATE,
+        type: DataTypes.DATEONLY,
         allowNull: true,
       },
-      notas:{
+      notas: {
         type: DataTypes.TEXT,
         allowNull: true,
-      }
+      },
     },
     {
       sequelize,
