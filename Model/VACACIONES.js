@@ -21,21 +21,13 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
-      fecha_solicitud: {
-        type: DataTypes.DATEONLY,
-        allowNull: true,
-      },
-      notas: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-      },
     },
     {
       sequelize,
       tableName: "VACACIONES",
       schema: "dbo",
       timestamps: false,
-    }
+    },
   );
   VACACIONES.associate = (models) => {
     VACACIONES.belongsTo(models.USUARIOS, {
