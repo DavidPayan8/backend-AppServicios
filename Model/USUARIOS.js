@@ -66,11 +66,11 @@ module.exports = function (sequelize, DataTypes) {
       },
       ext_cara: {
         type: DataTypes.STRING(20),
-        allowNull: true
+        allowNull: true,
       },
       ext_anverso: {
         type: DataTypes.STRING(20),
-        allowNull: true
+        allowNull: true,
       },
       fichaje_activo: {
         type: DataTypes.BOOLEAN,
@@ -85,6 +85,11 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.DECIMAL(5, 2),
         allowNull: true,
       },
+      codigo_usuario: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+        unique: true,
+      },
     },
     {
       sequelize,
@@ -98,12 +103,17 @@ module.exports = function (sequelize, DataTypes) {
           fields: [{ name: "DNI" }],
         },
         {
+          name: "IX_USUARIOS_CODIGO_USUARIO",
+          unique: true,
+          fields: [{ name: "codigo_usuario" }],
+        },
+        {
           name: "pk_usuarios",
           unique: true,
           fields: [{ name: "id" }],
         },
       ],
-    }
+    },
   );
   USUARIOS.associate = (models) => {
     USUARIOS.hasMany(models.VACACIONES, {

@@ -71,6 +71,11 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: true,
         defaultValue: false,
       },
+      flutter_api_key: {
+        type: DataTypes.STRING(64),
+        allowNull: true,
+        unique: true,
+      },
     },
     {
       sequelize,
@@ -84,7 +89,7 @@ module.exports = function (sequelize, DataTypes) {
           fields: [{ name: "id" }],
         },
       ],
-    }
+    },
   );
   CONFIG_EMPRESA.associate = (models) => {
     CONFIG_EMPRESA.belongsTo(models.EMPRESA, {
