@@ -30,6 +30,8 @@ const horariosRoutes = require("./routes/horariosRoutes");
 const notaGastoRoutes = require("./routes/notaGastoRoutes");
 const catLaboralRoutes = require("./routes/categoriaLaboralRoutes");
 const pushBrowserRoutes = require("./routes/pushBrowserRoutes");
+const flutterFichajeRoutes = require("./routes/flutterFichajeRoutes");
+const flutterConfigRoutes = require("./routes/flutterConfigRoutes");
 
 const authenticateToken = require("./middleware/authMiddleware");
 
@@ -66,6 +68,8 @@ const routes = [
   { path: "categoria-laboral", router: catLaboralRoutes },
   { path: "nota-gasto", router: notaGastoRoutes },
   { path: "push-browser", router: pushBrowserRoutes },
+  { path: "flutter-fichaje", router: flutterFichajeRoutes },
+  { path: "flutter-config", router: flutterConfigRoutes },
 ];
 
 // Middleware para cors
