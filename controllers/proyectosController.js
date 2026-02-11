@@ -705,7 +705,6 @@ const obtenerOTsConstruccion = async (req, res) => {
     const otsConstruccion = await db.ORDEN_TRABAJO.findAll({
       where: whereClause,
       attributes: ["id", "nombre", "estado"],
-      logging: console.log,
     });
 
     res.status(200).json(otsConstruccion);
