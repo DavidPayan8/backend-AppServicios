@@ -30,12 +30,12 @@ const getActividades = async (req, res) => {
               db.Sequelize.where(
                 db.Sequelize.col("ORDEN_TRABAJO.id_servicio_origen"),
                 "=",
-                db.Sequelize.col("proyecto.id_origen")
+                db.Sequelize.col("proyecto.id_origen"),
               ),
               db.Sequelize.where(
                 db.Sequelize.col("ORDEN_TRABAJO.id_empresa"),
                 "=",
-                db.Sequelize.col("proyecto.id_empresa")
+                db.Sequelize.col("proyecto.id_empresa"),
               ),
             ],
           },
@@ -79,9 +79,9 @@ const getAllProyects = async (req, res) => {
           db.sequelize.fn(
             "CONVERT",
             db.sequelize.literal("VARCHAR"),
-            db.sequelize.col("ORDEN_TRABAJO.id_origen")
+            db.sequelize.col("ORDEN_TRABAJO.id_origen"),
           ),
-          { [Op.like]: `%${filtro}%` }
+          { [Op.like]: `%${filtro}%` },
         );
       }
     }
@@ -104,7 +104,7 @@ const getAllProyects = async (req, res) => {
         // Suma de horas de hoy
         [
           db.sequelize.literal(
-            "COALESCE(SUM(DATEDIFF(SECOND, [partes_trabajo].[hora_entrada], [partes_trabajo].[hora_salida])), 0) / 3600.0"
+            "COALESCE(SUM(DATEDIFF(SECOND, [partes_trabajo].[hora_entrada], [partes_trabajo].[hora_salida])), 0) / 3600.0",
           ),
           "sumHorasHoy",
         ],
@@ -138,10 +138,10 @@ const getAllProyects = async (req, res) => {
               db.sequelize.fn(
                 "CONVERT",
                 db.sequelize.literal("date"),
-                db.sequelize.col("partes_trabajo.fecha")
+                db.sequelize.col("partes_trabajo.fecha"),
               ),
               "=",
-              db.sequelize.literal("CONVERT(date, GETDATE())")
+              db.sequelize.literal("CONVERT(date, GETDATE())"),
             ),
           },
         },
@@ -189,8 +189,8 @@ const getAllProyects = async (req, res) => {
           db.sequelize.fn(
             "SUM",
             db.sequelize.literal(
-              "DATEDIFF(SECOND, hora_entrada, hora_salida) / 3600.0"
-            )
+              "DATEDIFF(SECOND, hora_entrada, hora_salida) / 3600.0",
+            ),
           ),
           "totalHorasHoy",
         ],
@@ -203,14 +203,14 @@ const getAllProyects = async (req, res) => {
           db.sequelize.fn(
             "CONVERT",
             db.sequelize.literal("date"),
-            db.sequelize.fn("GETDATE")
+            db.sequelize.fn("GETDATE"),
           ),
           "=",
           db.sequelize.fn(
             "CONVERT",
             db.sequelize.literal("date"),
-            db.sequelize.col("fecha")
-          )
+            db.sequelize.col("fecha"),
+          ),
         ),
       },
       raw: true,
@@ -328,6 +328,7 @@ const getObras = async (req, res) => {
     const obras = await db.PROYECTOS.findAll({
       where: whereClause,
       raw: true,
+      logging: console.log,
     });
 
     res.status(200).json(obras);
@@ -353,7 +354,7 @@ const createOtObra = async (req, res) => {
         es_ote,
         id_empresa: empresa,
       },
-      { transaction }
+      { transaction },
     );
 
     // Crear calendario
@@ -363,7 +364,7 @@ const createOtObra = async (req, res) => {
         id_usuario,
         id_proyecto: nuevaOT.id,
       },
-      { transaction }
+      { transaction },
     );
 
     await transaction.commit();
@@ -541,7 +542,7 @@ const crearProyecto = async (req, res) => {
         es_ote,
         id_empresa: empresa,
       },
-      { transaction }
+      { transaction },
     );
 
     // Crear entrada en calendario usando la fecha asignada del proyecto
@@ -552,7 +553,7 @@ const crearProyecto = async (req, res) => {
         usuario,
         id_proyecto: nuevoProyecto.id,
       },
-      { transaction }
+      { transaction },
     );
 
     await transaction.commit();
@@ -698,12 +699,13 @@ const obtenerOTsConstruccion = async (req, res) => {
 
       const idsProyectos = proyectosAutorizados.map((p) => p.Proyecto_Id);
 
-      whereClause.id_servicio_origen = { [Op.in]: idsProyectos };
+      whereClause.id = { [Op.in]: idsProyectos };
     }
 
     const otsConstruccion = await db.ORDEN_TRABAJO.findAll({
       where: whereClause,
       attributes: ["id", "nombre", "estado"],
+      logging: console.log,
     });
 
     res.status(200).json(otsConstruccion);
@@ -889,7 +891,7 @@ const reasignarOt = async (req, res) => {
     // Actualizar también el calendario donde el id_proyecto sea igual al id_ot
     await db.CALENDARIO.update(
       { id_usuario: id_usuario, fecha: date },
-      { where: { id_proyecto: id_ot } }
+      { where: { id_proyecto: id_ot } },
     );
 
     return res.status(200).json({
