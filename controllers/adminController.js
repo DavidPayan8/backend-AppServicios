@@ -64,7 +64,8 @@ const darAltaEmpleadoHandler = async (req, res) => {
     });
 
     // Crear asignación de jornada si viene
-    if (id_horario) {
+    if (id_horario !== null || id_horario !== undefined) {
+      console.log("Creando asignación de jornada");
       await db.ASIGNACION_HORARIO_USUARIO.create({
         id_usuario: usuario.id,
         id_horario,
@@ -263,7 +264,7 @@ const editarEmpleadoHandler = async (req, res) => {
     };
 
     const campos = Object.fromEntries(
-      Object.entries(camposActualizables).filter(([_, v]) => v !== undefined)
+      Object.entries(camposActualizables).filter(([_, v]) => v !== undefined),
     );
 
     if (Object.keys(campos).length === 0)
@@ -337,7 +338,7 @@ const getVacacionesHandler = async (req, res) => {
       itemsPorPagina,
       ordenarPor,
       esAscendiente,
-      filtros
+      filtros,
     );
 
     res.status(200).json(vacaciones);
@@ -383,7 +384,7 @@ const getVacacionHandler = async (req, res) => {
 
     // Ordenar los estados para obtener el último
     vacacion.vacaciones_estado.sort(
-      (a, b) => new Date(b.tiempo) - new Date(a.tiempo)
+      (a, b) => new Date(b.tiempo) - new Date(a.tiempo),
     );
     const ultimoEstado = vacacion.vacaciones_estado[0];
 
@@ -411,7 +412,7 @@ const actualizarVacacionHandler = async (req, res) => {
 
     await db.VACACIONES.update(
       { estado, razon, actualizadoPor: req.user.id },
-      { where: { id } }
+      { where: { id } },
     );
 
     await db.VACACIONES_ESTADOS.create({
@@ -450,7 +451,7 @@ const getCambiosEstadoHandler = async (req, res) => {
           db.Sequelize.fn(
             "CONVERT",
             db.Sequelize.literal("VARCHAR"),
-            db.Sequelize.col("tiempo")
+            db.Sequelize.col("tiempo"),
           ),
           "tiempo",
         ],

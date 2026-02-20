@@ -172,7 +172,6 @@ const getAllProyects = async (req, res) => {
       limit,
       offset,
       subQuery: false,
-      logging: console.log,
     });
 
     const plainRows = rows.map((r) => r.get({ plain: true }));
@@ -328,7 +327,6 @@ const getObras = async (req, res) => {
     const obras = await db.PROYECTOS.findAll({
       where: whereClause,
       raw: true,
-      logging: console.log,
     });
 
     res.status(200).json(obras);
