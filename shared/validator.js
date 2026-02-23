@@ -11,7 +11,7 @@ const validateCIFFormat = (cif) => {
 const validateCIFUnique = async (cif, empresaId = null) => {
   try {
     const whereCondition = empresaId
-      ? { cif, id: { [Op.ne]: empresaId } }
+      ? { cif, id_empresa: { [Op.ne]: empresaId } }
       : { cif };
 
     const count = await db.EMPRESA.count({ where: whereCondition });
