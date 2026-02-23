@@ -49,7 +49,7 @@ const getEmpresas = async (req, res) => {
               limiteUsuarios: e.config.limite_usuarios,
             }
           : null,
-      }))
+      })),
     );
   } catch (error) {
     console.error("Error al obtener empresas:", error);
@@ -163,7 +163,7 @@ const createEmpresaCompleta = async (req, res) => {
         direccion: direccion ?? null,
         telefono: telefono ?? null,
       },
-      { transaction: t }
+      { transaction: t },
     );
 
     // Obtener id generado
@@ -188,7 +188,7 @@ const createEmpresaCompleta = async (req, res) => {
             configuracion?.app?.proyectosAutorizacion ?? false,
           limite_usuarios: configuracion?.limiteUsuarios ?? null,
         },
-        { transaction: t }
+        { transaction: t },
       );
     }
 
@@ -201,7 +201,7 @@ const createEmpresaCompleta = async (req, res) => {
             id_modulo: modulo.id,
             habilitado: modulo.habilitado ?? false,
           },
-          { transaction: t }
+          { transaction: t },
         );
 
         if (modulo.submodulos && Array.isArray(modulo.submodulos)) {
@@ -212,7 +212,7 @@ const createEmpresaCompleta = async (req, res) => {
                 id_submodulo: sub.id,
                 habilitado: sub.habilitado ?? false,
               },
-              { transaction: t }
+              { transaction: t },
             );
           }
         }
@@ -230,7 +230,7 @@ const createEmpresaCompleta = async (req, res) => {
           fichaje_activo: true,
           primer_inicio: false,
         },
-        { transaction: t }
+        { transaction: t },
       );
     }
 
@@ -318,7 +318,7 @@ const updateEmpresa = async (req, res) => {
       },
       {
         where: { id_empresa: empresa.id },
-      }
+      },
     );
 
     res.status(200).json({ success: true });
@@ -332,11 +332,13 @@ const updateConfigEmpresa = async (req, res) => {
   try {
     const empresa = req.body;
 
+    console.log(empresa, req.user.empresa);
+
     if (!validateCIFFormat(empresa.cif)) {
       return res.status(400).json({ message: "El CIF no es válido." });
     }
 
-    const isUnique = await validateCIFUnique(empresa.cif, empresa.id);
+    const isUnique = await validateCIFUnique(empresa.cif, req.user.empresa);
     if (!isUnique) {
       return res
         .status(400)
@@ -350,7 +352,7 @@ const updateConfigEmpresa = async (req, res) => {
         smtp_user: empresa.configuracion.email.smtp_user,
         smtp_port: empresa.configuracion.email.smtp_port,
         smtp_pass: empresa.configuracion.email.smtp_pass,
-        color_primario: empresa.configuracion.app.colorPrimario,
+        color_principal: empresa.configuracion.app.colorPrimario,
         hay_primer_inicio: empresa.configuracion.app.hayPrimerInicio,
         es_tipo_obra: empresa.configuracion.app.esTipoObra,
         isLaTorre: empresa.configuracion.app.isLaTorre,
@@ -358,8 +360,8 @@ const updateConfigEmpresa = async (req, res) => {
         proyectos_autorizacion: empresa.configuracion.app.proyectosAutorizacion,
       },
       {
-        where: { id_empresa: empresa.id },
-      }
+        where: { id_empresa: req.user.empresa },
+      },
     );
 
     res.status(200).json({ success: true });
