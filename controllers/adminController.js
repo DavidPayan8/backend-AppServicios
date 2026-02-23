@@ -7,6 +7,7 @@ const { verificarLimiteUsuarios } = require("../utils/empresaValidations");
 const darAltaEmpleadoHandler = async (req, res) => {
   try {
     const { empresa } = req.user;
+    console.log("Usuario", req.body);
     const {
       username,
       password,
@@ -51,7 +52,7 @@ const darAltaEmpleadoHandler = async (req, res) => {
       user_name: username,
       contrasena: password,
       nomapes: nombreApellidos,
-      dni,
+      DNI: dni,
       num_seguridad_social: seguridadSocial,
       email,
       telefono,
@@ -63,9 +64,10 @@ const darAltaEmpleadoHandler = async (req, res) => {
       primer_inicio: primerInicio,
     });
 
+    console.log("Alta completada", usuario);
+
     // Crear asignación de jornada si viene
-    if (id_horario !== null || id_horario !== undefined) {
-      console.log("Creando asignación de jornada");
+    if (id_horario !== null && id_horario !== undefined) {
       await db.ASIGNACION_HORARIO_USUARIO.create({
         id_usuario: usuario.id,
         id_horario,
@@ -76,7 +78,7 @@ const darAltaEmpleadoHandler = async (req, res) => {
 
     res.status(201).json({ message: "Alta completada", usuarioId: usuario.id });
   } catch (error) {
-    console.error("Error al dar de alta empleado:", error);
+    console.log("Error al dar de alta empleado:", error);
     res.status(500).json({ message: "Error del servidor" });
   }
 };
@@ -258,7 +260,10 @@ const editarEmpleadoHandler = async (req, res) => {
       telefono,
       rol,
       sexo,
-      categoria_laboral_id: Number(categoriaLaboral),
+      categoria_laboral_id:
+        categoriaLaboral !== undefined && categoriaLaboral !== null
+          ? Number(categoriaLaboral)
+          : undefined,
       salario_personalizado: salario ?? null,
       horas_personalizadas: horas ?? null,
     };
@@ -280,16 +285,16 @@ const editarEmpleadoHandler = async (req, res) => {
         [Op.or]: [{ user_name: username }, { dni }],
       },
     });
+
     if (existe) return res.status(400).json({ message: "Usuario/DNI en uso" });
 
     await db.USUARIOS.update(campos, { where: { id } });
 
-    console.log("Actualizando horario a:", horario);
-    if (horario !== undefined) {
-      console.log("Actualizando horario a:", horario);
+    if (horario !== undefined && horario !== null) {
       const asignacion = await db.ASIGNACION_HORARIO_USUARIO.findOne({
         where: { id_usuario: id },
       });
+
       if (asignacion) {
         await asignacion.update({
           id_horario: horario,
