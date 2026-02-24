@@ -10,12 +10,12 @@ const obtenerFichajesProyecto = async (req, res) => {
     const whereUsuario = {};
 
     if (desde) {
-      whereAsistencia.fecha = { [Op.gte]: new Date(desde) };
+      whereAsistencia.fecha = { [Op.gte]: desde };
     }
     if (hasta) {
       whereAsistencia.fecha = {
         ...whereAsistencia.fecha,
-        [Op.lte]: new Date(hasta),
+        [Op.lte]: hasta,
       };
     }
     if (trabajador) {
@@ -35,7 +35,7 @@ const obtenerFichajesProyecto = async (req, res) => {
           as: "usuario",
           where: {
             id_empresa: req.user.empresa,
-            ...whereUsuario
+            ...whereUsuario,
           },
           attributes: [
             "nomapes",
@@ -48,13 +48,12 @@ const obtenerFichajesProyecto = async (req, res) => {
               model: db.CATEGORIA_LABORAL,
               as: "categoriaLaboral",
               attributes: ["id", "nombre"],
+              required: false, // para mostrar usuarios sin categoría
               include: [
                 {
                   model: db.TARIFAS_CATEGORIAS,
                   as: "tarifas",
-                  attributes: [
-                    "horas_jornada",
-                  ],
+                  attributes: ["horas_jornada"],
                   where: {
                     [Op.and]: [
                       { fecha_inicio: { [Op.lte]: hoy } },
@@ -85,8 +84,10 @@ const obtenerFichajesProyecto = async (req, res) => {
         ["localizacion_entrada", "Ubicacion_entrada"],
         ["localizacion_salida", "Ubicacion_salida"],
       ],
-      order: [["hora_entrada", "DESC"]],
-      distinct: true, // evita duplicados
+      order: [
+        ["fecha", "DESC"],
+        ["hora_entrada", "DESC"],
+      ],
       raw: true,
       nest: true,
     });
@@ -124,7 +125,7 @@ const eliminarFichajes = async (req, res) => {
       res.status(404).json({ message: "Fichajes no encontrados" });
     }
   } catch (error) {
-    console.log(error)
+    console.log(error);
     res
       .status(500)
       .json({ error: "Error al eliminar los fichajes: " + error.message });
@@ -142,18 +143,25 @@ const patchFichaje = async (req, res) => {
       localizacionSalida,
     } = req.query;
 
+    const parseParam = (val) =>
+      val === "null" || val === "NULL" || val === "" ? null : val;
+    const parseDate = (val) => {
+      const p = parseParam(val);
+      return p ? p.split(" ")[0] : p;
+    };
+
     // Actualizar el fichaje
     const result = await db.CONTROL_ASISTENCIAS.update(
       {
-        fecha,
-        horaEntrada,
-        horaSalida,
-        localizacionEntrada,
-        localizacionSalida,
+        fecha: parseDate(fecha),
+        hora_entrada: parseParam(horaEntrada),
+        hora_salida: parseParam(horaSalida),
+        localizacion_entrada: parseParam(localizacionEntrada),
+        localizacion_salida: parseParam(localizacionSalida),
       },
       {
         where: { id },
-      }
+      },
     );
 
     if (result[0] > 0) {
@@ -162,7 +170,7 @@ const patchFichaje = async (req, res) => {
       res.status(404).json({ message: "Fichaje no encontrado" });
     }
   } catch (error) {
-    console.log(error)
+    console.log(error);
     res
       .status(500)
       .json({ error: "Error al actualizar el fichaje: " + error.message });
@@ -179,21 +187,28 @@ const postFichaje = async (req, res) => {
       localizacionSalida,
     } = req.query;
 
+    const parseParam = (val) =>
+      val === "null" || val === "NULL" || val === "" ? null : val;
+    const parseDate = (val) => {
+      const p = parseParam(val);
+      return p ? p.split(" ")[0] : p;
+    };
+
     // Crear un nuevo fichaje
     const result = await db.CONTROL_ASISTENCIAS.create({
       id_usuario: idUsuario,
-      fecha: entrada,
-      hora_entrada: entrada,
-      hora_salida: salida,
-      localizacion_entrada: localizacionEntrada,
-      localizacion_salida: localizacionSalida,
+      fecha: parseDate(entrada),
+      hora_entrada: parseParam(entrada),
+      hora_salida: parseParam(salida),
+      localizacion_entrada: parseParam(localizacionEntrada),
+      localizacion_salida: parseParam(localizacionSalida),
     });
 
     res
       .status(201)
       .json({ message: "Fichaje creado correctamente", id: result.id });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     res.status(500).json({
       error: "Controller: Error al crear el fichaje: " + error.message,
     });

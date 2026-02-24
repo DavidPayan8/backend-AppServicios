@@ -7,7 +7,6 @@ const { verificarLimiteUsuarios } = require("../utils/empresaValidations");
 const darAltaEmpleadoHandler = async (req, res) => {
   try {
     const { empresa } = req.user;
-    console.log("Usuario", req.body);
     const {
       username,
       password,
@@ -63,8 +62,6 @@ const darAltaEmpleadoHandler = async (req, res) => {
       horas_personalizadas: horas ?? null,
       primer_inicio: primerInicio,
     });
-
-    console.log("Alta completada", usuario);
 
     // Crear asignación de jornada si viene
     if (id_horario !== null && id_horario !== undefined) {
