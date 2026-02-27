@@ -118,6 +118,48 @@ const ficharFlutterHandler = async (req, res) => {
   }
 };
 
+const isAdminHandler = async (req, res) => {
+  const { codigo_usuario } = req.body;
+
+  try {
+    if (!codigo_usuario) {
+      return res.status(400).json({
+        success: false,
+        message: "codigo_usuario es requerido",
+      });
+    }
+
+    const usuario = await db.USUARIOS.findOne({
+      where: {
+        codigo_usuario,
+        id_empresa: req.empresa.id,
+      },
+      attributes: ["rol"],
+    });
+
+    if (!usuario) {
+      return res.status(200).json({
+        success: true,
+        isAdmin: false,
+      });
+    }
+
+    const isAdmin = usuario.rol.toLowerCase() === "admin";
+
+    return res.status(200).json({
+      success: true,
+      isAdmin,
+    });
+  } catch (error) {
+    console.error("Error en isAdminHandler:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error del servidor",
+    });
+  }
+};
+
 module.exports = {
   ficharFlutterHandler,
+  isAdminHandler,
 };
