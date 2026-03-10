@@ -1,10 +1,15 @@
 const { sendPushToUsers } = require("./pushBrowserController");
+const db = require("../Model");
+const { Op } = require("sequelize");
 
 /**
  * POST /api/vb6/push
  *
  * Envía una notificación WebPush directamente a los navegadores suscritos
  * de los usuarios indicados. NO crea registros en la tabla NOTIFICACIONES.
+ *
+ * Devuelve además la lista de suscripciones activas encontradas para
+ * que el bridge pueda logearlas y el desarrollador las revise en BD.
  *
  * Body:
  *   destino   {number[]}  IDs de usuario destinatarios
@@ -38,13 +43,34 @@ exports.enviarPush = async (req, res) => {
   }
 
   try {
-    // Envía el WebPush directamente a los navegadores suscritos
+    // 1. Consultar qué navegadores (PushBrowser) están suscritos y activos
+    const suscripciones = await db.PushBrowser.findAll({
+      where: {
+        id_usuario: { [Op.in]: destino },
+        isActive: true,
+      },
+      attributes: ["id", "id_usuario", "endpoint"],
+    });
+
+    // Preparar info de log: id BD, usuario y primeros/últimos chars del endpoint
+    const infoSuscripciones = suscripciones.map((s) => ({
+      id_push_browser: s.id,
+      id_usuario: s.id_usuario,
+      endpoint_preview: `${s.endpoint.substring(0, 40)}...${s.endpoint.slice(-20)}`,
+    }));
+
+    console.log(
+      `[VB6 Push] usuarios=${destino} | suscripciones activas=${suscripciones.length} | asunto="${asunto}"`,
+    );
+
+    // 2. Enviar el WebPush
     await sendPushToUsers(destino, asunto, cuerpo, url);
 
     return res.status(200).json({
       success: true,
       ok: true,
-      enviados: destino.length,
+      enviados: suscripciones.length,
+      suscripciones: infoSuscripciones, // ← para el log del bridge
     });
   } catch (error) {
     console.error("Error en vb6Controller.enviarPush:", error);

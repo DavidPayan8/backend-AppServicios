@@ -175,7 +175,15 @@ exports.sendPushToUsers = async (
       } catch (err) {
         if (err.statusCode === 410 || err.statusCode === 404) {
           console.warn(
-            `Suscripción caducada o eliminada (410/404). Desactivando endpoint: ${browser.endpoint.substring(0, 50)}...`,
+            `Suscripción caducada o eliminada (${err.statusCode}). Desactivando endpoint: ${browser.endpoint.substring(0, 50)}...`,
+          );
+          await browser.update({ isActive: false });
+        } else if (err.statusCode === 403) {
+          // 403 = las claves VAPID actuales no coinciden con las usadas al suscribirse.
+          // La suscripción nunca funcionará con las claves actuales → desactivar.
+          console.warn(
+            `Suscripción con VAPID incorrecto (403). Desactivando endpoint: ${browser.endpoint.substring(0, 50)}...`,
+            `\nCausa: ${err.body || "VAPID credentials mismatch"}`,
           );
           await browser.update({ isActive: false });
         } else {
