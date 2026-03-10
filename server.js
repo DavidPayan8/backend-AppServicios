@@ -32,6 +32,7 @@ const catLaboralRoutes = require("./routes/categoriaLaboralRoutes");
 const pushBrowserRoutes = require("./routes/pushBrowserRoutes");
 const flutterFichajeRoutes = require("./routes/flutterFichajeRoutes");
 const flutterConfigRoutes = require("./routes/flutterConfigRoutes");
+const vb6Routes = require("./routes/vb6Routes");
 
 const authenticateToken = require("./middleware/authMiddleware");
 
@@ -70,6 +71,7 @@ const routes = [
   { path: "push-browser", router: pushBrowserRoutes },
   { path: "flutter-fichaje", router: flutterFichajeRoutes },
   { path: "flutter-config", router: flutterConfigRoutes },
+  { path: "vb6", router: vb6Routes },
 ];
 
 // Middleware para cors
