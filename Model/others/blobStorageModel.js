@@ -9,8 +9,19 @@ const mime = require("mime-types");
 const AdmZip = require("adm-zip");
 const db = require("../../Model");
 
-const AZURE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING;
-const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_CONNECTION_STRING);
+// const AZURE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING;
+// const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_CONNECTION_STRING);
+// estaba fallando asi que lo cambio a una funcion lazy
+
+const getBlobServiceClient = () => {
+  const connStr = process.env.AZURE_STORAGE_CONNECTION_STRING;
+  if (!connStr) {
+    throw new Error('AZURE_STORAGE_CONNECTION_STRING faltante en .env');
+  }
+  return BlobServiceClient.fromConnectionString(connStr);
+};
+
+
 const CONTAINER_NAME = process.env.AZURE_CONTAINER_NAME;
 
 /**
@@ -73,7 +84,10 @@ const createBlobPathEmpresa = (
  * Subir archivos a Azure Blob Storage
  */
 async function uploadToAzure(ambito, archivos, id_usuario, id_empresa, tipo) {
-
+    const AZURE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING; 
+    const blobServiceClient = BlobServiceClient.fromConnectionString(
+    process.env.AZURE_STORAGE_CONNECTION_STRING
+  ); //lazy de blobStorage
     let blobPath;
     const files = Array.isArray(archivos) ? archivos : [archivos];
     const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME);
