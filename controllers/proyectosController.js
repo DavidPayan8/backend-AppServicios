@@ -216,8 +216,6 @@ const getAllProyects = async (req, res) => {
       plain: true,
     });
 
-    console.log(plainRows);
-
     const data = mapformatOrdenesTrabajo(plainRows);
 
     res
@@ -289,10 +287,9 @@ const getByIdLaTorre = async (req, res) => {
       subQuery: false,
     });
 
-    const prueba = formatOrdenTrabajo(result);
-    console.log(prueba);
+    const resultFormatted = formatOrdenTrabajo(result);
 
-    res.status(200).json(prueba);
+    res.status(200).json(resultFormatted);
   } catch (error) {
     console.error("Error al obtener la órden de trabajo:", error);
     res.status(500).json({ message: "Error al obtener órdenes de trabajo" });
@@ -697,7 +694,7 @@ const obtenerOTsConstruccion = async (req, res) => {
 
       const idsProyectos = proyectosAutorizados.map((p) => p.Proyecto_Id);
 
-      whereClause.id = { [Op.in]: idsProyectos };
+      whereClause.id_servicio_origen = { [Op.in]: idsProyectos };
     }
 
     const otsConstruccion = await db.ORDEN_TRABAJO.findAll({
