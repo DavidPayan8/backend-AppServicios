@@ -35,6 +35,7 @@ const flutterConfigRoutes = require("./routes/flutterConfigRoutes");
 const vb6Routes = require("./routes/vb6Routes");
 
 const authenticateToken = require("./middleware/authMiddleware");
+const nominasRoutes = require('./routes/nominasRoutes');
 
 const app = express();
 
@@ -71,6 +72,7 @@ const routes = [
   { path: "push-browser", router: pushBrowserRoutes },
   { path: "flutter-fichaje", router: flutterFichajeRoutes },
   { path: "flutter-config", router: flutterConfigRoutes },
+  { path: 'nominas', router: nominasRoutes },
   { path: "vb6", router: vb6Routes },
 ];
 
@@ -79,6 +81,10 @@ app.use(cors());
 app.use(morgan("dev"));
 
 // Middleware para multipart/form-data y json
+app.use(express.json({ limit: '10mb' })); //dev-miguel
+app.use(express.urlencoded({ limit: '10mb', extended: true })); //dev-miguel
+/* PROVISIONALMENTE COMENTADO
+
 app.use((req, res, next) => {
   if (req.is("multipart/form-data")) return next();
   express.json({ limit: "10mb" })(req, res, (err) => {
@@ -86,6 +92,8 @@ app.use((req, res, next) => {
     express.urlencoded({ limit: "10mb", extended: true })(req, res, next);
   });
 });
+
+*/ 
 // Configurar rutas
 routes.forEach(({ path, router, noBase }) => {
   app.use(noBase ? `/${path}` : `${BASE_API_URL}${path}`, router);
@@ -100,6 +108,7 @@ app.get("/protected", authenticateToken, (req, res) => {
 app.get("/", (req, res) => {
   res.json({ message: "Levantado" });
 });
+
 
 // Iniciar el servidor
 app.listen(port, () => {
