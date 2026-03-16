@@ -144,6 +144,8 @@ async function uploadToAzure(ambito, archivos, id_usuario, id_empresa, tipo) {
                         id_empresa,
                         tipo
                     );
+
+                    console.log("blobPath",blobPath)
                     await registrarOperacionDocumento(
                         blobPath,
                         "crear",
