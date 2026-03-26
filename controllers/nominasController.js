@@ -1,65 +1,69 @@
 const fs = require('fs');
-const path = require('path');
 const db = require('../Model');
-const User = db['USUARIOS']; 
-const Nomina = db['Nomina'];
+const User = db['USUARIOS'];
 const { uploadToAzure } = require('../Model/others/blobStorageModel');
+const { TIPOS_DOCUMENTO } = require('../shared/tiposDocumento');
+
+// Valores por defecto para subida masiva de nóminas
+const DEFAULTS = {
+  ambito: 'Personal',
+  tipo: TIPOS_DOCUMENTO.NOMINAS,
+};
+
+// Regex para extraer DNI/NIE del nombre de archivo
+const DNI_REGEX = /(\d{8}[TRWAGMYFPDXBNJZSQVHLCKE])[_\.]|(\d{8}[TRWAGMYFPDXBNJZSQVHLCKE])/i;
+
+/**
+ * Normaliza el ámbito: primera letra mayúscula, resto minúsculas
+ * Ej: "personal" -> "Personal", "EMPRESA" -> "Empresa"
+ */
+const normalizarAmbito = (raw) =>
+  raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+
+/**
+ * Extrae el DNI del nombre de un archivo.
+ * Soporta formatos: "nombre12345678Z.pdf", "12345678Z_algo.pdf", etc.
+ */
+const extraerDniDeNombre = (filename) => {
+  const match = filename.match(DNI_REGEX);
+  if (!match) return null;
+  return (match[1] || match[2]).toUpperCase();
+};
 
 const uploadPdfs = async (req, res) => {
   try {
-    console.log('🚀 uploadPdfs INICIO');
-    console.log('📦 req.body:', req.body);
-    console.log('📁 req.files:', req.files);
-    console.log('📦 req.file:', req.file);
-    const files = req.files || []; // Array de PDFs validados desde busboy
+    const files = req.files || [];
+    const ambito = normalizarAmbito(req.body.ambito || DEFAULTS.ambito);
+    const tipo = req.body.tipo || DEFAULTS.tipo;
+    const id_empresa = req.user.empresa;
+
     const resultados = [];
 
-    for (let file of files) {
-      // Extraer DNI del nombre: asume título en formato "DNI_12345678Z.pdf" o "12345678Z.pdf"
-      const dniMatch = file.originalname.match(/(\d{8}[TRWAGMYFPDXBNJZSQVHLCKE])[_\.]|(\d{8}[TRWAGMYFPDXBNJZSQVHLCKE])/i);
-      if (!dniMatch) {
+    for (const file of files) {
+      const dni = extraerDniDeNombre(file.originalname);
+      if (!dni) {
         return res.status(400).json({ error: `DNI no encontrado en ${file.originalname}` });
       }
-      const dni = (dniMatch[1] || dniMatch[2]).toUpperCase();
 
-      // Buscar user por DNI con Sequelize
       const user = await User.findOne({ where: { DNI: dni } });
       if (!user) {
         return res.status(400).json({ error: `Usuario no encontrado con DNI: ${dni}` });
       }
 
-      // Leer el archivo del disco y construir el objeto que uploadToAzure espera
       const buffer = fs.readFileSync(file.path);
-      
-
-      const ambito = req.body.ambito ||'Personal';
-      const tipo = req.body.tipo || 'nomina';
-      const id_empresa = req.body.id_empresa; // viene desde el front
-
-      console.log('📝 Datos form:', { ambito, tipo, id_empresa });
-
-    
       const archivoAzure = { buffer, filename: file.originalname };
-      await uploadToAzure(ambito, archivoAzure, user.id, id_empresa, tipo);
-      
-       await Nomina.create({
-        IdUsuario: user.id,
-        ambito: req.body.ambito || 'personal',
-        tipo: req.body.tipo || 'nomina',
-        nombreOriginal: file.originalname,
-        Ruta: '', //Aqui no iria una ruta?
-        Tamano: buffer.length
-      });  // actua en db
-      
-      
-      resultados.push({ dni, userId: user.id});
 
-      // Borra temp después de procesar
+      await uploadToAzure(ambito, archivoAzure, user.id, id_empresa, tipo);
+
+      resultados.push({ dni, userId: user.id });
+
+      // Limpia el archivo temporal
       fs.unlinkSync(file.path);
     }
 
-    res.json({ success: true, message: 'PDFs procesados correctamente' });
+    res.json({ success: true, message: `${resultados.length}/${files} PDFs procesados correctamente`, resultados });
   } catch (error) {
+    console.error('Error en uploadPdfs:', error);
     res.status(500).json({ error: error.message });
   }
 };

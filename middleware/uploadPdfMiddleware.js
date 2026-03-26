@@ -7,7 +7,12 @@ const uploadPdfMiddleware = (req, res, next) => {
   
   const busboy = Busboy({ headers: req.headers });
   const files = [];
+  const fields = {};
   let responded = false;  // ← ANTI-DUPLICADA
+
+  busboy.on('field', (fieldname, val) => {
+    fields[fieldname] = val;
+  });
 
   busboy.on('file', (fieldname, file, info) => {
   const { filename, encoding, mimeType } = info;
@@ -44,6 +49,7 @@ const uploadPdfMiddleware = (req, res, next) => {
 
   busboy.on('finish', () => {
     console.log('✅ FINISH files:', files.length);
+    req.body = fields;
     req.files = files;
     
     if (files.length === 0) {

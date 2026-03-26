@@ -1,4 +1,8 @@
 const Sequelize = require("sequelize");
+const bcrypt = require("bcrypt");
+
+const SALT_ROUNDS = 10;
+
 module.exports = function (sequelize, DataTypes) {
   const USUARIOS = sequelize.define(
     "USUARIOS",
@@ -18,7 +22,7 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: false,
       },
       contrasena: {
-        type: DataTypes.STRING(50),
+        type: DataTypes.STRING(255),
         allowNull: false,
       },
       nomapes: {
@@ -96,6 +100,18 @@ module.exports = function (sequelize, DataTypes) {
       tableName: "USUARIOS",
       schema: "dbo",
       timestamps: false,
+      hooks: {
+        beforeCreate: async (usuario) => {
+          if (usuario.contrasena) {
+            usuario.contrasena = await bcrypt.hash(usuario.contrasena, SALT_ROUNDS);
+          }
+        },
+        beforeUpdate: async (usuario) => {
+          if (usuario.changed("contrasena")) {
+            usuario.contrasena = await bcrypt.hash(usuario.contrasena, SALT_ROUNDS);
+          }
+        },
+      },
       indexes: [
         {
           name: "IX_UNIQUE_DNI",

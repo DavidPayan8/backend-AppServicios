@@ -1,6 +1,9 @@
 const { sendPushToUsers } = require("./pushBrowserController");
 const db = require("../Model");
 const { Op } = require("sequelize");
+const bcrypt = require("bcrypt");
+
+const SALT_ROUNDS = 10;
 
 /**
  * POST /api/vb6/push
@@ -77,6 +80,42 @@ exports.enviarPush = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Error del servidor al enviar el push.",
+    });
+  }
+};
+
+/**
+ * POST /api/vb6/hash-password
+ *
+ * Recibe una contraseña en texto plano y devuelve su hash bcrypt.
+ * Permite a la aplicación VB6 generar hashes compatibles con el sistema
+ * sin tener que implementar bcrypt localmente.
+ *
+ * Body:
+ *   password  {string}  Contraseña en texto plano a hashear
+ */
+exports.hashPassword = async (req, res) => {
+  const { password } = req.body;
+
+  if (!password || typeof password !== "string") {
+    return res.status(400).json({
+      success: false,
+      message: "'password' es obligatorio y debe ser un string.",
+    });
+  }
+
+  try {
+    const hash = await bcrypt.hash(password, SALT_ROUNDS);
+
+    return res.status(200).json({
+      success: true,
+      hash,
+    });
+  } catch (error) {
+    console.error("Error en vb6Controller.hashPassword:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error del servidor al hashear la contraseña.",
     });
   }
 };

@@ -1,4 +1,5 @@
 const db = require("../Model");
+const bcrypt = require("bcrypt");
 const identidad = require("../shared/identidad");
 
 // Obtener todos los usuarios de una empresa
@@ -84,7 +85,7 @@ const actualizarPerfilHandler = async (req, res) => {
       sexo: sexo.toUpperCase(),
     };
     if (password) {
-      updateData.contrasena = password;
+      updateData.contrasena = await bcrypt.hash(password, 10);
     }
 
     await db.USUARIOS.update(updateData, {
