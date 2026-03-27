@@ -14,6 +14,7 @@ const {
 } = require("../controllers/albaranController");
 
 router.use(authenticateToken);
+router.use(authorizeModule("servicios", "albaran"));
 
 //Rutas para cabecera doc
 router.get("/obtener-cabecera", obtenerCabeceraOt);

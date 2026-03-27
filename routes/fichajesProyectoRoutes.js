@@ -5,6 +5,7 @@ const authenticateToken = require("../middleware/authMiddleware");
 
 
 router.use(authenticateToken);
+router.use(authorizeModule("servicios", "fichaje"));
 
 router.get("/", obtenerFichajesProyecto);
 router.delete("/", eliminarFichajes);

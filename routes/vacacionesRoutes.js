@@ -12,6 +12,7 @@ const authenticateToken = require("../middleware/authMiddleware");
 const router = express.Router();
 
 router.use(authenticateToken);
+router.use(authorizeModule("portal_empleado", "vacaciones_portal"));
 
 router.get("/total", obtenerTotalVacaciones);
 router.get("/tipos", obtenerTiposVacacion);

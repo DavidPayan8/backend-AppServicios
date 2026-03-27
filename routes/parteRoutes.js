@@ -14,6 +14,7 @@ const authenticateToken = require("../middleware/authMiddleware");
 const router = express.Router();
 
 router.use(authenticateToken);
+router.use(authorizeModule("servicios", "cierre"));
 
 router.get("/check-parte-abierto", checkParteAbierto);
 

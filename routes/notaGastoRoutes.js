@@ -5,6 +5,7 @@ const notaGastoController = require('../controllers/notaGastoController');
 const authenticateToken = require("../middleware/authMiddleware");
 
 router.use(authenticateToken);
+router.use(authorizeModule("portal_empleado", "nota_gasto"));
 
 /**
  * @route   GET /api/notas-gasto

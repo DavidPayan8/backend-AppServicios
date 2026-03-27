@@ -6,6 +6,7 @@ const { uploadPdfs } = require('../controllers/nominasController'); //  controla
 const authenticateToken = require('../middleware/authMiddleware');
 
 router.use(authenticateToken);
+router.use(authorizeModule("portal_empleado", "nominas"));
 router.use(uploadPdfMiddleware);
 
 // Ruta POST para múltiples PDFs (campo 'pdfs' en frontend)

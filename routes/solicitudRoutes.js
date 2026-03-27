@@ -11,6 +11,7 @@ const authenticateToken = require("../middleware/authMiddleware");
 const router = express.Router();
 
 router.use(authenticateToken);
+router.use(authorizeModule("la-torre", "solicitud"));
 
 router.get("/", getAllSolicitudes);
 router.get("/:id", getById);
