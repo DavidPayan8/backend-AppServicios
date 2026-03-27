@@ -94,7 +94,7 @@ const visualizarArchivoAzure = async (req, res) => {
 const subirTarjetaContacto = async (req, res) => {
     const { empresa } = req.user;
     const id_usuario = req.user.id;
-    const tipo = 'contacto';
+    const tipo = TIPOS_DOCUMENTO.CONTACTO;
     const ambito = 'Personal';
 
     try {
@@ -193,7 +193,7 @@ const eliminarArchivoAzure = async (req, res) => {
 const visualizarTarjetaContacto = async (req, res) => {
     const { empresa } = req.user;
     const id_usuario = req.user.id;
-    const tipo = "contacto";
+    const tipo = TIPOS_DOCUMENTO.CONTACTO;
     const ambito = "Personal";
     const expiracionMin = 60; // minutos de validez del SAS
 
@@ -260,12 +260,12 @@ const visualizarImagenOT = async (req, res) => {
     const expiracionMin = 60;
 
     try {
-        tipo = "OT";
-        let nombreArchivo = await obtenerPrimerArchivo("Empresa", idProyecto, idOT, empresa, "OT");
+        tipo = TIPOS_DOCUMENTO.OT;
+        let nombreArchivo = await obtenerPrimerArchivo("Empresa", idProyecto, idOT, empresa, TIPOS_DOCUMENTO.OT);
 
         if (!nombreArchivo) {
-            nombreArchivo = await obtenerPrimerArchivo("Empresa", idProyecto, null, empresa, "General");
-            tipo = "General";
+            nombreArchivo = await obtenerPrimerArchivo("Empresa", idProyecto, null, empresa, TIPOS_DOCUMENTO.GENERAL);
+            tipo = TIPOS_DOCUMENTO.GENERAL;
         }
 
         if (!nombreArchivo) {
@@ -283,12 +283,10 @@ const visualizarImagenOT = async (req, res) => {
     }
 };
 
-
-
 const subirTicketGasto = async (req, res) => {
     const { empresa, id } = req.user;
     const ambito = 'Personal';
-    const tipo = `NotaGasto`;
+    const tipo = TIPOS_DOCUMENTO.NOTA_GASTO;
     const dbName = process.env.DB_NAME;
 
     try {

@@ -1,10 +1,17 @@
 /**
  * VB6 Bridge API Key Authentication Middleware
- * Validates the x-vb6-api-key header against the VB6_API_KEY environment variable.
- * Simpler than flutterApiKeyMiddleware — no DB lookup needed, single shared key.
+ *
+ * Validates the x-vb6-api-key header. Supports two modes:
+ *   1. Per-company keys stored in CONFIG_EMPRESA.vb6_api_key (preferred)
+ *   2. Fallback to single shared VB6_API_KEY env variable (legacy)
+ *
+ * If the key matches a per-company key, req.vb6Empresa is populated
+ * with the company info. If it matches the env var, req.vb6Empresa is null.
  */
 
-const vb6ApiKeyMiddleware = (req, res, next) => {
+const db = require("../Model");
+
+const vb6ApiKeyMiddleware = async (req, res, next) => {
   const apiKey = req.headers["x-vb6-api-key"];
 
   if (!apiKey) {
@@ -14,24 +21,43 @@ const vb6ApiKeyMiddleware = (req, res, next) => {
     });
   }
 
-  const expectedKey = process.env.VB6_API_KEY;
-
-  if (!expectedKey) {
-    console.error("VB6_API_KEY no está definida en las variables de entorno.");
-    return res.status(500).json({
-      success: false,
-      message: "Configuración del servidor incompleta.",
+  try {
+    // 1. Try per-company key from DB
+    const configEmpresa = await db.CONFIG_EMPRESA.findOne({
+      where: { vb6_api_key: apiKey },
+      include: [
+        {
+          model: db.EMPRESA,
+          as: "empresa",
+          attributes: ["id_empresa", "nombre"],
+        },
+      ],
     });
-  }
 
-  if (apiKey !== expectedKey) {
+    if (configEmpresa) {
+      req.vb6Empresa = configEmpresa.empresa;
+      return next();
+    }
+
+    // 2. Fallback to env variable (legacy single shared key)
+    const expectedKey = process.env.VB6_API_KEY;
+
+    if (expectedKey && apiKey === expectedKey) {
+      req.vb6Empresa = null;
+      return next();
+    }
+
     return res.status(401).json({
       success: false,
       message: "API key inválida.",
     });
+  } catch (error) {
+    console.error("Error en vb6ApiKeyMiddleware:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error del servidor al validar API key.",
+    });
   }
-
-  next();
 };
 
 module.exports = vb6ApiKeyMiddleware;

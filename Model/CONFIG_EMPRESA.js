@@ -76,6 +76,11 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: true,
         unique: true,
       },
+      vb6_api_key: {
+        type: DataTypes.STRING(64),
+        allowNull: true,
+        unique: true,
+      },
     },
     {
       sequelize,

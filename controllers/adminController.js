@@ -1,6 +1,7 @@
 const identidad = require("../shared/identidad");
 const { getVacaciones } = require("../Model/others/admiModel");
 const db = require("../Model");
+const bcrypt = require("bcrypt");
 const { Op, fn } = require("sequelize");
 const { verificarLimiteUsuarios } = require("../utils/empresaValidations");
 
@@ -96,7 +97,6 @@ const getEmpleadosHandler = async (req, res) => {
       "id",
       "id_origen",
       "user_name",
-      "contrasena",
       "nomapes",
       "id_config",
       "id_empresa",
@@ -168,7 +168,6 @@ const getEmpleadosHandler = async (req, res) => {
     const empleados = rows.map((usuario) => ({
       id: usuario.id,
       username: usuario.user_name,
-      password: usuario.contrasena,
       nombreApellidos: usuario.nomapes,
       dni: usuario.DNI,
       seguridadSocial: usuario.num_seguridad_social,
@@ -206,7 +205,6 @@ const getDetallesHandler = async (req, res) => {
     const empleadoFormateado = {
       id: empleado.id,
       username: empleado.user_name,
-      password: empleado.contrasena,
       nombreApellidos: empleado.nomapes,
       dni: empleado.DNI,
       seguridadSocial: empleado.num_seguridad_social,
@@ -246,12 +244,18 @@ const editarEmpleadoHandler = async (req, res) => {
       horas,
     } = req.body;
 
+    // Hashear contraseña si viene
+    const hashedPassword =
+      password && password.trim() !== ""
+        ? await bcrypt.hash(password, 10)
+        : undefined;
+
     // Campos actualizables
     const camposActualizables = {
       user_name: username,
-      contrasena: password && password.trim() !== "" ? password : undefined,
+      contrasena: hashedPassword,
       nomapes: nombreApellidos,
-      dni,
+      DNI: dni,
       num_seguridad_social: seguridadSocial,
       email,
       telefono,

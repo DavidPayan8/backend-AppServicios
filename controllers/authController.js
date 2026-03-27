@@ -1,5 +1,6 @@
 const { Op } = require("sequelize");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
 const db = require("../Model");
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -91,7 +92,9 @@ const login = async (req, res) => {
     });
 
     if (!user) return res.status(401).json({ message: "Credenciales incorrectas" });
-    if (password !== user.contrasena) return res.status(401).json({ message: "Contraseña incorrecta" });
+
+    const passwordValida = await bcrypt.compare(password, user.contrasena);
+    if (!passwordValida) return res.status(401).json({ message: "Contraseña incorrecta" });
 
     // Horario correspondiente
     const hoy = new Date();

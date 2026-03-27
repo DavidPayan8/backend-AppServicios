@@ -69,6 +69,29 @@ const uploadPdfMiddleware = (req, res, next) => {
     files.push({ path: filePath, originalname: filenameStr });
   });
 
+  busboy.on('finish', () => {
+    console.log('✅ FINISH files:', files.length);
+    req.body = fields;
+    req.files = files;
+    
+    if (files.length === 0) {
+      if (!responded) {
+        responded = true;
+        return res.status(400).json({ error: 'No PDFs encontrados' });
+      }
+    }
+    next();
+  });
+
+  busboy.on('error', (err) => {
+    if (!responded) {
+      responded = true;
+      console.log('💥 ERROR:', err);
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  req.pipe(busboy);
 };
 
 module.exports = uploadPdfMiddleware;
