@@ -435,6 +435,27 @@ const getCountUsersByEmpresa = async (req, res) => {
   }
 };
 
+//dev-mike
+const updateColorPrincipal = async (req, res) => {
+    try {
+      const { empresa } = req.user;
+      const { color_principal } = req.body;
+
+      if (!color_principal || !/^#[0-9A-Fa-f]{6}$/.test(color_principal)) {
+        return res.status(400).json({ message: "Color inválido. Formato esperado: #RRGGBB" });
+      }
+
+      await db.CONFIG_EMPRESA.update(
+        { color_principal },
+        { where: { id_empresa: empresa } }
+      );
+
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("Error al actualizar color principal:", error);
+      res.status(500).send("Error del servidor");
+    }
+  };
 module.exports = {
   getEmpresas,
   getEmpresa,
@@ -444,4 +465,5 @@ module.exports = {
   getCountUsersByEmpresa,
   updateEmpresaCompleta,
   createEmpresaCompleta,
+  updateColorPrincipal,
 };
