@@ -3,7 +3,7 @@ const router = express.Router();
 const authenticateToken = require('../middleware/authMiddleware');
 const uploadPdfMiddleware = require('../middleware/uploadPdfMiddleware'); // middleware de pdfs
 const { uploadPdfs } = require('../controllers/nominasController'); //  controlador de nominas
-const authenticateToken = require('../middleware/authMiddleware');
+const { authorizeModule } = require('../middleware/moduleMiddleware');
 
 router.use(authenticateToken);
 router.use(authorizeModule("portal_empleado", "nominas"));

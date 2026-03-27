@@ -11,6 +11,7 @@ const {
   actualizarLocalizacionSalida,
 } = require("../controllers/parteController");
 const authenticateToken = require("../middleware/authMiddleware");
+const { authorizeModule } = require('../middleware/moduleMiddleware');
 const router = express.Router();
 
 router.use(authenticateToken);

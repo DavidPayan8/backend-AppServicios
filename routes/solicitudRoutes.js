@@ -8,6 +8,7 @@ const {
 } = require("../controllers/solicitudController");
 const uploadMiddleware = require("../middleware/fileMiddleware");
 const authenticateToken = require("../middleware/authMiddleware");
+const { authorizeModule } = require('../middleware/moduleMiddleware');
 const router = express.Router();
 
 router.use(authenticateToken);

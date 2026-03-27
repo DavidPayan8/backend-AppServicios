@@ -1,6 +1,7 @@
 const express = require('express');
 const { obtenerHorasTotales, obtenerDatosTabla } = require('../controllers/estadisticasController');
 const authenticateToken = require('../middleware/authMiddleware');
+const { authorizeModule } = require('../middleware/moduleMiddleware');
 const router = express.Router();
 
 router.use(authenticateToken);

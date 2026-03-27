@@ -134,3 +134,9 @@ dist
 .pnp.*
 
 .pdf
+
+# Local config
+
+.claudeignore
+.claude/
+*.claude.*

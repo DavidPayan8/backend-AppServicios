@@ -12,6 +12,7 @@ const {
 
 const authenticateToken = require("../middleware/authMiddleware");
 const authorizeRol = require("../middleware/authorizeMiddleware");
+const { authorizeModule } = require('../middleware/moduleMiddleware');
 const router = express.Router();
 
 router.use(authenticateToken);

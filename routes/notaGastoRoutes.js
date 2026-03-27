@@ -3,6 +3,7 @@ const router = express.Router();
 const uploadMiddleware = require("../middleware/fileMiddleware");
 const notaGastoController = require('../controllers/notaGastoController');
 const authenticateToken = require("../middleware/authMiddleware");
+const { authorizeModule } = require('../middleware/moduleMiddleware');
 
 router.use(authenticateToken);
 router.use(authorizeModule("portal_empleado", "nota_gasto"));

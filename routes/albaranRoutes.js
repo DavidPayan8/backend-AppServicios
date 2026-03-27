@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const authenticateToken = require("../middleware/authMiddleware");
+const { authorizeModule } = require('../middleware/moduleMiddleware');
 const {
   cambiarDetalleAlbaran,
   crearDetalleAlbaran,
@@ -15,6 +16,7 @@ const {
 
 router.use(authenticateToken);
 router.use(authorizeModule("servicios", "albaran"));
+
 
 //Rutas para cabecera doc
 router.get("/obtener-cabecera", obtenerCabeceraOt);
