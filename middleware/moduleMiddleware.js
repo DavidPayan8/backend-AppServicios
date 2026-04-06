@@ -18,6 +18,7 @@ const loadPermissions = async (id_empresa) => {
     include: [
       {
         model: db.MODULOS,
+        as: "empresas_modulo_modulo",
         attributes: ["clave_modulo"],
       },
     ],
@@ -29,6 +30,7 @@ const loadPermissions = async (id_empresa) => {
     include: [
       {
         model: db.SUBMODULOS,
+        as: "empresas_submodulo_submodulo",
         attributes: ["clave"],
       },
     ],
@@ -37,14 +39,14 @@ const loadPermissions = async (id_empresa) => {
   const permisos = new Set();
 
   modulosHabilitados.forEach((em) => {
-    if (em.MODULO?.clave_modulo) {
-      permisos.add(em.MODULO.clave_modulo);
+    if (em.empresas_modulo_modulo?.clave_modulo) {
+      permisos.add(em.empresas_modulo_modulo.clave_modulo);
     }
   });
 
   submodulosHabilitados.forEach((es) => {
-    if (es.SUBMODULO?.clave) {
-      permisos.add(es.SUBMODULO.clave);
+    if (es.empresas_submodulo_submodulo?.clave) {
+      permisos.add(es.empresas_submodulo_submodulo.clave);
     }
   });
 

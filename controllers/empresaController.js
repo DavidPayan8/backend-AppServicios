@@ -86,6 +86,7 @@ const getEmpresa = async (req, res) => {
           esTipoObra: config?.es_tipo_obra,
           parteAuto: config?.parte_auto,
           proyectosAutorizacion: config?.proyectos_autorizacion,
+          timezone: config?.timezone, //devMike: para la zona horaria de la empresa
         },
         email: {
           email: config?.email_entrante,
@@ -332,19 +333,6 @@ const updateConfigEmpresa = async (req, res) => {
   try {
     const empresa = req.body;
 
-    console.log(empresa, req.user.empresa);
-
-    if (!validateCIFFormat(empresa.cif)) {
-      return res.status(400).json({ message: "El CIF no es válido." });
-    }
-
-    const isUnique = await validateCIFUnique(empresa.cif, req.user.empresa);
-    if (!isUnique) {
-      return res
-        .status(400)
-        .json({ message: "Ya existe una empresa con este CIF." });
-    }
-
     await db.CONFIG_EMPRESA.update(
       {
         email_entrante: empresa.configuracion.email.email,
@@ -358,6 +346,7 @@ const updateConfigEmpresa = async (req, res) => {
         isLaTorre: empresa.configuracion.app.isLaTorre,
         parte_auto: empresa.configuracion.app.parteAuto,
         proyectos_autorizacion: empresa.configuracion.app.proyectosAutorizacion,
+        timezone: empresa.configuracion.app.timezone //devMike: esto es para que la hora de fichar sea la de la empresa en su huso horario
       },
       {
         where: { id_empresa: req.user.empresa },
@@ -398,7 +387,7 @@ const updateEmpresaCompleta = async (req, res) => {
     if (app.parteAuto !== undefined) updateData.parte_auto = app.parteAuto;
     if (app.proyectosAutorizacion !== undefined)
       updateData.proyectos_autorizacion = app.proyectosAutorizacion;
-
+    if (app.timezone !== undefined) updateData.timezone = app.timezone; //devMike: identico a antes, si no se configura por defecto 
     // Limite usuarios
     if (empresa.limiteUsuarios !== undefined) {
       updateData.limite_usuarios = empresa.limiteUsuarios;
