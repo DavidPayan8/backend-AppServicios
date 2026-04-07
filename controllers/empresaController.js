@@ -38,6 +38,7 @@ const getEmpresas = async (req, res) => {
                 isLaTorre: e.config.isLaTorre,
                 parteAuto: e.config.parte_auto,
                 proyectosAutorizacion: e.config.proyectos_autorizacion,
+                timezone: e.config.timezone,
               },
               email: {
                 email: e.config.email_entrante,
@@ -65,6 +66,21 @@ const getEmpresa = async (req, res) => {
       include: {
         model: db.CONFIG_EMPRESA,
         as: "config",
+        attributes: [
+          "hay_primer_inicio",
+          "color_principal",
+          "es_tipo_obra",
+          "isLaTorre",
+          "parte_auto",
+          "proyectos_autorizacion",
+          "timezone",
+          "email_entrante",
+          "smtp_host",
+          "smtp_user",
+          "smtp_port",
+          "smtp_pass",
+          "limite_usuarios",
+        ],
       },
     });
 
@@ -82,7 +98,7 @@ const getEmpresa = async (req, res) => {
       configuracion: {
         app: {
           hayPrimerInicio: config?.hay_primer_inicio,
-          colorPrimario: config?.color_primario,
+          colorPrimario: config?.color_principal,
           esTipoObra: config?.es_tipo_obra,
           parteAuto: config?.parte_auto,
           proyectosAutorizacion: config?.proyectos_autorizacion,
@@ -98,8 +114,7 @@ const getEmpresa = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error al obtener empresa:", error);
-    res.status(500).send("Error del servidor");
+    res.status(500).json({ error: error.message, type: error.constructor.name });
   }
 };
 
@@ -180,7 +195,7 @@ const createEmpresaCompleta = async (req, res) => {
           smtp_user: configuracion?.email?.smtp_user ?? null,
           smtp_port: configuracion?.email?.smtp_port ?? null,
           smtp_pass: configuracion?.email?.smtp_pass ?? null,
-          color_primario: configuracion?.app?.colorPrimario ?? "#2c3e50",
+          color_principal: configuracion?.app?.colorPrimario ?? "#2c3e50",
           hay_primer_inicio: configuracion?.app?.hayPrimerInicio ?? false,
           es_tipo_obra: configuracion?.app?.esTipoObra ?? false,
           isLaTorre: configuracion?.app?.isLaTorre ?? false,
@@ -381,7 +396,7 @@ const updateEmpresaCompleta = async (req, res) => {
 
     // App config
     if (app.colorPrimario !== undefined)
-      updateData.color_primario = app.colorPrimario;
+      updateData.color_principal = app.colorPrimario;
     if (app.hayPrimerInicio !== undefined)
       updateData.hay_primer_inicio = app.hayPrimerInicio;
     if (app.esTipoObra !== undefined) updateData.es_tipo_obra = app.esTipoObra;

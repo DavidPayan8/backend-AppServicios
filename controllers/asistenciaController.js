@@ -1,11 +1,14 @@
 const db = require("../Model");
 const { obtenerDireccionReversa } = require("../Model/others/geolocationModel");
 
-// devMike: devuelve la hora actual en la timezone de la empresa como string HH:MM:SS (compatible con columna TIME de SQL Server)
+// devMike: devuelve la fecha y hora actual en la timezone de la empresa como string YYYY-MM-DD HH:MM:SS (para evitar el año 1900 de SQL Server)
 const getNowForEmpresa = (timezone) => {
   const tz = timezone || "Europe/Madrid";
   const formatter = new Intl.DateTimeFormat("en-CA", {
     timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
@@ -14,8 +17,8 @@ const getNowForEmpresa = (timezone) => {
   const parts = Object.fromEntries(
     formatter.formatToParts(new Date()).map(({ type, value }) => [type, value])
   );
-  const result = `${parts.hour}:${parts.minute}:${parts.second}`;
-  console.log("[getNowForEmpresa] tz:", tz, "-> hora calculada:", result, "| UTC actual:", new Date().toISOString());
+  const result = `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
+  console.log("[getNowForEmpresa] tz:", tz, "-> fecha y hora calculada:", result, "| UTC actual:", new Date().toISOString());
   return result;
 };
 
@@ -344,6 +347,11 @@ const obtenerPartesUsuarioFecha = async (req, res) => {
         parte.horas = "00:00";
       }
 
+      // Normalizar fecha a "YYYY-MM-DD": con raw:true el driver devuelve la columna DATE como objeto Date ISO
+      if (parte.fecha) {
+        parte.fecha = new Date(parte.fecha).toISOString().slice(0, 10);
+      }
+
       return parte;
     });
 
@@ -403,6 +411,8 @@ const cerrarParteAbierto = async (req, res) => {
 };
 
 const formatFecha = (fecha) => {
+  // Acepta "DD/MM/YYYY" (del endpoint de consulta) y "YYYY-MM-DD" (del endpoint de fichaje)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return fecha;
   const [dia, mes, anio] = fecha.split("/");
   return `${anio}-${mes}-${dia}`;
 };
