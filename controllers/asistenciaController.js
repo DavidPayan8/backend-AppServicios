@@ -365,9 +365,13 @@ const obtenerPartesUsuarioFecha = async (req, res) => {
       order: [["hora_entrada", "ASC"]],
     });
 
+    const { timezone } = await getConfigEmpresa(req.user.empresa);
+    const serverTime = new Date().toISOString(); // Usamos ISO UTC para la sincronización real
+
     res.status(200).json({
       hoy: partesConHoras,
       ayer: partesAyerSinSalida,
+      serverTime,
     });
   } catch (error) {
     console.error("Error al obtener los partes del usuario:", error.message);
