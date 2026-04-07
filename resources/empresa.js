@@ -9,6 +9,7 @@ const configEmpresaResource = (config) => {
         telefono: config.empresa?.telefono || null,
         isLaTorre: config.isLaTorre || false,
         parteAuto: config.parte_auto || false,
+        timezone: config.timezone || "Europe/Madrid",
     };
 };
 

@@ -187,6 +187,7 @@ const createEmpresaCompleta = async (req, res) => {
           parte_auto: configuracion?.app?.parteAuto ?? false,
           proyectos_autorizacion:
             configuracion?.app?.proyectosAutorizacion ?? false,
+          timezone: configuracion?.app?.timezone || "Europe/Madrid",
           limite_usuarios: configuracion?.limiteUsuarios ?? null,
         },
         { transaction: t },
@@ -263,6 +264,7 @@ const getConfigEmpresa = async (req, res) => {
         "isLaTorre",
         "parte_auto",
         "proyectos_autorizacion",
+        "timezone",
       ],
       include: [
         {
