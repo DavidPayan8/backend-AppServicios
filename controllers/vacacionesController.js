@@ -226,6 +226,64 @@ const obtenerDiasVacacionesHandler = async (req, res) => {
   }
 };
 
+const obtenerResumenVacacionesHandler = async (req, res) => {
+  const { tipo } = req.body;
+  const idUsuario = req.user.id;
+
+  try {
+    // 1. Total disponible del tipo de vacación
+    const tipoVacacion = await db.TIPOS_VACACION.findByPk(tipo, {
+      attributes: ["cantidad_dias"],
+    });
+    const diasTotales = tipoVacacion?.cantidad_dias || 0;
+
+    // 2. Días solicitados (sin aprobar aún)
+    const diasSolicitados = await db.sequelize.query(
+      `SELECT COUNT(*) AS total FROM DIAS_VACACION dv
+       INNER JOIN VACACIONES v ON dv.id_vacacion = v.id
+       WHERE v.id_usuario = :idUsuario AND v.tipo = :tipo
+       AND dv.estado IN ('solicitado', 'solicitada')`,
+      { replacements: { idUsuario, tipo }, type: db.Sequelize.QueryTypes.SELECT }
+    );
+
+    // 3. Días aprobados futuros (no usados aún)
+    const diasAprobadosFuturos = await db.sequelize.query(
+      `SELECT COUNT(*) AS total FROM DIAS_VACACION dv
+       INNER JOIN VACACIONES v ON dv.id_vacacion = v.id
+       WHERE v.id_usuario = :idUsuario AND v.tipo = :tipo
+       AND dv.estado IN ('aceptado', 'aceptada')
+       AND CONVERT(DATE, dv.dia) > CONVERT(DATE, GETDATE())`,
+      { replacements: { idUsuario, tipo }, type: db.Sequelize.QueryTypes.SELECT }
+    );
+
+    // 4. Días aprobados pasados (usados)
+    const diasUsados = await db.sequelize.query(
+      `SELECT COUNT(*) AS total FROM DIAS_VACACION dv
+       INNER JOIN VACACIONES v ON dv.id_vacacion = v.id
+       WHERE v.id_usuario = :idUsuario AND v.tipo = :tipo
+       AND dv.estado IN ('aceptado', 'aceptada')
+       AND CONVERT(DATE, dv.dia) <= CONVERT(DATE, GETDATE())`,
+      { replacements: { idUsuario, tipo }, type: db.Sequelize.QueryTypes.SELECT }
+    );
+
+    // 5. Calcular disponibles
+    const diasSolicitadosTotal = diasSolicitados[0]?.total || 0;
+    const diasAprobadosTotal = (diasAprobadosFuturos[0]?.total || 0) + (diasUsados[0]?.total || 0);
+    const diasDisponibles = diasTotales - diasSolicitadosTotal - diasAprobadosTotal;
+
+    return res.status(200).json({
+      diasTotales,
+      diasDisponibles: Math.max(0, diasDisponibles),
+      diasAprobados: diasAprobadosFuturos[0]?.total || 0,
+      diasUsados: diasUsados[0]?.total || 0,
+      diasSolicitados: diasSolicitadosTotal,
+    });
+  } catch (error) {
+    console.error("Error al obtener resumen de vacaciones:", error.message);
+    return res.status(500).json({ error: "Error al obtener resumen de vacaciones" });
+  }
+};
+
 const solicitarVacacionesHandler = async (req, res) => {
   const { tipo, dias } = req.body;
   const id_usuario = req.user.id;
@@ -296,5 +354,6 @@ module.exports = {
   obtenerVacacionesDenegadas: obtenerVacacionesDenegadasHandler,
   obtenerVacacionesSolicitadas: obtenerVacacionesSolicitadasHandler,
   obtenerDiasVacaciones: obtenerDiasVacacionesHandler,
+  obtenerResumenVacaciones: obtenerResumenVacacionesHandler,
   solicitarVacaciones: solicitarVacacionesHandler,
 };
