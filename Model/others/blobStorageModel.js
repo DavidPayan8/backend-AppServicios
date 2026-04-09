@@ -8,9 +8,21 @@ const path = require("path");
 const mime = require("mime-types");
 const AdmZip = require("adm-zip");
 const db = require("../../Model");
+const { TIPOS_DOCUMENTO } = require("../../shared/tiposDocumento");
 
-const AZURE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING;
-const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_CONNECTION_STRING);
+// const AZURE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING;
+// const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_CONNECTION_STRING);
+// estaba fallando asi que lo cambio a una funcion lazy
+
+const getBlobServiceClient = () => {
+  const connStr = process.env.AZURE_STORAGE_CONNECTION_STRING;
+  if (!connStr) {
+    throw new Error('AZURE_STORAGE_CONNECTION_STRING faltante en .env');
+  }
+  return BlobServiceClient.fromConnectionString(connStr);
+};
+
+
 const CONTAINER_NAME = process.env.AZURE_CONTAINER_NAME;
 
 /**
@@ -51,7 +63,7 @@ const createBlobPathEmpresa = (
     // Base común
     const base = `${dbname}/${id_empresa}/${ambito}/Proyecto/${identifyProyect}`;
 
-    if (tipo === "OT") {
+    if (tipo === TIPOS_DOCUMENTO.OT) {
         if (!identifyOT) throw new Error("Falta identifyOT para tipo OT");
 
         ruta = nombreArchivo
@@ -59,7 +71,7 @@ const createBlobPathEmpresa = (
             : `${base}/Ot/${identifyOT}`;
     }
 
-    if (tipo === "General") {
+    if (tipo === TIPOS_DOCUMENTO.GENERAL) {
         ruta = nombreArchivo
             ? `${base}/General/${nombreArchivo}`
             : `${base}/General`;
@@ -73,7 +85,7 @@ const createBlobPathEmpresa = (
  * Subir archivos a Azure Blob Storage
  */
 async function uploadToAzure(ambito, archivos, id_usuario, id_empresa, tipo) {
-
+    const blobServiceClient = getBlobServiceClient();
     let blobPath;
     const files = Array.isArray(archivos) ? archivos : [archivos];
     const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME);
@@ -130,6 +142,7 @@ async function uploadToAzure(ambito, archivos, id_usuario, id_empresa, tipo) {
                         id_empresa,
                         tipo
                     );
+
                     await registrarOperacionDocumento(
                         blobPath,
                         "crear",
@@ -139,7 +152,6 @@ async function uploadToAzure(ambito, archivos, id_usuario, id_empresa, tipo) {
                         tipo
                     );
 
-                    // Detectar el MIME del archivo principal
                     const contentType =
                         mime.lookup(file.filename) || "application/octet-stream";
 
@@ -150,7 +162,6 @@ async function uploadToAzure(ambito, archivos, id_usuario, id_empresa, tipo) {
                         }
                     });
                 }
-
             }
         }
 
@@ -170,7 +181,7 @@ async function deleteArchivoAzure(ambito, nombreArchivo, id_usuario, id_empresa,
     if (ambito === "Personal") {
         blobPath = createBlobPathPersonal(ambito, nombreArchivo, id_usuario, id_empresa, tipo);
     }
-    const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME);
+    const containerClient = getBlobServiceClient().getContainerClient(CONTAINER_NAME);
     const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
 
 
@@ -194,7 +205,7 @@ async function listadoArchivosAzure(ambito, fileName, id_usuario, id_empresa, ti
     if (ambito === "Personal") {
         blobPath = createBlobPathPersonal(ambito, fileName, id_usuario, id_empresa, tipo);
     }
-    const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME);
+    const containerClient = getBlobServiceClient().getContainerClient(CONTAINER_NAME);
 
     const iter = containerClient.listBlobsFlat({ prefix: blobPath + "/" });
     const listado = [];
@@ -218,7 +229,7 @@ async function downloadArchivoAzure(ambito, nombreArchivo, id_usuario, id_empres
     if (ambito === "Personal") {
         blobPath = createBlobPathPersonal(ambito, nombreArchivo, id_usuario, id_empresa, tipo);
     }
-    const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME);
+    const containerClient = getBlobServiceClient().getContainerClient(CONTAINER_NAME);
     const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
 
     try {
@@ -254,7 +265,7 @@ async function generarUrlTemporalAzure(
     } else {
         blobPath = createBlobPathEmpresa(ambito, nombreArchivo, idProyecto, idOt, id_empresa, tipo);
     }
-    const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME);
+    const containerClient = getBlobServiceClient().getContainerClient(CONTAINER_NAME);
     const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
 
     // Credenciales de cuenta necesarias para generar SAS
@@ -282,7 +293,7 @@ async function generarUrlTemporalAzure(
  * Genera un URL temporal (SAS) a partir de la ruta del blob (path relativo al contenedor)
  */
 async function generarUrlTemporalAzureByPath(blobPath, expiracionEnMinutos = 60) {
-    const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME);
+    const containerClient = getBlobServiceClient().getContainerClient(CONTAINER_NAME);
     const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
     const nombreArchivo = path.basename(blobPath);
 
@@ -341,9 +352,9 @@ async function registrarOperacionDocumento(ruta, operacion, transaction, empresa
 async function eliminarArchivoAzureByPath(blobPath) {
     if (!blobPath) throw new Error("Se requiere blobPath");
 
-    const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME);
+    const containerClient = getBlobServiceClient().getContainerClient(CONTAINER_NAME);
     const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
-    
+
     try {
         await blockBlobClient.deleteIfExists();
         return true;
@@ -355,13 +366,13 @@ async function eliminarArchivoAzureByPath(blobPath) {
 
 
 async function obtenerPrimerBlobEmpresa(ambito, idProyecto, idOT, id_empresa, tipo) {
-    const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME);
+    const containerClient = getBlobServiceClient().getContainerClient(CONTAINER_NAME);
     let prefix;
 
-    if (tipo === "OT") {
-        prefix = createBlobPathEmpresa(ambito, null, idProyecto, idOT, id_empresa, "OT") + "/";
+    if (tipo === TIPOS_DOCUMENTO.OT) {
+        prefix = createBlobPathEmpresa(ambito, null, idProyecto, idOT, id_empresa, TIPOS_DOCUMENTO.OT) + "/";
     } else {
-        prefix = createBlobPathEmpresa(ambito, null, idProyecto, null, id_empresa, "General") + "/";
+        prefix = createBlobPathEmpresa(ambito, null, idProyecto, null, id_empresa, TIPOS_DOCUMENTO.GENERAL) + "/";
     }
 
     const iter = containerClient.listBlobsFlat({ prefix });
@@ -376,13 +387,13 @@ async function obtenerPrimerBlobEmpresa(ambito, idProyecto, idOT, id_empresa, ti
  * Obtiene el primer archivo dentro de una carpeta en Azure Blob Storage
  */
 async function obtenerPrimerArchivo(ambito, idProyecto, idOT, id_empresa, tipo) {
-    const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME);
+    const containerClient = getBlobServiceClient().getContainerClient(CONTAINER_NAME);
 
     let prefix;
-    if (tipo === "OT") {
-        prefix = createBlobPathEmpresa(ambito, null, idProyecto, idOT, id_empresa, "OT") + "/";
+    if (tipo === TIPOS_DOCUMENTO.OT) {
+        prefix = createBlobPathEmpresa(ambito, null, idProyecto, idOT, id_empresa, TIPOS_DOCUMENTO.OT) + "/";
     } else {
-        prefix = createBlobPathEmpresa(ambito, null, idProyecto, null, id_empresa, "General") + "/";
+        prefix = createBlobPathEmpresa(ambito, null, idProyecto, null, id_empresa, TIPOS_DOCUMENTO.GENERAL) + "/";
     }
 
     const iter = containerClient.listBlobsFlat({ prefix });

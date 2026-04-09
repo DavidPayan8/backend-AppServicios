@@ -8,7 +8,7 @@ const config = {
   dialect: "mssql",
   timezone: '+00:00',
   options: {
-    instanceName: "KONGSERVER",
+    instanceName: "",
     encrypt: true,
     enableArithAbort: true,
     trustServerCertificate: true,
@@ -25,7 +25,7 @@ const sequelize = new Sequelize(
     timezone: '+00:00',
     dialectOptions: {
       options: {
-        instanceName: "KONGSERVER",
+        instanceName: "",
         encrypt: false,
         enableArithAbort: true,
         trustServerCertificate: true,

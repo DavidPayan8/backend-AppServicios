@@ -137,6 +137,7 @@ const actualizarModulosEmpresa = async (req, res) => {
     }
 
     await t.commit();
+    invalidateCache(id_empresa); //evitamos esperar al TTL para hacer refresh de los permisos
     res.status(200).json({ message: "Modulos actualizados" });
   } catch (error) {
     await t.rollback();
