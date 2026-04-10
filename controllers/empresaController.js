@@ -9,6 +9,21 @@ const getEmpresas = async (req, res) => {
         {
           model: db.CONFIG_EMPRESA,
           as: "config",
+          attributes: [
+            "hay_primer_inicio",
+            "color_principal",
+            "es_tipo_obra",
+            "isLaTorre",
+            "parte_auto",
+            "proyectos_autorizacion",
+            "timezone",
+            "email_entrante",
+            "smtp_host",
+            "smtp_user",
+            "smtp_port",
+            "smtp_pass",
+            "limite_usuarios",
+          ],
         },
       ],
       attributes: [
@@ -21,7 +36,7 @@ const getEmpresas = async (req, res) => {
       ],
     });
 
-    res.json(
+    return res.status(200).json(
       empresas.map((e) => ({
         id: e.id_empresa,
         nombre: e.nombre,
@@ -33,7 +48,7 @@ const getEmpresas = async (req, res) => {
           ? {
               app: {
                 hayPrimerInicio: e.config.hay_primer_inicio,
-                colorPrimario: e.config.color_primario,
+                colorPrimario: e.config.color_principal,
                 esTipoObra: e.config.es_tipo_obra,
                 isLaTorre: e.config.isLaTorre,
                 parteAuto: e.config.parte_auto,
@@ -54,7 +69,7 @@ const getEmpresas = async (req, res) => {
     );
   } catch (error) {
     console.error("Error al obtener empresas:", error);
-    res.status(500).send("Error del servidor");
+    return res.status(500).json({ error: "Error al obtener empresas", details: error.message });
   }
 };
 
