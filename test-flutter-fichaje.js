@@ -15,6 +15,7 @@ async function testFichar(codigoUsuario, testName) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "X-Flutter-API-Key": "8960507a5412b5a3a9419a43d21de43e4190bba54d4664f63bca672f9fc2c1d8",
       },
       body: JSON.stringify({ codigo_usuario: codigoUsuario }),
     });
@@ -51,7 +52,10 @@ async function runTests() {
   try {
     const response = await fetch(`${BASE_URL}/fichar`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Flutter-API-Key": "8960507a5412b5a3a9419a43d21de43e4190bba54d4664f63bca672f9fc2c1d8",
+      },
       body: JSON.stringify({}),
     });
     const data = await response.json();
@@ -64,7 +68,7 @@ async function runTests() {
 
   // Test 3 & 4: Valid user - entrada y salida
   // NOTE: You need to replace 'TEST_USER_001' with an actual codigo_usuario from your database
-  const validCode = "TEST_USER_001"; // ⚠️ REPLACE WITH REAL CODE
+  const validCode = "8260"; // ⚠️ REPLACE WITH REAL CODE
 
   console.log(`\n⚠️  Para probar con un usuario real, necesitas:`);
   console.log(`   1. Actualizar un usuario en la BD con un codigo_usuario`);

@@ -46,15 +46,12 @@ const obtenerTotalVacacionesHandler = async (req, res) => {
     const total = vacaciones.aceptadas + vacaciones.solicitadas;
 
     // Consulta 3: días disponibles (por tipo de vacación de empresa o global)
-    const user = await db.USUARIOS.findByPk(idUsuario, {
-      attributes: ["id_empresa"],
-    });
-
-    const totalDisponibles = await db.TIPOS_VACACION.sum("cantidad_dias", {
-      where: {
-        [Op.or]: [{ id_empresa: null }, { id_empresa: user.id_empresa }],
-      },
-    });
+    const totalDisponibles = await
+  db.SALDO_VACACIONES.sum("cantidad_dias", {
+    where: {
+      id_usuario: idUsuario,
+    },
+  });
 
     vacaciones.pendientes = (totalDisponibles || 0) - total;
 
@@ -232,10 +229,12 @@ const obtenerResumenVacacionesHandler = async (req, res) => {
 
   try {
     // 1. Total disponible del tipo de vacación
-    const tipoVacacion = await db.TIPOS_VACACION.findByPk(tipo, {
-      attributes: ["cantidad_dias"],
-    });
-    const diasTotales = tipoVacacion?.cantidad_dias || 0;
+  const saldoVacacion = await
+  db.SALDO_VACACIONES.findOne({
+  where: { id_usuario: idUsuario, tipo: tipo },
+  attributes: ["cantidad_dias"],
+  });
+  const diasTotales = saldoVacacion?.cantidad_dias || 0;
 
     // 2. Días solicitados (sin aprobar aún)
     const diasSolicitados = await db.sequelize.query(

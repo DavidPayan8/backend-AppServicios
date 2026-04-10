@@ -5,6 +5,28 @@ const bcrypt = require("bcrypt");
 const { Op, fn } = require("sequelize");
 const { verificarLimiteUsuarios } = require("../utils/empresaValidations");
 
+const upsertSaldoVacaciones = async (idUsuario, idEmpresa, diasVacaciones) => {
+  const tipoVacacion = await db.TIPOS_VACACION.findOne({
+    where: { nombre: 'Vacación', id_empresa: idEmpresa },
+    attributes: ['id'],
+  });
+  if (!tipoVacacion) return;
+
+  const saldo = await db.SALDO_VACACIONES.findOne({
+    where: { id_usuario: idUsuario, tipo: tipoVacacion.id },
+  });
+
+  if (saldo) {
+    await saldo.update({ cantidad_dias: diasVacaciones });
+  } else {
+    await db.SALDO_VACACIONES.create({
+      id_usuario: idUsuario,
+      tipo: tipoVacacion.id,
+      cantidad_dias: diasVacaciones,
+    });
+  }
+};
+
 const darAltaEmpleadoHandler = async (req, res) => {
   try {
     const { empresa } = req.user;
@@ -22,6 +44,7 @@ const darAltaEmpleadoHandler = async (req, res) => {
       id_horario,
       salario,
       horas,
+      diasVacaciones,
     } = req.body;
 
     // Verificar límite de usuarios
@@ -72,6 +95,11 @@ const darAltaEmpleadoHandler = async (req, res) => {
         fecha_asignacion: new Date(),
         activo: true,
       });
+    }
+
+    // Crear saldo de vacaciones si viene
+    if (diasVacaciones != null) {
+      await upsertSaldoVacaciones(usuario.id, empresa, Number(diasVacaciones));
     }
 
     res.status(201).json({ message: "Alta completada", usuarioId: usuario.id });
@@ -202,6 +230,20 @@ const getDetallesHandler = async (req, res) => {
       order: [["fecha_asignacion", "DESC"]],
     });
 
+    // Buscar días de vacaciones del tipo "Vacación"
+    let diasVacaciones = null;
+    const tipoVacacion = await db.TIPOS_VACACION.findOne({
+      where: { nombre: 'Vacación', id_empresa: empleado.id_empresa },
+      attributes: ['id'],
+    });
+    if (tipoVacacion) {
+      const saldo = await db.SALDO_VACACIONES.findOne({
+        where: { id_usuario: id, tipo: tipoVacacion.id },
+        attributes: ['cantidad_dias'],
+      });
+      diasVacaciones = saldo?.cantidad_dias ?? null;
+    }
+
     const empleadoFormateado = {
       id: empleado.id,
       username: empleado.user_name,
@@ -216,6 +258,7 @@ const getDetallesHandler = async (req, res) => {
       horas: empleado.horas_personalizadas ?? null,
       categoriaLaboral: empleado.categoria_laboral_id ?? null,
       horario: asignacion ? asignacion.id_horario : null,
+      diasVacaciones,
     };
 
     res.status(200).json(empleadoFormateado);
@@ -242,6 +285,7 @@ const editarEmpleadoHandler = async (req, res) => {
       horario,
       salario,
       horas,
+      diasVacaciones,
     } = req.body;
 
     // Hashear contraseña si viene
@@ -309,6 +353,14 @@ const editarEmpleadoHandler = async (req, res) => {
           fecha_asignacion: new Date(),
           activo: true,
         });
+      }
+    }
+
+    // Actualizar saldo de vacaciones si viene
+    if (diasVacaciones != null) {
+      const usuarioEditado = await db.USUARIOS.findByPk(id, { attributes: ['id_empresa'] });
+      if (usuarioEditado) {
+        await upsertSaldoVacaciones(id, usuarioEditado.id_empresa, Number(diasVacaciones));
       }
     }
 
