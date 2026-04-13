@@ -59,6 +59,7 @@ const obtenerTotalVacacionesHandler = async (req, res) => {
 
     vacaciones.pendientes = (totalDisponibles || 0) - total;
 
+    console.log(`[totalVacaciones] usuario=${idUsuario} totalDisponibles=${totalDisponibles} aceptadas=${vacaciones.aceptadas} solicitadas=${vacaciones.solicitadas} pendientes=${vacaciones.pendientes}`);
     return res.status(200).json(vacaciones);
   } catch (error) {
     console.error("Error al obtener vacaciones:", error.message);
