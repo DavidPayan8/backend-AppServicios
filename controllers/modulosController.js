@@ -1,4 +1,5 @@
 const db = require("../Model");
+const { invalidateCache } = require("../middleware/moduleMiddleware");
 
 const obtenerModulos = async (req, res) => {
   const { id_empresa } = req.query;
@@ -100,39 +101,43 @@ const createSubmodulo = async (req, res) => {
 const actualizarModulosEmpresa = async (req, res) => {
   const { id_empresa, modulos } = req.body;
 
-  try {
-    const t = await db.sequelize.transaction();
-    for (const modulo of modulos) {
-      await db.EMPRESAS_MODULOS.upsert(
-        {
-          id_empresa,
-          id_modulo: modulo.id,
-          habilitado: modulo.habilitado,
-        },
-        {
-          where: {
-            id_empresa,
-            id_modulo: modulo.id,
-          },
-          transaction: t,
-        }
-      );
+  if (!id_empresa || !Array.isArray(modulos)) {
+    return res.status(400).json({ message: "Faltan campos obligatorios" });
+  }
 
-      for (const sub of modulo.submodulos) {
-        await db.EMPRESAS_SUBMODULOS.upsert(
-          {
-            id_empresa,
-            id_submodulo: sub.id,
-            habilitado: sub.habilitado,
-          },
-          {
-            where: {
-              id_empresa,
-              id_submodulo: sub.id,
-            },
-            transaction: t,
-          }
+  let t;
+  try {
+    t = await db.sequelize.transaction();
+
+    for (const modulo of modulos) {
+      const existingModulo = await db.EMPRESAS_MODULOS.findOne({
+        where: { id_empresa, id_modulo: modulo.id },
+        transaction: t,
+      });
+
+      if (existingModulo) {
+        await existingModulo.update({ habilitado: modulo.habilitado }, { transaction: t });
+      } else {
+        await db.EMPRESAS_MODULOS.create(
+          { id_empresa, id_modulo: modulo.id, habilitado: modulo.habilitado },
+          { transaction: t }
         );
+      }
+
+      for (const sub of (modulo.submodulos || [])) {
+        const existingSub = await db.EMPRESAS_SUBMODULOS.findOne({
+          where: { id_empresa, id_submodulo: sub.id },
+          transaction: t,
+        });
+
+        if (existingSub) {
+          await existingSub.update({ habilitado: sub.habilitado }, { transaction: t });
+        } else {
+          await db.EMPRESAS_SUBMODULOS.create(
+            { id_empresa, id_submodulo: sub.id, habilitado: sub.habilitado },
+            { transaction: t }
+          );
+        }
       }
     }
 
@@ -140,9 +145,9 @@ const actualizarModulosEmpresa = async (req, res) => {
     invalidateCache(id_empresa); //evitamos esperar al TTL para hacer refresh de los permisos
     res.status(200).json({ message: "Modulos actualizados" });
   } catch (error) {
-    await t.rollback();
-    res.status(500).json({ message: "Erro al actualizar modulos" });
-    console.log(error);
+    if (t) await t.rollback();
+    console.error("Error al actualizar modulos:", error);
+    res.status(500).json({ message: "Error al actualizar modulos" });
   }
 };
 
