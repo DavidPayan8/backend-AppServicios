@@ -21,6 +21,11 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.BOOLEAN,
         allowNull: false,
       },
+      descuenta_vacaciones: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
       id_empresa: {
         type: DataTypes.INTEGER,
         allowNull: true,

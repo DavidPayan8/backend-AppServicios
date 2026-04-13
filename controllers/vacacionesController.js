@@ -11,13 +11,15 @@ const obtenerTotalVacacionesHandler = async (req, res) => {
       pendientes: 0,
     };
 
-    // Consulta 1: días ACEPTADOS
+    // Consulta 1: días ACEPTADOS (solo tipos que descuentan vacaciones)
     const [aceptadosRaw] = await db.sequelize.query(
       `
       SELECT COUNT(dv.dia) AS TotalDiasAceptados
       FROM DIAS_VACACION dv
       INNER JOIN VACACIONES v ON v.id = dv.id_vacacion
+      INNER JOIN TIPOS_VACACION tv ON tv.id = v.tipo
       WHERE v.id_usuario = :idUsuario AND dv.estado IN ('aceptado', 'aceptada')
+      AND tv.descuenta_vacaciones = 1
       `,
       {
         replacements: { idUsuario },
@@ -27,13 +29,15 @@ const obtenerTotalVacacionesHandler = async (req, res) => {
 
     vacaciones.aceptadas = aceptadosRaw.TotalDiasAceptados || 0;
 
-    // Consulta 2: días SOLICITADOS
+    // Consulta 2: días SOLICITADOS (solo tipos que descuentan vacaciones)
     const [solicitadosRaw] = await db.sequelize.query(
       `
       SELECT COUNT(dv.dia) AS TotalDiasSolicitados
       FROM DIAS_VACACION dv
       INNER JOIN VACACIONES v ON v.id = dv.id_vacacion
+      INNER JOIN TIPOS_VACACION tv ON tv.id = v.tipo
       WHERE v.id_usuario = :idUsuario AND dv.estado IN ('solicitado', 'solicitada')
+      AND tv.descuenta_vacaciones = 1
       `,
       {
         replacements: { idUsuario },
@@ -240,8 +244,10 @@ const obtenerResumenVacacionesHandler = async (req, res) => {
     const diasSolicitados = await db.sequelize.query(
       `SELECT COUNT(*) AS total FROM DIAS_VACACION dv
        INNER JOIN VACACIONES v ON dv.id_vacacion = v.id
+       INNER JOIN TIPOS_VACACION tv ON tv.id = v.tipo
        WHERE v.id_usuario = :idUsuario AND v.tipo = :tipo
-       AND dv.estado IN ('solicitado', 'solicitada')`,
+       AND dv.estado IN ('solicitado', 'solicitada')
+       AND tv.descuenta_vacaciones = 1`,
       { replacements: { idUsuario, tipo }, type: db.Sequelize.QueryTypes.SELECT }
     );
 
@@ -249,8 +255,10 @@ const obtenerResumenVacacionesHandler = async (req, res) => {
     const diasAprobadosFuturos = await db.sequelize.query(
       `SELECT COUNT(*) AS total FROM DIAS_VACACION dv
        INNER JOIN VACACIONES v ON dv.id_vacacion = v.id
+       INNER JOIN TIPOS_VACACION tv ON tv.id = v.tipo
        WHERE v.id_usuario = :idUsuario AND v.tipo = :tipo
        AND dv.estado IN ('aceptado', 'aceptada')
+       AND tv.descuenta_vacaciones = 1
        AND CONVERT(DATE, dv.dia) > CONVERT(DATE, GETDATE())`,
       { replacements: { idUsuario, tipo }, type: db.Sequelize.QueryTypes.SELECT }
     );
@@ -259,8 +267,10 @@ const obtenerResumenVacacionesHandler = async (req, res) => {
     const diasUsados = await db.sequelize.query(
       `SELECT COUNT(*) AS total FROM DIAS_VACACION dv
        INNER JOIN VACACIONES v ON dv.id_vacacion = v.id
+       INNER JOIN TIPOS_VACACION tv ON tv.id = v.tipo
        WHERE v.id_usuario = :idUsuario AND v.tipo = :tipo
        AND dv.estado IN ('aceptado', 'aceptada')
+       AND tv.descuenta_vacaciones = 1
        AND CONVERT(DATE, dv.dia) <= CONVERT(DATE, GETDATE())`,
       { replacements: { idUsuario, tipo }, type: db.Sequelize.QueryTypes.SELECT }
     );
