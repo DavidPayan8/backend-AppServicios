@@ -202,11 +202,17 @@ const obtenerDiasVacacionesHandler = async (req, res) => {
     const dias = await db.sequelize.query(
       `
 				SELECT
-					v.id, -- ID de la vacación
-					CONVERT(VARCHAR(10), dv.dia, 120) AS dia, -- Día de la vacación en formato 'YYYY-MM-DD'
-					dv.estado
+					v.id,
+					CONVERT(VARCHAR(10), dv.dia, 120) AS dia,
+					dv.estado,
+					ve.razon
 				FROM DIAS_VACACION dv
 				INNER JOIN VACACIONES v ON dv.id_vacacion = v.id
+				LEFT JOIN (
+					SELECT id_vacacion, estado, razon,
+						ROW_NUMBER() OVER (PARTITION BY id_vacacion, estado ORDER BY tiempo DESC) AS rn
+					FROM VACACIONES_ESTADOS
+				) ve ON ve.id_vacacion = v.id AND ve.estado = dv.estado AND ve.rn = 1
 				WHERE v.id_usuario = :UserId
 				AND v.tipo = :TipoId;
     `,

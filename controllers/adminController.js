@@ -6,24 +6,11 @@ const { Op, fn } = require("sequelize");
 const { verificarLimiteUsuarios } = require("../utils/empresaValidations");
 
 const upsertSaldoVacaciones = async (idUsuario, idEmpresa, diasVacaciones) => {
-  console.log(`[upsertSaldo] idUsuario=${idUsuario} idEmpresa=${idEmpresa} dias=${diasVacaciones}`);
-
-  // Debug: ver todos los tipos de la empresa
-  const todosLosTipos = await db.TIPOS_VACACION.findAll({
-    where: { id_empresa: idEmpresa },
-    attributes: ['id', 'nombre'],
-  });
-  console.log('[upsertSaldo] Tipos disponibles:', JSON.stringify(todosLosTipos.map(t => ({ id: t.id, nombre: t.nombre }))));
-
   const tipoVacacion = await db.TIPOS_VACACION.findOne({
     where: { nombre: 'Vacación', id_empresa: idEmpresa },
     attributes: ['id'],
   });
-  if (!tipoVacacion) {
-    console.warn('[upsertSaldo] No se encontró tipo "Vacación" para empresa', idEmpresa);
-    return;
-  }
-  console.log('[upsertSaldo] Tipo encontrado id=', tipoVacacion.id);
+  if (!tipoVacacion) return;
 
   const saldo = await db.SALDO_VACACIONES.findOne({
     where: { id_usuario: idUsuario, tipo: tipoVacacion.id },
@@ -31,14 +18,12 @@ const upsertSaldoVacaciones = async (idUsuario, idEmpresa, diasVacaciones) => {
 
   if (saldo) {
     await saldo.update({ cantidad_dias: diasVacaciones });
-    console.log('[upsertSaldo] UPDATED saldo id=', saldo.id, 'cantidad_dias=', diasVacaciones);
   } else {
-    const nuevo = await db.SALDO_VACACIONES.create({
+    await db.SALDO_VACACIONES.create({
       id_usuario: idUsuario,
       tipo: tipoVacacion.id,
       cantidad_dias: diasVacaciones,
     });
-    console.log('[upsertSaldo] CREATED saldo id=', nuevo.id, 'cantidad_dias=', diasVacaciones);
   }
 };
 
