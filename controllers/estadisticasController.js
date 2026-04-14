@@ -47,14 +47,14 @@ const obtenerDatosTabla = async (req, res) => {
 
     res.status(200).json({
       registros,
-      totalHoras: total.total_rango || 0,
+      totalHoras: total[0]?.total_rango || 0,
     });
   } catch (error) {
     console.error(
       "Error al obtener estadísticas formato tabla:",
       error.message
     );
-    throw error;
+    res.status(500).json({ message: "Error al obtener estadísticas.", error: error.message });
   }
 };
 
