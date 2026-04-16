@@ -34,6 +34,7 @@ const flutterFichajeRoutes = require("./routes/flutterFichajeRoutes");
 const flutterConfigRoutes = require("./routes/flutterConfigRoutes");
 const nominasRoutes = require('./routes/nominasRoutes');
 const vb6Routes = require("./routes/vb6Routes");
+const horasExtraRoutes = require("./routes/horasExtraRoutes");
 
 const authenticateToken = require("./middleware/authMiddleware");
 
@@ -74,6 +75,7 @@ const routes = [
   { path: "flutter-config", router: flutterConfigRoutes },
   { path: 'nominas', router: nominasRoutes },
   { path: "vb6", router: vb6Routes },
+  { path: "horas-extra", router: horasExtraRoutes },
 ];
 
 // Middleware para cors
