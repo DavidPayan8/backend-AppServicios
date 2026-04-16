@@ -8,14 +8,26 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn('config_empresa', 'timezone', {
-      type: Sequelize.STRING(50),
-      allowNull: false,
-      defaultValue: 'Europe/Madrid'
-    });
+    await queryInterface.sequelize.query(`
+      IF NOT EXISTS (
+        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_NAME = 'config_empresa' AND COLUMN_NAME = 'timezone'
+      )
+      BEGIN
+        ALTER TABLE config_empresa ADD timezone VARCHAR(50) NOT NULL DEFAULT 'Europe/Madrid'
+      END
+    `);
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeColumn('config_empresa', 'timezone');
+    await queryInterface.sequelize.query(`
+      IF EXISTS (
+        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_NAME = 'config_empresa' AND COLUMN_NAME = 'timezone'
+      )
+      BEGIN
+        ALTER TABLE config_empresa DROP COLUMN timezone
+      END
+    `);
   }
 };
