@@ -1,4 +1,5 @@
-const { HorasExtra } = require("../Model");
+const db = require("../Model");
+const { HorasExtra } = db;
 const { Op } = require("sequelize");
 const { paginatedResponse } = require("../resources/helpers/paginator");
 
@@ -25,6 +26,9 @@ const calcularDuracion = (horaInicio, horaFin) => {
  */
 exports.obtenerHorasExtra = async (req, res) => {
   try {
+    console.log("obtenerHorasExtra - req.user.id:", req.user?.id);
+    console.log("obtenerHorasExtra - db.HorasExtra:", db.HorasExtra ? "EXISTS" : "UNDEFINED");
+
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
@@ -50,13 +54,6 @@ exports.obtenerHorasExtra = async (req, res) => {
       limit,
       offset,
       order: [["fecha", "DESC"], ["fechaCreacion", "DESC"]],
-      include: [
-        {
-          model: require("../Model").USUARIOS,
-          as: "empleado_rel",
-          attributes: ["nombre", "apellido"]
-        }
-      ]
     });
 
     const response = paginatedResponse(
@@ -96,13 +93,6 @@ exports.crearHoraExtra = async (req, res) => {
       });
     }
 
-    if (horaInicio >= horaFin) {
-      return res.status(400).json({
-        success: false,
-        message: "La hora fin debe ser posterior a la hora inicio (o del día siguiente)"
-      });
-    }
-
     const duracionMinutos = calcularDuracion(horaInicio, horaFin);
 
     const horaExtraData = {
@@ -139,15 +129,7 @@ exports.obtenerHoraExtraPorId = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const horaExtra = await HorasExtra.findByPk(id, {
-      include: [
-        {
-          model: require("../Model").USUARIOS,
-          as: "empleado_rel",
-          attributes: ["nombre", "apellido"]
-        }
-      ]
-    });
+    const horaExtra = await HorasExtra.findByPk(id);
 
     if (!horaExtra) {
       return res.status(404).json({
@@ -204,13 +186,6 @@ exports.actualizarHoraExtra = async (req, res) => {
       });
     }
 
-    // Validaciones
-    if (horaInicio && horaFin && horaInicio >= horaFin) {
-      return res.status(400).json({
-        success: false,
-        message: "La hora fin debe ser posterior a la hora inicio"
-      });
-    }
 
     const updateData = {};
     if (fecha) updateData.fecha = fecha;

@@ -19,25 +19,25 @@ const obtenerDatosTabla = async (req, res) => {
     fechaFin = new Date(fin);
   }
   try {
-   // Obtener registros entre fechas
-    const registros = await db.CONTROL_ASISTENCIAS.findAll({
-      where: {
-        id_usuario,
-        fecha: {
-          [Op.between]: [fechaInicio, fechaFin],
-        },
-      },
-      raw: true,
-    });
-
-    // Obtener el total de horas trabajadas
-    const total = await db.sequelize.query(
+    // Obtener registros de control_asistencias + horas_extra (UNION)
+    const registros = await db.sequelize.query(
       `
-      SELECT 
-          SUM(DATEDIFF(MINUTE, hora_entrada, hora_salida)) / 60.0 AS total_rango
-        FROM control_asistencias
-        WHERE id_usuario = :id_usuario
-          AND fecha BETWEEN :fechaInicio AND :fechaFin;
+      SELECT id, fecha, hora_entrada, hora_salida, 'fichaje' AS tipo
+      FROM control_asistencias
+      WHERE id_usuario = :id_usuario
+        AND fecha BETWEEN :fechaInicio AND :fechaFin
+
+      UNION ALL
+
+      SELECT id, CAST(fecha AS DATE) AS fecha,
+        horaInicio AS hora_entrada,
+        horaFin AS hora_salida,
+        'extra' AS tipo
+      FROM horas_extra
+      WHERE empleado = :id_usuario
+        AND fecha BETWEEN :fechaInicio AND :fechaFin
+
+      ORDER BY fecha DESC
     `,
       {
         replacements: { id_usuario, fechaInicio, fechaFin },
@@ -45,9 +45,36 @@ const obtenerDatosTabla = async (req, res) => {
       }
     );
 
+    // Obtener el total de horas (fichajes + horas extra)
+    const total = await db.sequelize.query(
+      `
+      SELECT
+        (
+          SELECT ISNULL(SUM(DATEDIFF(MINUTE, hora_entrada, hora_salida)), 0)
+          FROM control_asistencias
+          WHERE id_usuario = :id_usuario
+            AND fecha BETWEEN :fechaInicio AND :fechaFin
+        )
+        +
+        (
+          SELECT ISNULL(SUM(duracionMinutos), 0)
+          FROM horas_extra
+          WHERE empleado = :id_usuario
+            AND fecha BETWEEN :fechaInicio AND :fechaFin
+        ) AS total_minutos
+    `,
+      {
+        replacements: { id_usuario, fechaInicio, fechaFin },
+        type: db.Sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    const totalMinutos = total[0]?.total_minutos || 0;
+    const totalHoras = totalMinutos / 60;
+
     res.status(200).json({
       registros,
-      totalHoras: total[0]?.total_rango || 0,
+      totalHoras,
     });
   } catch (error) {
     console.error(
@@ -107,14 +134,23 @@ const obtenerDatosDias = async (id_usuario, fechaInicio, fechaFin) => {
       }
     );
 
-    // Query 2: Total horas en el rango
+    // Query 2: Total horas en el rango (fichajes + horas extra)
     const [totalHorasResult] = await db.sequelize.query(
       `
       SELECT
-        SUM(DATEDIFF(MINUTE, hora_entrada, hora_salida)) / 60.0 AS total_rango
-      FROM control_asistencias
-      WHERE id_usuario = :id_usuario
-        AND fecha BETWEEN :fechaInicio AND :fechaFin;
+        (
+          SELECT ISNULL(SUM(DATEDIFF(MINUTE, hora_entrada, hora_salida)), 0)
+          FROM control_asistencias
+          WHERE id_usuario = :id_usuario
+            AND fecha BETWEEN :fechaInicio AND :fechaFin
+        )
+        +
+        (
+          SELECT ISNULL(SUM(duracionMinutos), 0)
+          FROM horas_extra
+          WHERE empleado = :id_usuario
+            AND fecha BETWEEN :fechaInicio AND :fechaFin
+        ) AS total_minutos
       `,
       {
         replacements: {
@@ -126,9 +162,10 @@ const obtenerDatosDias = async (id_usuario, fechaInicio, fechaFin) => {
       }
     );
 
+    const totalMinutos = totalHorasResult?.total_minutos || 0;
     return {
       horasPorDia,
-      totalHoras: totalHorasResult?.total_rango || 0,
+      totalHoras: totalMinutos / 60,
     };
   } catch (error) {
     console.error("Error al obtener estadísticas por días:", error.message);
@@ -152,11 +189,21 @@ const obtenerDatosMes = async (id_usuario, anio, mes) => {
 
     const totalMesQuery = `
       SELECT
-        SUM(DATEDIFF(MINUTE, hora_entrada, hora_salida)) / 60.0 AS total_mes
-      FROM control_asistencias
-      WHERE id_usuario = :id_usuario
-        AND YEAR(fecha) = :anio
-        AND MONTH(fecha) = :mes;
+        (
+          SELECT ISNULL(SUM(DATEDIFF(MINUTE, hora_entrada, hora_salida)), 0)
+          FROM control_asistencias
+          WHERE id_usuario = :id_usuario
+            AND YEAR(fecha) = :anio
+            AND MONTH(fecha) = :mes
+        )
+        +
+        (
+          SELECT ISNULL(SUM(duracionMinutos), 0)
+          FROM horas_extra
+          WHERE empleado = :id_usuario
+            AND YEAR(fecha) = :anio
+            AND MONTH(fecha) = :mes
+        ) AS total_minutos
     `;
 
     const horasPorDia = await db.sequelize.query(horasPorDiaQuery, {
@@ -169,9 +216,10 @@ const obtenerDatosMes = async (id_usuario, anio, mes) => {
       type: Sequelize.QueryTypes.SELECT,
     });
 
+    const totalMinutos = totalMes?.total_minutos || 0;
     return {
       horasPorDia,
-      totalHoras: totalMes?.total_mes || 0,
+      totalHoras: totalMinutos / 60,
     };
   } catch (error) {
     console.error("Error al obtener datos del mes:", error.message);
@@ -202,21 +250,31 @@ const obtenerDatosAnio = async (id_usuario, anio) => {
     const [totalHoras] = await db.sequelize.query(
       `
       SELECT
-        SUM(DATEDIFF(SECOND, hora_entrada, hora_salida)) / 3600.0 AS total_horas_anual
-      FROM control_asistencias
-      WHERE id_usuario = :id_usuario
-        AND YEAR(fecha) = :anio
-        AND hora_salida IS NOT NULL
-    `,
+        (
+          SELECT ISNULL(SUM(DATEDIFF(SECOND, hora_entrada, hora_salida)), 0)
+          FROM control_asistencias
+          WHERE id_usuario = :id_usuario
+            AND YEAR(fecha) = :anio
+            AND hora_salida IS NOT NULL
+        )
+        +
+        (
+          SELECT ISNULL(SUM(duracionMinutos * 60), 0)
+          FROM horas_extra
+          WHERE empleado = :id_usuario
+            AND YEAR(fecha) = :anio
+        ) AS total_segundos
+      `,
       {
         replacements: { id_usuario, anio },
         type: db.Sequelize.QueryTypes.SELECT,
       }
     );
 
+    const totalSegundos = totalHoras?.total_segundos || 0;
     return {
       horasPorMes,
-      totalHoras: totalHoras?.total_horas_anual || 0,
+      totalHoras: totalSegundos / 3600,
     };
   } catch (error) {
     console.error("Error al obtener estadísticas anuales:", error.message);
