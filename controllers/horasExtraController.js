@@ -95,6 +95,22 @@ exports.crearHoraExtra = async (req, res) => {
 
     const duracionMinutos = calcularDuracion(horaInicio, horaFin);
 
+    // Validar que no exista registro con misma fecha y misma hora de inicio
+    const duplicado = await HorasExtra.findOne({
+      where: {
+        empleado: req.user.id,
+        fecha,
+        horaInicio
+      }
+    });
+
+    if (duplicado) {
+      return res.status(409).json({
+        success: false,
+        message: "Ya existe un registro que comienza a esa hora en esa fecha"
+      });
+    }
+
     const horaExtraData = {
       empleado: req.user.id,
       id_empresa: req.user.empresa,
