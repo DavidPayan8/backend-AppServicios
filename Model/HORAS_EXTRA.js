@@ -51,6 +51,11 @@ module.exports = function (sequelize, DataTypes) {
       validate: {
         min: 0
       }
+    },
+    es_automatico: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: false
     }
   }, {
     sequelize,

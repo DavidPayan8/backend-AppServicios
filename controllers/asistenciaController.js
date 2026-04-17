@@ -1,5 +1,6 @@
 const db = require("../Model");
 const { obtenerDireccionReversa } = require("../Model/others/geolocationModel");
+const { calcularYRegistrarHorasExtraAuto } = require("../helpers/horasExtraAuto");
 
 // devMike: devuelve la fecha y hora actual en la timezone de la empresa como string YYYY-MM-DD HH:MM:SS (para evitar el año 1900 de SQL Server)
 const getNowForEmpresa = (timezone) => {
@@ -219,8 +220,25 @@ const ficharSalidaHandler = async (req, res) => {
       }
     }
 
+    // Calcular horas extra automáticas (no crítico: error no aborta la transacción)
+    let resultadoExtra = { minutosExtra: 0 };
+    try {
+      resultadoExtra = await calcularYRegistrarHorasExtraAuto({
+        userId,
+        empresaId,
+        fecha: parteAbierto.fecha,
+        transaction: t,
+        db
+      });
+    } catch (errorExtra) {
+      console.error('[HorasExtra Auto] Error no crítico:', errorExtra.message);
+    }
+
     await t.commit();
-    res.status(200).json({ id: parteAbierto.id });
+    res.status(200).json({
+      id: parteAbierto.id,
+      horasExtra: resultadoExtra.minutosExtra > 0 ? resultadoExtra : null
+    });
   } catch (error) {
     await t.rollback();
     console.error("Error al fichar salida:", error);
