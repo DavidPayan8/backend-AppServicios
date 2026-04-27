@@ -9,6 +9,21 @@ const getEmpresas = async (req, res) => {
         {
           model: db.CONFIG_EMPRESA,
           as: "config",
+          attributes: [
+            "hay_primer_inicio",
+            "color_principal",
+            "es_tipo_obra",
+            "isLaTorre",
+            "parte_auto",
+            "proyectos_autorizacion",
+            "timezone",
+            "email_entrante",
+            "smtp_host",
+            "smtp_user",
+            "smtp_port",
+            "smtp_pass",
+            "limite_usuarios",
+          ],
         },
       ],
       attributes: [
@@ -21,7 +36,7 @@ const getEmpresas = async (req, res) => {
       ],
     });
 
-    res.json(
+    return res.status(200).json(
       empresas.map((e) => ({
         id: e.id_empresa,
         nombre: e.nombre,
@@ -33,11 +48,12 @@ const getEmpresas = async (req, res) => {
           ? {
               app: {
                 hayPrimerInicio: e.config.hay_primer_inicio,
-                colorPrimario: e.config.color_primario,
+                colorPrimario: e.config.color_principal,
                 esTipoObra: e.config.es_tipo_obra,
                 isLaTorre: e.config.isLaTorre,
                 parteAuto: e.config.parte_auto,
                 proyectosAutorizacion: e.config.proyectos_autorizacion,
+                timezone: e.config.timezone,
               },
               email: {
                 email: e.config.email_entrante,
@@ -53,7 +69,7 @@ const getEmpresas = async (req, res) => {
     );
   } catch (error) {
     console.error("Error al obtener empresas:", error);
-    res.status(500).send("Error del servidor");
+    return res.status(500).json({ error: "Error al obtener empresas", details: error.message });
   }
 };
 
@@ -65,6 +81,21 @@ const getEmpresa = async (req, res) => {
       include: {
         model: db.CONFIG_EMPRESA,
         as: "config",
+        attributes: [
+          "hay_primer_inicio",
+          "color_principal",
+          "es_tipo_obra",
+          "isLaTorre",
+          "parte_auto",
+          "proyectos_autorizacion",
+          "timezone",
+          "email_entrante",
+          "smtp_host",
+          "smtp_user",
+          "smtp_port",
+          "smtp_pass",
+          "limite_usuarios",
+        ],
       },
     });
 
@@ -82,10 +113,11 @@ const getEmpresa = async (req, res) => {
       configuracion: {
         app: {
           hayPrimerInicio: config?.hay_primer_inicio,
-          colorPrimario: config?.color_primario,
+          colorPrimario: config?.color_principal,
           esTipoObra: config?.es_tipo_obra,
           parteAuto: config?.parte_auto,
           proyectosAutorizacion: config?.proyectos_autorizacion,
+          timezone: config?.timezone, //devMike: para la zona horaria de la empresa
         },
         email: {
           email: config?.email_entrante,
@@ -97,8 +129,7 @@ const getEmpresa = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error al obtener empresa:", error);
-    res.status(500).send("Error del servidor");
+    res.status(500).json({ error: error.message, type: error.constructor.name });
   }
 };
 
@@ -179,13 +210,14 @@ const createEmpresaCompleta = async (req, res) => {
           smtp_user: configuracion?.email?.smtp_user ?? null,
           smtp_port: configuracion?.email?.smtp_port ?? null,
           smtp_pass: configuracion?.email?.smtp_pass ?? null,
-          color_primario: configuracion?.app?.colorPrimario ?? "#2c3e50",
+          color_principal: configuracion?.app?.colorPrimario ?? "#2c3e50",
           hay_primer_inicio: configuracion?.app?.hayPrimerInicio ?? false,
           es_tipo_obra: configuracion?.app?.esTipoObra ?? false,
           isLaTorre: configuracion?.app?.isLaTorre ?? false,
           parte_auto: configuracion?.app?.parteAuto ?? false,
           proyectos_autorizacion:
             configuracion?.app?.proyectosAutorizacion ?? false,
+          timezone: configuracion?.app?.timezone || "Europe/Madrid",
           limite_usuarios: configuracion?.limiteUsuarios ?? null,
         },
         { transaction: t },
@@ -262,6 +294,7 @@ const getConfigEmpresa = async (req, res) => {
         "isLaTorre",
         "parte_auto",
         "proyectos_autorizacion",
+        "timezone",
       ],
       include: [
         {
@@ -332,19 +365,6 @@ const updateConfigEmpresa = async (req, res) => {
   try {
     const empresa = req.body;
 
-    console.log(empresa, req.user.empresa);
-
-    if (!validateCIFFormat(empresa.cif)) {
-      return res.status(400).json({ message: "El CIF no es válido." });
-    }
-
-    const isUnique = await validateCIFUnique(empresa.cif, req.user.empresa);
-    if (!isUnique) {
-      return res
-        .status(400)
-        .json({ message: "Ya existe una empresa con este CIF." });
-    }
-
     await db.CONFIG_EMPRESA.update(
       {
         email_entrante: empresa.configuracion.email.email,
@@ -358,6 +378,7 @@ const updateConfigEmpresa = async (req, res) => {
         isLaTorre: empresa.configuracion.app.isLaTorre,
         parte_auto: empresa.configuracion.app.parteAuto,
         proyectos_autorizacion: empresa.configuracion.app.proyectosAutorizacion,
+        timezone: empresa.configuracion.app.timezone //devMike: esto es para que la hora de fichar sea la de la empresa en su huso horario
       },
       {
         where: { id_empresa: req.user.empresa },
@@ -390,7 +411,7 @@ const updateEmpresaCompleta = async (req, res) => {
 
     // App config
     if (app.colorPrimario !== undefined)
-      updateData.color_primario = app.colorPrimario;
+      updateData.color_principal = app.colorPrimario;
     if (app.hayPrimerInicio !== undefined)
       updateData.hay_primer_inicio = app.hayPrimerInicio;
     if (app.esTipoObra !== undefined) updateData.es_tipo_obra = app.esTipoObra;
@@ -398,7 +419,7 @@ const updateEmpresaCompleta = async (req, res) => {
     if (app.parteAuto !== undefined) updateData.parte_auto = app.parteAuto;
     if (app.proyectosAutorizacion !== undefined)
       updateData.proyectos_autorizacion = app.proyectosAutorizacion;
-
+    if (app.timezone !== undefined) updateData.timezone = app.timezone; //devMike: identico a antes, si no se configura por defecto 
     // Limite usuarios
     if (empresa.limiteUsuarios !== undefined) {
       updateData.limite_usuarios = empresa.limiteUsuarios;
@@ -435,6 +456,27 @@ const getCountUsersByEmpresa = async (req, res) => {
   }
 };
 
+//dev-mike
+const updateColorPrincipal = async (req, res) => {
+    try {
+      const { empresa } = req.user;
+      const { color_principal } = req.body;
+
+      if (!color_principal || !/^#[0-9A-Fa-f]{6}$/.test(color_principal)) {
+        return res.status(400).json({ message: "Color inválido. Formato esperado: #RRGGBB" });
+      }
+
+      await db.CONFIG_EMPRESA.update(
+        { color_principal },
+        { where: { id_empresa: empresa } }
+      );
+
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("Error al actualizar color principal:", error);
+      res.status(500).send("Error del servidor");
+    }
+  };
 module.exports = {
   getEmpresas,
   getEmpresa,
@@ -444,4 +486,5 @@ module.exports = {
   getCountUsersByEmpresa,
   updateEmpresaCompleta,
   createEmpresaCompleta,
+  updateColorPrincipal,
 };

@@ -9,9 +9,11 @@ const {
   obtenerDiasVacaciones,
 } = require("../controllers/vacacionesController");
 const authenticateToken = require("../middleware/authMiddleware");
+const { authorizeModule } = require('../middleware/moduleMiddleware');
 const router = express.Router();
 
 router.use(authenticateToken);
+router.use(authorizeModule("portal_empleado", "vacaciones_portal"));
 
 router.get("/total", obtenerTotalVacaciones);
 router.get("/tipos", obtenerTiposVacacion);

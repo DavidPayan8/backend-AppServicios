@@ -1,14 +1,38 @@
 const db = require("../Model");
 const { obtenerDireccionReversa } = require("../Model/others/geolocationModel");
 
-// Fichar entrada
-// Helper para verificar parte_auto
-const checkParteAuto = async (empresaId) => {
+// devMike: devuelve la fecha y hora actual en la timezone de la empresa como string YYYY-MM-DD HH:MM:SS (para evitar el año 1900 de SQL Server)
+const getNowForEmpresa = (timezone) => {
+  const tz = timezone || "Europe/Madrid";
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  const parts = Object.fromEntries(
+    formatter.formatToParts(new Date()).map(({ type, value }) => [type, value])
+  );
+  const result = `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
+  console.log("[getNowForEmpresa] tz:", tz, "-> fecha y hora calculada:", result, "| UTC actual:", new Date().toISOString());
+  return result;
+};
+
+// Helper para verificar parte_auto y timezone de empresa
+const getConfigEmpresa = async (empresaId) => {
   const configEmpresa = await db.CONFIG_EMPRESA.findOne({
     where: { id_empresa: empresaId },
-    attributes: ["parte_auto"],
+    attributes: ["parte_auto", "timezone"], //timezone afecta a la hora de fichar
   });
-  return configEmpresa?.parte_auto || false;
+  console.log("[getConfigEmpresa] empresaId:", empresaId, "-> timezone en BD:", configEmpresa?.timezone);
+  return {
+    isParteAuto: configEmpresa?.parte_auto || false,
+    timezone: configEmpresa?.timezone || "Europe/Madrid",
+  };
 };
 
 // Verificar tiempo mínimo entre fichajes (debounce)
@@ -85,8 +109,9 @@ const ficharEntradaHandler = async (req, res) => {
       });
     }
 
-    // Verificar si la empresa tiene activado el parte automático
-    const isParteAuto = await checkParteAuto(empresaId);
+    // Verificar configuración de empresa (parte_auto y timezone)
+    const { isParteAuto, timezone } = await getConfigEmpresa(empresaId);
+    const ahora = getNowForEmpresa(timezone);
 
     // Validar que se haya seleccionado un proyecto si parte_auto está activado
     if (isParteAuto && !proyectoId) {
@@ -101,7 +126,7 @@ const ficharEntradaHandler = async (req, res) => {
       {
         id_usuario: userId,
         fecha,
-        hora_entrada: db.Sequelize.literal("GETDATE()"),
+        hora_entrada: ahora,
       },
       { transaction: t }
     );
@@ -112,7 +137,7 @@ const ficharEntradaHandler = async (req, res) => {
           id_usuario: userId,
           id_proyecto: proyectoId,
           fecha,
-          hora_entrada: db.Sequelize.literal("GETDATE()"),
+          hora_entrada: ahora,
         },
         { transaction: t }
       );
@@ -170,12 +195,13 @@ const ficharSalidaHandler = async (req, res) => {
       });
     }
 
-    // Actualizar parte con hora de salida
-    parteAbierto.hora_salida = db.Sequelize.literal("GETDATE()");
-    await parteAbierto.save({ transaction: t });
+    // Verificar configuración de empresa (parte_auto y timezone)
+    const { isParteAuto, timezone } = await getConfigEmpresa(empresaId);
+    const ahora = getNowForEmpresa(timezone);
 
-    // Verificar si la empresa tiene activado el parte automático
-    const isParteAuto = await checkParteAuto(empresaId);
+    // Actualizar parte con hora de salida
+    parteAbierto.hora_salida = ahora;
+    await parteAbierto.save({ transaction: t });
 
     if (isParteAuto) {
       const parteTrabajoAbierto = await db.PARTES_TRABAJO.findOne({
@@ -188,7 +214,7 @@ const ficharSalidaHandler = async (req, res) => {
       });
 
       if (parteTrabajoAbierto) {
-        parteTrabajoAbierto.hora_salida = db.Sequelize.literal("GETDATE()");
+        parteTrabajoAbierto.hora_salida = ahora;
         await parteTrabajoAbierto.save({ transaction: t });
       }
     }
@@ -321,6 +347,11 @@ const obtenerPartesUsuarioFecha = async (req, res) => {
         parte.horas = "00:00";
       }
 
+      // Normalizar fecha a "YYYY-MM-DD": con raw:true el driver devuelve la columna DATE como objeto Date ISO
+      if (parte.fecha) {
+        parte.fecha = new Date(parte.fecha).toISOString().slice(0, 10);
+      }
+
       return parte;
     });
 
@@ -334,9 +365,13 @@ const obtenerPartesUsuarioFecha = async (req, res) => {
       order: [["hora_entrada", "ASC"]],
     });
 
+    const { timezone } = await getConfigEmpresa(req.user.empresa);
+    const serverTime = new Date().toISOString(); // Usamos ISO UTC para la sincronización real
+
     res.status(200).json({
       hoy: partesConHoras,
       ayer: partesAyerSinSalida,
+      serverTime,
     });
   } catch (error) {
     console.error("Error al obtener los partes del usuario:", error.message);
@@ -348,6 +383,7 @@ const obtenerPartesUsuarioFecha = async (req, res) => {
 
 const cerrarParteAbierto = async (req, res) => {
   const userId = req.user.id;
+  const { empresa: empresaId } = req.user;
   const { id_parte } = req.body;
 
   try {
@@ -366,8 +402,9 @@ const cerrarParteAbierto = async (req, res) => {
       });
     }
 
+    const { timezone } = await getConfigEmpresa(empresaId);
     // Actualizar parte con hora de salida
-    parteAbierto.hora_salida = db.Sequelize.literal("GETDATE()");
+    parteAbierto.hora_salida = getNowForEmpresa(timezone);
     await parteAbierto.save();
 
     res.status(200).json(parteAbierto.id);
@@ -378,6 +415,8 @@ const cerrarParteAbierto = async (req, res) => {
 };
 
 const formatFecha = (fecha) => {
+  // Acepta "DD/MM/YYYY" (del endpoint de consulta) y "YYYY-MM-DD" (del endpoint de fichaje)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return fecha;
   const [dia, mes, anio] = fecha.split("/");
   return `${anio}-${mes}-${dia}`;
 };

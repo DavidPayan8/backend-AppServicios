@@ -37,7 +37,7 @@ const obtenerDatosTabla = async (req, res) => {
           SUM(DATEDIFF(MINUTE, hora_entrada, hora_salida)) / 60.0 AS total_rango
         FROM control_asistencias
         WHERE id_usuario = :id_usuario
-          AND CONVERT(DATE, hora_entrada) BETWEEN :fechaInicio AND :fechaFin;
+          AND fecha BETWEEN :fechaInicio AND :fechaFin;
     `,
       {
         replacements: { id_usuario, fechaInicio, fechaFin },
@@ -47,14 +47,14 @@ const obtenerDatosTabla = async (req, res) => {
 
     res.status(200).json({
       registros,
-      totalHoras: total.total_rango || 0,
+      totalHoras: total[0]?.total_rango || 0,
     });
   } catch (error) {
     console.error(
       "Error al obtener estadísticas formato tabla:",
       error.message
     );
-    throw error;
+    res.status(500).json({ error: "Error al obtener estadísticas" });
   }
 };
 
@@ -88,13 +88,13 @@ const obtenerDatosDias = async (id_usuario, fechaInicio, fechaFin) => {
   try {
     const horasPorDia = await db.sequelize.query(
       `
-      SELECT 
-        CAST(hora_entrada AS DATE) AS fecha,
+      SELECT
+        CONVERT(varchar(10), fecha, 23) AS fecha,
         SUM(DATEDIFF(MINUTE, hora_entrada, hora_salida)) / 60.0 AS horas_trabajadas
       FROM control_asistencias
       WHERE id_usuario = :id_usuario
-        AND hora_entrada BETWEEN :fechaInicio AND :fechaFin
-      GROUP BY CAST(hora_entrada AS DATE)
+        AND fecha BETWEEN :fechaInicio AND :fechaFin
+      GROUP BY fecha
       ORDER BY fecha;
       `,
       {
@@ -110,11 +110,11 @@ const obtenerDatosDias = async (id_usuario, fechaInicio, fechaFin) => {
     // Query 2: Total horas en el rango
     const [totalHorasResult] = await db.sequelize.query(
       `
-      SELECT 
+      SELECT
         SUM(DATEDIFF(MINUTE, hora_entrada, hora_salida)) / 60.0 AS total_rango
       FROM control_asistencias
       WHERE id_usuario = :id_usuario
-        AND hora_entrada BETWEEN :fechaInicio AND :fechaFin;
+        AND fecha BETWEEN :fechaInicio AND :fechaFin;
       `,
       {
         replacements: {
@@ -139,24 +139,24 @@ const obtenerDatosDias = async (id_usuario, fechaInicio, fechaFin) => {
 const obtenerDatosMes = async (id_usuario, anio, mes) => {
   try {
     const horasPorDiaQuery = `
-      SELECT 
-        CAST(hora_entrada AS DATE) AS fecha,
+      SELECT
+        CONVERT(varchar(10), fecha, 23) AS fecha,
         SUM(DATEDIFF(MINUTE, hora_entrada, hora_salida)) / 60.0 AS horas_trabajadas
       FROM control_asistencias
       WHERE id_usuario = :id_usuario
-        AND YEAR(hora_entrada) = :anio
-        AND MONTH(hora_entrada) = :mes
-      GROUP BY CAST(hora_entrada AS DATE)
+        AND YEAR(fecha) = :anio
+        AND MONTH(fecha) = :mes
+      GROUP BY fecha
       ORDER BY fecha;
     `;
 
     const totalMesQuery = `
-      SELECT 
+      SELECT
         SUM(DATEDIFF(MINUTE, hora_entrada, hora_salida)) / 60.0 AS total_mes
       FROM control_asistencias
       WHERE id_usuario = :id_usuario
-        AND YEAR(hora_entrada) = :anio
-        AND MONTH(hora_entrada) = :mes;
+        AND YEAR(fecha) = :anio
+        AND MONTH(fecha) = :mes;
     `;
 
     const horasPorDia = await db.sequelize.query(horasPorDiaQuery, {
@@ -184,13 +184,13 @@ const obtenerDatosAnio = async (id_usuario, anio) => {
     const horasPorMes = await db.sequelize.query(
       `
       SELECT
-        MONTH(hora_entrada) AS mes,
+        MONTH(fecha) AS mes,
         SUM(DATEDIFF(SECOND, hora_entrada, hora_salida)) / 3600.0 AS total_horas
       FROM control_asistencias
-      WHERE id_usuario = :id_usuario 
-        AND YEAR(hora_entrada) = :anio
+      WHERE id_usuario = :id_usuario
+        AND YEAR(fecha) = :anio
         AND hora_salida IS NOT NULL -- Excluye registros abiertos
-      GROUP BY MONTH(hora_entrada)
+      GROUP BY MONTH(fecha)
       ORDER BY mes
     `,
       {
@@ -205,7 +205,7 @@ const obtenerDatosAnio = async (id_usuario, anio) => {
         SUM(DATEDIFF(SECOND, hora_entrada, hora_salida)) / 3600.0 AS total_horas_anual
       FROM control_asistencias
       WHERE id_usuario = :id_usuario
-        AND YEAR(hora_entrada) = :anio
+        AND YEAR(fecha) = :anio
         AND hora_salida IS NOT NULL
     `,
       {

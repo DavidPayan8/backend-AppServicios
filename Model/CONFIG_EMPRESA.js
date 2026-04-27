@@ -81,6 +81,11 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: true,
         unique: true,
       },
+      timezone: {
+        type: DataTypes.STRING(50),
+        allowNull: false,
+        defaultValue: "Europe/Madrid",
+      },
     },
     {
       sequelize,
