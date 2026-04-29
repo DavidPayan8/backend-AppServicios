@@ -33,6 +33,7 @@ const pushBrowserRoutes = require("./routes/pushBrowserRoutes");
 const flutterFichajeRoutes = require("./routes/flutterFichajeRoutes");
 const flutterConfigRoutes = require("./routes/flutterConfigRoutes");
 const nominasRoutes = require('./routes/nominasRoutes');
+const inmovilizadoRoutes = require('./routes/inmovilizadoRoutes');
 const vb6Routes = require("./routes/vb6Routes");
 
 const authenticateToken = require("./middleware/authMiddleware");
@@ -73,6 +74,7 @@ const routes = [
   { path: "flutter-fichaje", router: flutterFichajeRoutes },
   { path: "flutter-config", router: flutterConfigRoutes },
   { path: 'nominas', router: nominasRoutes },
+  { path: 'inmovilizados', router: inmovilizadoRoutes },
   { path: "vb6", router: vb6Routes },
 ];
 
