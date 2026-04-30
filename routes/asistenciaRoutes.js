@@ -9,6 +9,7 @@ const {
   cerrarParteAbierto,
   actualizarLocalizacionEntrada,
   actualizarLocalizacionSalida,
+  obtenerUltimoFichajeUsuario,
 } = require("../controllers/asistenciaController");
 
 router.use(authenticateToken);
@@ -20,5 +21,6 @@ router.patch("/actualizar-localizacion-entrada",authorizeModule("registro_horari
 router.patch("/actualizar-localizacion-salida",authorizeModule("registro_horario"), actualizarLocalizacionSalida);
 router.get("/partes-usuario",authorizeModule("registro_horario"), obtenerPartesUsuarioFecha);
 router.patch("/cerrar-parte",authorizeModule("registro_horario"), cerrarParteAbierto);
+router.get("/ultimo-fichaje/:usuarioId", obtenerUltimoFichajeUsuario);
 
 module.exports = router;

@@ -414,6 +414,29 @@ const cerrarParteAbierto = async (req, res) => {
   }
 };
 
+const obtenerUltimoFichajeUsuario = async (req, res) => {
+  const { usuarioId } = req.params;
+
+  try {
+    const ultimoFichaje = await db.CONTROL_ASISTENCIAS.findOne({
+      where: { id_usuario: usuarioId },
+      order: [["id", "DESC"]],
+      raw: true,
+    });
+
+    res.status(200).json({
+      horaEntrada: ultimoFichaje?.hora_entrada || null,
+      horaSalida: ultimoFichaje?.hora_salida || null,
+      fecha: ultimoFichaje?.fecha || null,
+    });
+  } catch (error) {
+    console.error("Error al obtener último fichaje:", error);
+    res.status(500).json({
+      message: "Error del servidor al obtener el último fichaje.",
+    });
+  }
+};
+
 const formatFecha = (fecha) => {
   // Acepta "DD/MM/YYYY" (del endpoint de consulta) y "YYYY-MM-DD" (del endpoint de fichaje)
   if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return fecha;
@@ -428,4 +451,5 @@ module.exports = {
   cerrarParteAbierto,
   actualizarLocalizacionEntrada,
   actualizarLocalizacionSalida,
+  obtenerUltimoFichajeUsuario,
 };
