@@ -1,6 +1,21 @@
 const db = require("../Model");
 const { Op } = require("sequelize");
 
+const obtenerTiposInmovilizado = async (req, res) => {
+  try {
+    const { empresa } = req.user;
+    const tipos = await db.TIPO_INMOVILIZADO.findAll({
+      where: { id_origen: empresa },
+      attributes: ["id", "Nombre", "codigo"],
+      order: [["Nombre", "ASC"]]
+    });
+    res.status(200).json(tipos);
+  } catch (error) {
+    console.error("Error al obtener tipos de inmovilizado:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const obtenerInmovilizados = async (req, res) => {
   try {
     const { empresa, rol } = req.user;
