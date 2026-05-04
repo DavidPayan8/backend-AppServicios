@@ -6,6 +6,7 @@ const {
   obtenerInmovilizados,
   obtenerMovimientos,
   obtenerUbicacionesInmovilizado,
+  obtenerTiposInmovilizado,
   crearMovimiento,
   actualizarInmovilizado,
   actualizarMovimiento,
@@ -15,6 +16,7 @@ const {
 router.use(authenticateToken);
 router.use(authorizeModule("portal_empleado", "material_inmovilizado"));
 
+router.get('/tipos', obtenerTiposInmovilizado);
 router.get('/inmovilizados', obtenerInmovilizados);
 router.get('/movimientos', obtenerMovimientos);
 router.get('/inmovilizados/:id/ubicaciones', obtenerUbicacionesInmovilizado);

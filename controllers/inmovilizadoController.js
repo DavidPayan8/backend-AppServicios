@@ -77,7 +77,7 @@ const obtenerUbicacionesInmovilizado = async (req, res) => {
         }
       ],
       where,
-      attributes: ["id", "fecha_inicio", "fecha_final", "nombreTrabajador", "Ubicacion"],
+      attributes: ["id", "fecha_inicio", "fecha_final", "nombreTrabajador", "Ubicacion", "Observaciones"],
       order: [["fecha_inicio", "DESC"]],
       ...(year ? {} : { limit: 10 })
     });
@@ -280,6 +280,7 @@ const crearInmovilizado = async (req, res) => {
 };
 
 module.exports = {
+  obtenerTiposInmovilizado,
   obtenerInmovilizados,
   obtenerMovimientos,
   obtenerUbicacionesInmovilizado,
