@@ -47,6 +47,10 @@ module.exports = function (sequelize, DataTypes) {
           key: "id",
         },
       },
+      Ubicacion: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+      },
     },
     {
       sequelize,

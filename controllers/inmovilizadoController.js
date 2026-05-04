@@ -77,7 +77,7 @@ const obtenerMovimientos = async (req, res) => {
 const crearMovimiento = async (req, res) => {
   try {
     const { empresa } = req.user;
-    const { fecha_inicio, fecha_final, nombreTrabajador, Observaciones, Ubicacion, inmovilizados } = req.body;
+    let { fecha_inicio, fecha_final, nombreTrabajador, Observaciones, Ubicacion, inmovilizados } = req.body;
 
     console.log("Body recibido:", req.body);
 
@@ -85,10 +85,27 @@ const crearMovimiento = async (req, res) => {
       return res.status(400).json({ error: "Campos requeridos faltantes: fecha_inicio y nombreTrabajador" });
     }
 
+    const fechaInicio = new Date(fecha_inicio);
+    const fechaFinalParsed = (fecha_final && fecha_final !== '') ? new Date(fecha_final) : null;
+
+    if (isNaN(fechaInicio.getTime())) {
+      return res.status(400).json({ error: "Formato de fecha_inicio inválido" });
+    }
+
+    const ahora = new Date();
+    const margenMinutos = 5 * 60 * 1000;
+    if (fechaInicio < new Date(ahora.getTime() - margenMinutos)) {
+      return res.status(400).json({ error: "No se puede asignar con fecha más de 5 minutos atrás" });
+    }
+
+    if (fechaFinalParsed && fechaFinalParsed < fechaInicio) {
+      return res.status(400).json({ error: "Fecha final debe ser posterior a fecha inicio" });
+    }
+
     const movimiento = await db.MOVIMIENTOS.create({
       id_origen: empresa,
-      fecha_inicio,
-      fecha_final,
+      fecha_inicio: fechaInicio,
+      fecha_final: fechaFinalParsed,
       nombreTrabajador,
       Observaciones,
       Ubicacion,
@@ -103,6 +120,14 @@ const crearMovimiento = async (req, res) => {
           id_inmovilizado: idInmovilizado,
           id_trabajador: req.user.id
         });
+
+        // Actualizar ubicación del inmovilizado con la del movimiento
+        if (Ubicacion) {
+          const inmovilizado = await db.INMOVILIZADO.findByPk(idInmovilizado);
+          if (inmovilizado) {
+            await inmovilizado.update({ Ubicacion });
+          }
+        }
       }
     }
 
@@ -139,19 +164,33 @@ const actualizarInmovilizado = async (req, res) => {
 const actualizarMovimiento = async (req, res) => {
   try {
     const { id } = req.params;
-    const { fecha_inicio, fecha_final, nombreTrabajador, Observaciones, Ubicacion } = req.body;
+    let { fecha_inicio, fecha_final, nombreTrabajador, Observaciones, Ubicacion } = req.body;
 
     const movimiento = await db.MOVIMIENTOS.findByPk(id);
     if (!movimiento) {
       return res.status(404).json({ error: "Movimiento no encontrado" });
     }
 
+    if (!movimiento.fecha_final && fecha_inicio) {
+      return res.status(400).json({
+        error: "No se puede editar fecha_inicio de movimiento abierto"
+      });
+    }
+
+    const fechaInicioParsed = fecha_inicio ? new Date(fecha_inicio) : null;
+    const fechaFinalParsed = (fecha_final && fecha_final !== '') ? new Date(fecha_final) : null;
+
+    const fechaInicioBase = fechaInicioParsed || movimiento.fecha_inicio;
+    if (fechaFinalParsed && fechaFinalParsed < new Date(fechaInicioBase)) {
+      return res.status(400).json({ error: "Fecha final debe ser posterior a fecha inicio" });
+    }
+
     await movimiento.update({
-      fecha_inicio: fecha_inicio || movimiento.fecha_inicio,
-      fecha_final: fecha_final || movimiento.fecha_final,
+      fecha_inicio: fechaInicioParsed || movimiento.fecha_inicio,
+      fecha_final: fechaFinalParsed !== undefined ? fechaFinalParsed : movimiento.fecha_final,
       nombreTrabajador: nombreTrabajador || movimiento.nombreTrabajador,
-      Observaciones: Observaciones || movimiento.Observaciones,
-      Ubicacion: Ubicacion || movimiento.Ubicacion
+      Observaciones: Observaciones !== undefined ? Observaciones : movimiento.Observaciones,
+      Ubicacion: Ubicacion !== undefined ? Ubicacion : movimiento.Ubicacion
     });
 
     res.status(200).json(movimiento);
