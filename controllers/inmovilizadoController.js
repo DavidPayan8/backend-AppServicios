@@ -21,13 +21,15 @@ const obtenerInmovilizados = async (req, res) => {
     const { empresa, rol } = req.user;
     const { estado } = req.query;
 
+    const { categoria_laboral } = req.user;
     const where = { id_origen: empresa };
 
-    // Si no es admin o superadmin, solo mostrar inmovilizados de Alta
-    if (rol !== 'admin' && rol !== 'superadmin') {
+    const puedeVerTodos = rol === 'admin' || rol === 'superadmin' ||
+      (categoria_laboral && categoria_laboral.toUpperCase() === 'TECNICO');
+
+    if (!puedeVerTodos) {
       where.Estado = 'Alta';
     } else if (estado) {
-      // Si es admin, permite filtrar por estado si se especifica
       where.Estado = estado;
     }
 
@@ -46,6 +48,43 @@ const obtenerInmovilizados = async (req, res) => {
     res.status(200).json(inmovilizados);
   } catch (error) {
     console.error("Error al obtener inmovilizados:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const obtenerUbicacionesInmovilizado = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { year } = req.query;
+
+    const where = { Ubicacion: { [Op.ne]: null } };
+
+    if (year) {
+      const anio = parseInt(year, 10);
+      where.fecha_inicio = {
+        [Op.gte]: new Date(`${anio}-01-01T00:00:00.000Z`),
+        [Op.lt]: new Date(`${anio + 1}-01-01T00:00:00.000Z`)
+      };
+    }
+
+    const movimientos = await db.MOVIMIENTOS.findAll({
+      include: [
+        {
+          model: db.MOVIMIENTOS_INMOVILIZADO,
+          as: "inmovilizados",
+          where: { id_inmovilizado: id },
+          attributes: []
+        }
+      ],
+      where,
+      attributes: ["id", "fecha_inicio", "fecha_final", "nombreTrabajador", "Ubicacion"],
+      order: [["fecha_inicio", "DESC"]],
+      ...(year ? {} : { limit: 10 })
+    });
+
+    res.status(200).json(movimientos);
+  } catch (error) {
+    console.error("Error al obtener ubicaciones del inmovilizado:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -243,6 +282,7 @@ const crearInmovilizado = async (req, res) => {
 module.exports = {
   obtenerInmovilizados,
   obtenerMovimientos,
+  obtenerUbicacionesInmovilizado,
   crearMovimiento,
   actualizarInmovilizado,
   actualizarMovimiento,

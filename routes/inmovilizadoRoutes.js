@@ -5,6 +5,7 @@ const { authorizeModule } = require('../middleware/moduleMiddleware');
 const {
   obtenerInmovilizados,
   obtenerMovimientos,
+  obtenerUbicacionesInmovilizado,
   crearMovimiento,
   actualizarInmovilizado,
   actualizarMovimiento,
@@ -16,6 +17,7 @@ router.use(authorizeModule("portal_empleado", "material_inmovilizado"));
 
 router.get('/inmovilizados', obtenerInmovilizados);
 router.get('/movimientos', obtenerMovimientos);
+router.get('/inmovilizados/:id/ubicaciones', obtenerUbicacionesInmovilizado);
 router.post('/movimientos', crearMovimiento);
 router.put('/movimientos/:id', actualizarMovimiento);
 router.post('/inmovilizados', crearInmovilizado);
