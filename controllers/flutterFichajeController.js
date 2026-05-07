@@ -6,6 +6,34 @@ const db = require("../Model");
  * No JWT authentication required
  */
 
+const getNowForEmpresa = (timezone) => {
+  const tz = timezone || "Europe/Madrid";
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  const parts = Object.fromEntries(
+    formatter.formatToParts(new Date()).map(({ type, value }) => [type, value])
+  );
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
+};
+
+const getConfigEmpresa = async (empresaId) => {
+  const configEmpresa = await db.CONFIG_EMPRESA.findOne({
+    where: { id_empresa: empresaId },
+    attributes: ["timezone"],
+  });
+  return {
+    timezone: configEmpresa?.timezone || "Europe/Madrid",
+  };
+};
+
 const ficharFlutterHandler = async (req, res) => {
   const { codigo_usuario } = req.body;
 
@@ -42,9 +70,10 @@ const ficharFlutterHandler = async (req, res) => {
       });
     }
 
-    // Get current date in YYYY-MM-DD format
-    const today = new Date();
-    const fecha = today.toISOString().split("T")[0];
+    // Get timezone and current date/time in company timezone
+    const { timezone } = await getConfigEmpresa(req.empresa.id);
+    const ahora = getNowForEmpresa(timezone);
+    const fecha = ahora.split(" ")[0];
 
     const t = await db.sequelize.transaction();
 
@@ -68,14 +97,14 @@ const ficharFlutterHandler = async (req, res) => {
           {
             id_usuario: usuario.id,
             fecha,
-            hora_entrada: db.Sequelize.literal("GETDATE()"),
+            hora_entrada: ahora,
           },
           { transaction: t },
         );
         action = "entrada";
       } else {
         // Record exists without hora_salida -> Update with check-out
-        fichajeExistente.hora_salida = db.Sequelize.literal("GETDATE()");
+        fichajeExistente.hora_salida = ahora;
         await fichajeExistente.save({ transaction: t });
         fichaje = fichajeExistente;
         action = "salida";
