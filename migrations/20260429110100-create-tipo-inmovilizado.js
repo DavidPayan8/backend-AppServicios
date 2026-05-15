@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('TipoInmovilizado', {
+    await queryInterface.createTable('TIPO_INMOVILIZADO', {
       id: {
         autoIncrement: true,
         primaryKey: true,
@@ -38,6 +38,6 @@ module.exports = {
   },
 
   async down(queryInterface) {
-    await queryInterface.dropTable('TipoInmovilizado');
+    await queryInterface.dropTable('TIPO_INMOVILIZADO');
   }
 };
