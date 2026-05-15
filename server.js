@@ -84,16 +84,6 @@ app.use(morgan("dev"));
 app.use(express.json({ limit: '10mb' })); //dev-miguel
 app.use(express.urlencoded({ limit: '10mb', extended: true })); //dev-miguel
 
-/* PROVISIONALMENTE COMENTADO:falla al subir pdfs porque multipart no detecta el parseado JSON ni URLencoded
-
-app.use((req, res, next) => {
-  if (req.is("multipart/form-data")) return next();
-  express.json({ limit: "10mb" })(req, res, (err) => {
-    if (err) return next(err);
-    express.urlencoded({ limit: "10mb", extended: true })(req, res, next);
-  });
-});
-*/ 
 
 // Configurar rutas
 routes.forEach(({ path, router, noBase }) => {
