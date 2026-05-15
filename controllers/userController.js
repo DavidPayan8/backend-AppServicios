@@ -115,9 +115,38 @@ const cambiarPrimerInicio = async (req, res) => {
   }
 };
 
+// Eliminar usuario por superadmin (no se puede borrar a sí mismo ni a otros superadmins)
+const deleteUserBySuperadmin = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const usuario = await db.USUARIOS.findByPk(id);
+
+    if (!usuario) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    if (usuario.rol === "superadmin") {
+      return res.status(403).json({ message: "No se puede eliminar a un superadmin" });
+    }
+
+    if (usuario.id === req.user.id) {
+      return res.status(403).json({ message: "No puedes eliminarte a ti mismo" });
+    }
+
+    await usuario.destroy();
+
+    res.status(200).json({ message: "Usuario eliminado correctamente" });
+  } catch (error) {
+    console.error("Error al eliminar usuario:", error.message);
+    res.status(500).json({ message: "Error del servidor" });
+  }
+};
+
 module.exports = {
   getUsers: getUsersHandler,
   getPerfil: getPerfilHandler,
   actualizarPerfil: actualizarPerfilHandler,
   cambiarPrimerInicio,
+  deleteUserBySuperadmin,
 };
